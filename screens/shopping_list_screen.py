@@ -15,6 +15,9 @@ class ShoppingListScreen(Screen):
     Ekran aktivne liste za kupovinu.
     Izbor prodavnice, dodavanje proizvoda (autopopuna zadnje cene iz baze),
     racunanje totala, cuvanje zatvorene liste u istoriju.
+
+    Napomena o valutama: self.stavke_total se uvek drzi u RSD (bazna
+    valuta). Za prikaz se koristi db.rsd_u_prikaz().
     """
 
     def __init__(self, **kwargs):
@@ -33,7 +36,7 @@ class ShoppingListScreen(Screen):
         self.stavke_total = 0.0
         self.ids.items_box.clear_widgets()
         self.ids.store_label.text = "Prodavnica: (izbor dolazi)"
-        self.ids.total_label.text = "0.00"
+        self.ids.total_label.text = f"0.00 {db.valuta_oznaka()}"
 
     # ---------- Izbor prodavnice ----------
 
@@ -127,32 +130,36 @@ class ShoppingListScreen(Screen):
         row = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
         jedinica_input = StyledTextInput(hint_text="Jedinica (kg/l/kom)", multiline=False)
         kolicina_input = StyledTextInput(hint_text="Kolicina", input_filter="float", multiline=False)
-        cena_input = StyledTextInput(hint_text="Cena po jedinici", input_filter="float", multiline=False)
+        cena_input = StyledTextInput(
+            hint_text=f"Cena po jedinici ({db.valuta_oznaka()})",
+            input_filter="float", multiline=False,
+        )
         row.add_widget(jedinica_input)
         row.add_widget(kolicina_input)
         row.add_widget(cena_input)
         content.add_widget(row)
 
-        total_label = Label(text="Total: 0.00", size_hint_y=None, height=dp(30))
+        total_label = Label(text=f"Total: 0.00 {db.valuta_oznaka()}", size_hint_y=None, height=dp(30))
         content.add_widget(total_label)
 
         def update_total(*a):
             try:
                 k = float(kolicina_input.text.replace(",", "."))
                 c = float(cena_input.text.replace(",", "."))
-                total_label.text = f"Total: {k * c:.2f}"
+                total_label.text = f"Total: {k * c:.2f} {db.valuta_oznaka()}"
             except ValueError:
-                total_label.text = "Total: 0.00"
+                total_label.text = f"Total: 0.00 {db.valuta_oznaka()}"
 
         kolicina_input.bind(text=update_total)
         cena_input.bind(text=update_total)
 
-        def pick_suggestion(naziv, jedinica, cena):
+        def pick_suggestion(naziv, jedinica, cena_rsd):
             naziv_input.unbind(text=refresh_suggestions)
             naziv_input.text = naziv
             naziv_input.bind(text=refresh_suggestions)
             jedinica_input.text = jedinica
-            cena_input.text = f"{cena:.2f}"
+            # cena_rsd dolazi iz baze (RSD) -> prikazi konvertovano u trenutnu valutu
+            cena_input.text = f"{db.rsd_u_prikaz(cena_rsd):.2f}"
             update_total()
             suggestions_box.clear_widgets()
 
@@ -161,13 +168,14 @@ class ShoppingListScreen(Screen):
             query = naziv_input.text.strip().lower()
             if not query:
                 return
-            for pid, naziv, jedinica, cena in db.search_proizvodi(query):
+            for pid, naziv, jedinica, cena_rsd in db.search_proizvodi(query):
+                cena_prikaz = db.rsd_u_prikaz(cena_rsd)
                 btn = SecondaryButton(
-                    text=f"{naziv}  ({jedinica}, {cena:.2f})",
+                    text=f"{naziv}  ({jedinica}, {cena_prikaz:.2f} {db.valuta_oznaka()})",
                     size_hint_y=None, height=dp(36),
                 )
                 btn.bind(
-                    on_release=lambda inst, n=naziv, j=jedinica, c=cena: pick_suggestion(n, j, c)
+                    on_release=lambda inst, n=naziv, j=jedinica, c=cena_rsd: pick_suggestion(n, j, c)
                 )
                 suggestions_box.add_widget(btn)
 
@@ -191,30 +199,34 @@ class ShoppingListScreen(Screen):
                 return
             try:
                 kolicina = float(kolicina_input.text.replace(",", "."))
-                cena = float(cena_input.text.replace(",", "."))
+                cena_prikaz = float(cena_input.text.replace(",", "."))
             except ValueError:
                 return
-            if kolicina <= 0 or cena < 0:
+            if kolicina <= 0 or cena_prikaz < 0:
                 return
 
-            proizvod_id = db.add_or_update_proizvod(naziv, jedinica, cena, self.prodavnica_id)
-            total = db.add_stavka(self.lista_id, proizvod_id, naziv, kolicina, cena)
+            # Korisnik je uneo cenu u TRENUTNOJ valuti -> konvertuj u RSD pre cuvanja
+            cena_rsd = db.prikaz_u_rsd(cena_prikaz)
 
-            self.add_item_row(naziv, kolicina, jedinica, cena, total)
-            self.stavke_total += total
-            self.ids.total_label.text = f"{self.stavke_total:.2f}"
+            proizvod_id = db.add_or_update_proizvod(naziv, jedinica, cena_rsd, self.prodavnica_id)
+            total_rsd = db.add_stavka(self.lista_id, proizvod_id, naziv, kolicina, cena_rsd)
+
+            self.add_item_row(naziv, kolicina, jedinica, cena_rsd, total_rsd)
+            self.stavke_total += total_rsd
+            self.ids.total_label.text = f"{db.rsd_u_prikaz(self.stavke_total):.2f} {db.valuta_oznaka()}"
 
             popup.dismiss()
 
         add_btn.bind(on_release=confirm)
         popup.open()
 
-    def add_item_row(self, naziv, kolicina, jedinica, cena, total):
+    def add_item_row(self, naziv, kolicina, jedinica, cena_rsd, total_rsd):
+        """cena_rsd i total_rsd stizu u RSD -> prikazuju se konvertovano."""
         row = BoxLayout(size_hint_y=None, height=dp(48))
         row.add_widget(Label(text=naziv))
         row.add_widget(Label(text=f"{kolicina:g} {jedinica}", size_hint_x=0.4))
-        row.add_widget(Label(text=f"{cena:.2f}", size_hint_x=0.5))
-        row.add_widget(Label(text=f"{total:.2f}", size_hint_x=0.5))
+        row.add_widget(Label(text=f"{db.rsd_u_prikaz(cena_rsd):.2f}", size_hint_x=0.5))
+        row.add_widget(Label(text=f"{db.rsd_u_prikaz(total_rsd):.2f}", size_hint_x=0.5))
         self.ids.items_box.add_widget(row)
 
     # ---------- Zatvaranje liste ----------
@@ -223,7 +235,7 @@ class ShoppingListScreen(Screen):
         if self.lista_id is None:
             self.go_back()
             return
-        db.close_lista(self.lista_id, self.stavke_total)
+        db.close_lista(self.lista_id, self.stavke_total)  # cuva se u RSD
         self.reset_for_new_list()
         self.manager.current = "home"
 
