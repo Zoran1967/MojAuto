@@ -15,6 +15,9 @@ class DatabaseScreen(Screen):
     Tab "Proizvodi": svaki red su obicna Button dugmad (najpouzdanije u
     Kivy-ju za klik na malom ekranu) koja otvaraju formu za izmenu
     naziva/cene/jedinice ili trajno brisanje proizvoda iz baze.
+
+    Napomena o valutama: cene u bazi su UVEK u RSD. Ovde se prikazuju
+    i unose preko db.rsd_u_prikaz() / db.prikaz_u_rsd().
     """
 
     def on_pre_enter(self, *args):
@@ -28,7 +31,9 @@ class DatabaseScreen(Screen):
         header = BoxLayout(size_hint_y=None, height=dp(36))
         header.add_widget(Label(text="Proizvod", bold=True, color=(1, 1, 1, 1)))
         header.add_widget(Label(text="Jed.", bold=True, size_hint_x=0.3, color=(1, 1, 1, 1)))
-        header.add_widget(Label(text="Cena", bold=True, size_hint_x=0.4, color=(1, 1, 1, 1)))
+        header.add_widget(Label(
+            text=f"Cena ({db.valuta_oznaka()})", bold=True, size_hint_x=0.4, color=(1, 1, 1, 1)
+        ))
         box.add_widget(header)
 
         if not proizvodi:
@@ -38,12 +43,12 @@ class DatabaseScreen(Screen):
             )
             return
 
-        for pid, naziv, jedinica, cena, prodavnica in proizvodi:
+        for pid, naziv, jedinica, cena_rsd, prodavnica in proizvodi:
             row = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(2))
 
-            def make_handler(pid=pid, naziv=naziv, jedinica=jedinica, cena=cena):
+            def make_handler(pid=pid, naziv=naziv, jedinica=jedinica, cena_rsd=cena_rsd):
                 def handler(instance):
-                    self.open_edit_popup(pid, naziv, jedinica, cena)
+                    self.open_edit_popup(pid, naziv, jedinica, cena_rsd)
                 return handler
 
             handler = make_handler()
@@ -59,7 +64,7 @@ class DatabaseScreen(Screen):
                 background_normal="", background_color=(0.16, 0.16, 0.18, 1),
             )
             btn_cena = Button(
-                text=f"{cena:.2f}", size_hint_x=0.4,
+                text=f"{db.rsd_u_prikaz(cena_rsd):.2f}", size_hint_x=0.4,
                 background_normal="", background_color=(0.16, 0.16, 0.18, 1),
             )
 
@@ -72,7 +77,7 @@ class DatabaseScreen(Screen):
             row.add_widget(btn_cena)
             box.add_widget(row)
 
-    def open_edit_popup(self, proizvod_id, naziv, jedinica, cena):
+    def open_edit_popup(self, proizvod_id, naziv, jedinica, cena_rsd):
         content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
 
         row0 = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
@@ -88,8 +93,10 @@ class DatabaseScreen(Screen):
         content.add_widget(row1)
 
         row2 = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
-        cena_input = StyledTextInput(text=f"{cena:.2f}", input_filter="float", multiline=False)
-        row2.add_widget(Label(text="Cena:", size_hint_x=0.4))
+        cena_input = StyledTextInput(
+            text=f"{db.rsd_u_prikaz(cena_rsd):.2f}", input_filter="float", multiline=False
+        )
+        row2.add_widget(Label(text=f"Cena ({db.valuta_oznaka()}):", size_hint_x=0.4))
         row2.add_widget(cena_input)
         content.add_widget(row2)
 
@@ -105,15 +112,18 @@ class DatabaseScreen(Screen):
                 error_label.text = "Naziv ne moze biti prazan."
                 return
             try:
-                nova_cena = float(cena_input.text.replace(",", "."))
+                nova_cena_prikaz = float(cena_input.text.replace(",", "."))
             except ValueError:
                 error_label.text = "Neispravna cena."
                 return
-            if nova_cena < 0:
+            if nova_cena_prikaz < 0:
                 error_label.text = "Cena ne moze biti negativna."
                 return
 
-            uspeh = db.update_proizvod(proizvod_id, novi_naziv, nova_jedinica, nova_cena)
+            # Korisnik je uneo cenu u TRENUTNOJ valuti -> konvertuj u RSD pre cuvanja
+            nova_cena_rsd = db.prikaz_u_rsd(nova_cena_prikaz)
+
+            uspeh = db.update_proizvod(proizvod_id, novi_naziv, nova_jedinica, nova_cena_rsd)
             if not uspeh:
                 error_label.text = "Vec postoji proizvod sa tim nazivom."
                 return
