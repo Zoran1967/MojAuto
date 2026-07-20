@@ -6,6 +6,7 @@ Podesavanjima.
 """
 from kivy.uix.button import Button
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.textinput import TextInput
 from kivy.lang import Builder
 
 Builder.load_string("""
@@ -18,11 +19,17 @@ Builder.load_string("""
     bold: True
     canvas.before:
         Color:
+            rgba: (0, 0, 0, 0.25)
+        RoundedRectangle:
+            pos: self.x, self.y - dp(2)
+            size: self.size
+            radius: [dp(16)]
+        Color:
             rgba: app.theme.accent if self.state == "normal" else (app.theme.accent[0]*0.7, app.theme.accent[1]*0.7, app.theme.accent[2]*0.7, 1)
         RoundedRectangle:
             pos: self.pos
             size: self.size
-            radius: [dp(10)]
+            radius: [dp(16)]
 
 <SecondaryButton>:
     background_normal: ""
@@ -31,11 +38,17 @@ Builder.load_string("""
     color: 1, 1, 1, 1
     canvas.before:
         Color:
+            rgba: (0, 0, 0, 0.2)
+        RoundedRectangle:
+            pos: self.x, self.y - dp(2)
+            size: self.size
+            radius: [dp(16)]
+        Color:
             rgba: (0.28, 0.28, 0.30, 1) if self.state == "normal" else (0.38, 0.38, 0.40, 1)
         RoundedRectangle:
             pos: self.pos
             size: self.size
-            radius: [dp(10)]
+            radius: [dp(16)]
 
 <DangerButton>:
     background_normal: ""
@@ -44,20 +57,53 @@ Builder.load_string("""
     color: 1, 1, 1, 1
     canvas.before:
         Color:
+            rgba: (0, 0, 0, 0.2)
+        RoundedRectangle:
+            pos: self.x, self.y - dp(2)
+            size: self.size
+            radius: [dp(16)]
+        Color:
             rgba: (0.75, 0.20, 0.20, 1) if self.state == "normal" else (0.55, 0.15, 0.15, 1)
         RoundedRectangle:
             pos: self.pos
             size: self.size
-            radius: [dp(10)]
+            radius: [dp(16)]
 
 <Card>:
     canvas.before:
+        Color:
+            rgba: (0, 0, 0, 0.2)
+        RoundedRectangle:
+            pos: self.x, self.y - dp(2)
+            size: self.size
+            radius: [dp(14)]
         Color:
             rgba: (0.16, 0.16, 0.18, 1)
         RoundedRectangle:
             pos: self.pos
             size: self.size
+            radius: [dp(14)]
+
+<StyledTextInput>:
+    background_normal: ""
+    background_active: ""
+    background_color: 0, 0, 0, 0
+    foreground_color: 1, 1, 1, 1
+    cursor_color: app.theme.accent
+    hint_text_color: 0.6, 0.6, 0.6, 1
+    padding: [dp(12), dp(12), dp(12), dp(12)]
+    canvas.before:
+        Color:
+            rgba: (0.14, 0.14, 0.16, 1)
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
             radius: [dp(10)]
+        Color:
+            rgba: app.theme.accent if self.focus else (0.30, 0.30, 0.32, 1)
+        Line:
+            rounded_rectangle: (self.x, self.y, self.width, self.height, dp(10))
+            width: 1.2
 """)
 
 
@@ -78,4 +124,10 @@ class DangerButton(Button):
 
 class Card(BoxLayout):
     """Kartica sa zaobljenom pozadinom, za redove liste."""
+    pass
+
+
+class StyledTextInput(TextInput):
+    """Polje za unos teksta prilagodjeno tamnoj temi - tamna pozadina,
+    svetla slova, akcentna ivica kad je fokusirano."""
     pass
