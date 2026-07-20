@@ -2,12 +2,11 @@ from kivy.uix.screenmanager import Screen
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.button import Button
-from kivy.uix.textinput import TextInput
 from kivy.uix.popup import Popup
 from kivy.metrics import dp
 
 from database import db
-from widgets import PrimaryButton, SecondaryButton, DangerButton
+from widgets import PrimaryButton, SecondaryButton, DangerButton, StyledTextInput
 
 
 class DatabaseScreen(Screen):
@@ -77,19 +76,19 @@ class DatabaseScreen(Screen):
         content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
 
         row0 = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
-        naziv_input = TextInput(text=naziv, multiline=False)
+        naziv_input = StyledTextInput(text=naziv, multiline=False)
         row0.add_widget(Label(text="Naziv:", size_hint_x=0.4))
         row0.add_widget(naziv_input)
         content.add_widget(row0)
 
         row1 = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
-        jedinica_input = TextInput(text=jedinica, multiline=False)
+        jedinica_input = StyledTextInput(text=jedinica, multiline=False)
         row1.add_widget(Label(text="Jedinica:", size_hint_x=0.4))
         row1.add_widget(jedinica_input)
         content.add_widget(row1)
 
         row2 = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
-        cena_input = TextInput(text=f"{cena:.2f}", input_filter="float", multiline=False)
+        cena_input = StyledTextInput(text=f"{cena:.2f}", input_filter="float", multiline=False)
         row2.add_widget(Label(text="Cena:", size_hint_x=0.4))
         row2.add_widget(cena_input)
         content.add_widget(row2)
