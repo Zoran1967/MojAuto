@@ -1,5 +1,12 @@
 #:import dp kivy.metrics.dp
 <HomeScreen>:
+    canvas.before:
+        Color:
+            rgba: 0.06, 0.06, 0.08, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
     BoxLayout:
         orientation: "vertical"
         padding: 30
@@ -40,6 +47,6 @@
             on_release: root.go_to_settings()
 
         Image:
-            source: "assets/11436.png"
+            source: app.assets_dir + "11436.png"
             allow_stretch: True
             keep_ratio: True
