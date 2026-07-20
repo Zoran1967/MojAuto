@@ -33,26 +33,9 @@ Builder.load_file(os.path.join(BASE_DIR, "kv", "settings_screen.kv"))
 
 class ShoppingApp(App):
     theme = ObjectProperty(None)
+    assets_dir = ObjectProperty(None)
 
     def build(self):
         if platform not in ("android", "ios"):
             Window.size = (400, 700)
-        # Malo profesionalnija pozadina umesto cistog crnog
-        Window.clearcolor = (0.06, 0.06, 0.08, 1)
-
-        self.theme = Theme()
-        sacuvana_tema = db.get_setting("tema", self.theme.name)
-        self.theme.set_theme(sacuvana_tema)
-
-        sm = ScreenManager(transition=FadeTransition())
-        sm.add_widget(HomeScreen(name="home"))
-        sm.add_widget(ShoppingListScreen(name="shopping_list"))
-        sm.add_widget(HistoryScreen(name="history"))
-        sm.add_widget(DatabaseScreen(name="database"))
-        sm.add_widget(SettingsScreen(name="settings"))
-        sm.current = "home"
-        return sm
-
-
-if __name__ == "__main__":
-    ShoppingApp().run()
+        # Malo profesionalnija pozadina umesto cistog
