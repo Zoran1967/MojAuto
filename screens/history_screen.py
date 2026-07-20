@@ -15,6 +15,10 @@ class HistoryScreen(Screen):
     Klik na prodavnicu -> spisak racuna (po datumu) za tu prodavnicu.
     Klik na racun -> stavke (namirnice, kolicine, cene) tog racuna,
     sa mogucnoscu trajnog brisanja tog racuna.
+
+    Napomena o valutama: sve vrednosti (ukupno, cena, total) dolaze iz
+    baze UVEK u RSD. Ovde se prikazuju konvertovane preko
+    db.rsd_u_prikaz(), prema trenutno izabranoj valuti u podesavanjima.
     """
 
     def on_pre_enter(self, *args):
@@ -69,13 +73,14 @@ class HistoryScreen(Screen):
                 popup.dismiss()
                 self.load_history()
                 return
-            for lista_id, datum, ukupno in liste:
+            for lista_id, datum, ukupno_rsd in liste:
+                ukupno_prikaz = db.rsd_u_prikaz(ukupno_rsd)
                 btn = SecondaryButton(
-                    text=f"{datum}\nUkupno: {ukupno:.2f} din",
+                    text=f"{datum}\nUkupno: {ukupno_prikaz:.2f} {db.valuta_oznaka()}",
                     size_hint_y=None, height=dp(56), halign="center",
                 )
                 btn.bind(
-                    on_release=lambda inst, lid=lista_id, d=datum, u=ukupno:
+                    on_release=lambda inst, lid=lista_id, d=datum, u=ukupno_rsd:
                         self.open_receipt_detail(lid, d, u, popup, refresh_receipts)
                 )
                 receipts_box.add_widget(btn)
@@ -89,7 +94,7 @@ class HistoryScreen(Screen):
 
     # ---------- Nivo 2: stavke jednog racuna ----------
 
-    def open_receipt_detail(self, lista_id, datum, ukupno, parent_popup, refresh_parent):
+    def open_receipt_detail(self, lista_id, datum, ukupno_rsd, parent_popup, refresh_parent):
         content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
         content.add_widget(
             Label(text=datum, bold=True, font_size="16sp",
@@ -99,7 +104,9 @@ class HistoryScreen(Screen):
         header = BoxLayout(size_hint_y=None, height=dp(30))
         header.add_widget(Label(text="Proizvod", bold=True, font_size="13sp"))
         header.add_widget(Label(text="Kol.", bold=True, size_hint_x=0.4, font_size="13sp"))
-        header.add_widget(Label(text="Cena/j.", bold=True, size_hint_x=0.5, font_size="13sp"))
+        header.add_widget(Label(
+            text=f"Cena/j. ({db.valuta_oznaka()})", bold=True, size_hint_x=0.5, font_size="13sp"
+        ))
         header.add_widget(Label(text="Total", bold=True, size_hint_x=0.5, font_size="13sp"))
         content.add_widget(header)
 
@@ -110,17 +117,17 @@ class HistoryScreen(Screen):
         content.add_widget(scroll)
 
         stavke = db.get_lista_stavke(lista_id)
-        for naziv, kolicina, cena, total in stavke:
+        for naziv, kolicina, cena_rsd, total_rsd in stavke:
             row = BoxLayout(size_hint_y=None, height=dp(36))
             row.add_widget(Label(text=naziv, font_size="13sp"))
             row.add_widget(Label(text=f"{kolicina:g}", size_hint_x=0.4, font_size="13sp"))
-            row.add_widget(Label(text=f"{cena:.2f}", size_hint_x=0.5, font_size="13sp"))
-            row.add_widget(Label(text=f"{total:.2f}", size_hint_x=0.5, font_size="13sp"))
+            row.add_widget(Label(text=f"{db.rsd_u_prikaz(cena_rsd):.2f}", size_hint_x=0.5, font_size="13sp"))
+            row.add_widget(Label(text=f"{db.rsd_u_prikaz(total_rsd):.2f}", size_hint_x=0.5, font_size="13sp"))
             items_box.add_widget(row)
 
         total_row = BoxLayout(size_hint_y=None, height=dp(36))
         total_row.add_widget(Label(text="UKUPNO:", bold=True))
-        total_row.add_widget(Label(text=f"{ukupno:.2f} din", bold=True))
+        total_row.add_widget(Label(text=f"{db.rsd_u_prikaz(ukupno_rsd):.2f} {db.valuta_oznaka()}", bold=True))
         content.add_widget(total_row)
 
         detail_popup = Popup(title="Racun", content=content, size_hint=(0.94, 0.85))
