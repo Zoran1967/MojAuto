@@ -7,6 +7,10 @@ Tabele:
 - proizvodi (id, naziv, jedinica_mere, zadnja_cena, prodavnica_id)
 - liste (id, datum, prodavnica_id, ukupno, zatvorena)
 - lista_stavke (id, lista_id, proizvod_id, naziv, kolicina, cena_po_jedinici, total)
+
+Napomena o valutama: sve cene se u bazi CUVAJU UVEK U RSD (bazna valuta).
+Prikaz i unos se preracunavaju u letu prema trenutno izabranoj valuti
+(funkcije rsd_u_prikaz / prikaz_u_rsd na dnu fajla).
 """
 import sqlite3
 import os
@@ -16,13 +20,6 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def _get_db_path():
-    """
-    U pravom instaliranom APK-u (napravljenom preko Buildozer-a), fajlovi
-    aplikacije su u read-only delu, pa bazu treba cuvati u privatnom,
-    upisivom direktorijumu aplikacije (android.storage).
-    U Pydroid-u i na racunaru taj modul ne postoji, pa se koristi folder
-    pored skripte (BASE_DIR) - to je vec provereno da radi.
-    """
     try:
         from android.storage import app_storage_path
         return os.path.join(app_storage_path(), "shopping.db")
@@ -32,7 +29,6 @@ def _get_db_path():
 
 DB_PATH = _get_db_path()
 
-# Početnih 19 artikala kojima se puni baza pri prvom pokretanju
 SEED_PROIZVODI = [
     ("Hleb", "kom", 80.00),
     ("Mleko", "l", 110.00),
@@ -188,10 +184,8 @@ def add_or_update_proizvod(naziv, jedinica_mere, cena, prodavnica_id=None):
 
 
 def update_proizvod(proizvod_id, naziv, jedinica_mere, cena):
-    """Rucna izmena naziva/jedinice/cene proizvoda iz ekrana Baze (trajno)."""
     conn = get_connection()
     c = conn.cursor()
-    # Provera da novo ime ne kosi sa nekim DRUGIM proizvodom (case-insensitive)
     c.execute(
         "SELECT id FROM proizvodi WHERE LOWER(naziv) = LOWER(?) AND id != ?",
         (naziv, proizvod_id),
@@ -209,11 +203,6 @@ def update_proizvod(proizvod_id, naziv, jedinica_mere, cena):
 
 
 def delete_proizvod(proizvod_id):
-    """
-    Brise proizvod iz baze trajno. Vraca True ako je uspelo, False ako je
-    proizvod koriscen u nekoj (i zatvorenoj i otvorenoj) listi - u tom
-    slucaju se ne brise, da se ne pokvari istorija prethodnih kupovina.
-    """
     conn = get_connection()
     c = conn.cursor()
     c.execute("SELECT COUNT(*) FROM lista_stavke WHERE proizvod_id = ?", (proizvod_id,))
@@ -280,7 +269,6 @@ def get_istorija():
 
 
 def get_prodavnice_sa_istorijom():
-    """Prodavnice koje imaju bar jednu zatvorenu listu, sa ukupnim brojem racuna."""
     conn = get_connection()
     rows = conn.execute(
         """SELECT pr.id, pr.naziv, COUNT(l.id)
@@ -295,7 +283,6 @@ def get_prodavnice_sa_istorijom():
 
 
 def get_liste_za_prodavnicu(prodavnica_id):
-    """Svi zatvoreni racuni za jednu prodavnicu, najnoviji prvo."""
     conn = get_connection()
     rows = conn.execute(
         """SELECT id, datum, ukupno FROM liste
@@ -308,7 +295,6 @@ def get_liste_za_prodavnicu(prodavnica_id):
 
 
 def get_lista_stavke(lista_id):
-    """Stavke (namirnice) jednog konkretnog racuna."""
     conn = get_connection()
     rows = conn.execute(
         """SELECT naziv, kolicina, cena_po_jedinici, total
@@ -320,7 +306,6 @@ def get_lista_stavke(lista_id):
 
 
 def delete_lista(lista_id):
-    """Trajno brise jedan racun (i njegove stavke) iz istorije."""
     conn = get_connection()
     c = conn.cursor()
     c.execute("DELETE FROM lista_stavke WHERE lista_id = ?", (lista_id,))
@@ -349,3 +334,32 @@ def set_setting(kljuc, vrednost):
     )
     conn.commit()
     conn.close()
+
+
+# ---------- Konverzija valuta ----------
+
+def get_valuta():
+    return get_setting("valuta", "RSD")
+
+
+def get_kurs():
+    try:
+        return float(get_setting("kurs", "117.5"))
+    except (TypeError, ValueError):
+        return 117.5
+
+
+def rsd_u_prikaz(cena_rsd):
+    if get_valuta() == "EUR":
+        return cena_rsd / get_kurs()
+    return cena_rsd
+
+
+def prikaz_u_rsd(cena_prikaz):
+    if get_valuta() == "EUR":
+        return cena_prikaz * get_kurs()
+    return cena_prikaz
+
+
+def valuta_oznaka():
+    return "€" if get_valuta() == "EUR" else "din"
