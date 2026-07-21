@@ -26,17 +26,21 @@
             size_hint_y: None
             height: dp(30)
             Label:
+                id: col_product
                 text: "Proizvod"
                 bold: True
             Label:
+                id: col_qty
                 text: "Kol."
                 bold: True
                 size_hint_x: 0.4
             Label:
+                id: col_price
                 text: "Cena/j."
                 bold: True
                 size_hint_x: 0.5
             Label:
+                id: col_total
                 text: "Total"
                 bold: True
                 size_hint_x: 0.5
@@ -50,6 +54,7 @@
                 height: self.minimum_height
 
         PrimaryButton:
+            id: add_product_btn
             text: "+ Dodaj proizvod"
             size_hint_y: None
             height: dp(52)
@@ -59,6 +64,7 @@
             size_hint_y: None
             height: dp(40)
             Label:
+                id: total_word_label
                 text: "UKUPNO:"
                 bold: True
                 font_size: "18sp"
@@ -69,6 +75,7 @@
                 font_size: "18sp"
 
         SecondaryButton:
+            id: close_list_btn
             text: "Zatvori listu"
             size_hint_y: None
             height: dp(52)
