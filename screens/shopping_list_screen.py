@@ -88,7 +88,7 @@ class ShoppingListScreen(Screen):
         search.bind(text=refresh_results)
 
         btn_row = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
-        add_btn = PrimaryButton(text="+ Dodaj novu prodavnicu")
+        add_btn = PrimaryButton(text="+ Prodavnica")
         add_btn.bind(on_release=add_new_store)
         cancel_btn = SecondaryButton(text="Otkazi")
         cancel_btn.bind(on_release=cancel)
@@ -158,7 +158,6 @@ class ShoppingListScreen(Screen):
             naziv_input.text = naziv
             naziv_input.bind(text=refresh_suggestions)
             jedinica_input.text = jedinica
-            # cena_rsd dolazi iz baze (RSD) -> prikazi konvertovano u trenutnu valutu
             cena_input.text = f"{db.rsd_u_prikaz(cena_rsd):.2f}"
             update_total()
             suggestions_box.clear_widgets()
@@ -205,7 +204,6 @@ class ShoppingListScreen(Screen):
             if kolicina <= 0 or cena_prikaz < 0:
                 return
 
-            # Korisnik je uneo cenu u TRENUTNOJ valuti -> konvertuj u RSD pre cuvanja
             cena_rsd = db.prikaz_u_rsd(cena_prikaz)
 
             proizvod_id = db.add_or_update_proizvod(naziv, jedinica, cena_rsd, self.prodavnica_id)
@@ -221,7 +219,6 @@ class ShoppingListScreen(Screen):
         popup.open()
 
     def add_item_row(self, naziv, kolicina, jedinica, cena_rsd, total_rsd):
-        """cena_rsd i total_rsd stizu u RSD -> prikazuju se konvertovano."""
         row = BoxLayout(size_hint_y=None, height=dp(48))
         row.add_widget(Label(text=naziv))
         row.add_widget(Label(text=f"{kolicina:g} {jedinica}", size_hint_x=0.4))
@@ -235,7 +232,7 @@ class ShoppingListScreen(Screen):
         if self.lista_id is None:
             self.go_back()
             return
-        db.close_lista(self.lista_id, self.stavke_total)  # cuva se u RSD
+        db.close_lista(self.lista_id, self.stavke_total)
         self.reset_for_new_list()
         self.manager.current = "home"
 
