@@ -131,20 +131,24 @@
                 size_hint: 1, 1
                 pos_hint: {"x": 0, "y": 0}
 
-            Button:
-                text: "🌐"
-                font_size: "22sp"
+            BoxLayout:
+                orientation: "vertical"
                 size_hint: None, None
-                size: dp(52), dp(52)
+                size: dp(60), dp(74)
                 pos_hint: {"right": 0.97, "y": 0.04}
-                background_normal: ""
-                background_down: ""
-                background_color: 0.15, 0.15, 0.18, 0.9
-                on_release: root.open_language_picker()
-                canvas.before:
-                    Color:
-                        rgba: 0.15, 0.15, 0.18, 0.9
-                    RoundedRectangle:
-                        pos: self.pos
-                        size: self.size
-                        radius: [dp(26)]
+                spacing: dp(2)
+
+                Button:
+                    size_hint: None, None
+                    size: dp(52), dp(52)
+                    pos_hint: {"center_x": 0.5}
+                    background_normal: "assets/globe_icon.png"
+                    background_down: "assets/globe_icon.png"
+                    on_release: root.open_language_picker()
+
+                Label:
+                    text: "Language"
+                    font_size: "10sp"
+                    size_hint_y: None
+                    height: dp(18)
+                    color: 1, 1, 1, 1
