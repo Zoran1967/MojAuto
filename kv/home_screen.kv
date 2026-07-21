@@ -43,7 +43,7 @@
                     size: dp(64), dp(64)
                     pos_hint: {"center_x": 0.5}
                 PrimaryButton:
-                    text: "Nova lista\nza kupovinu"
+                    text: root.txt_new_list
                     size_hint_y: None
                     height: dp(56)
                     on_release: root.go_to_new_list()
@@ -57,7 +57,7 @@
                     size: dp(64), dp(64)
                     pos_hint: {"center_x": 0.5}
                 Button:
-                    text: "Istorija\nkupovina"
+                    text: root.txt_history
                     size_hint_y: None
                     height: dp(56)
                     background_normal: ""
@@ -82,7 +82,7 @@
                     size: dp(64), dp(64)
                     pos_hint: {"center_x": 0.5}
                 Button:
-                    text: "Baza proizvoda\ni prodavnica"
+                    text: root.txt_database
                     size_hint_y: None
                     height: dp(56)
                     background_normal: ""
@@ -107,7 +107,7 @@
                     size: dp(64), dp(64)
                     pos_hint: {"center_x": 0.5}
                 Button:
-                    text: "Podesavanja"
+                    text: root.txt_settings
                     size_hint_y: None
                     height: dp(56)
                     background_normal: ""
@@ -147,7 +147,7 @@
                     on_release: root.open_language_picker()
 
                 Label:
-                    text: "Language"
+                    text: root.txt_language_label
                     font_size: "10sp"
                     size_hint_y: None
                     height: dp(18)
