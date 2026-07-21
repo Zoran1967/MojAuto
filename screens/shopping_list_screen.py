@@ -58,6 +58,7 @@ class ShoppingListScreen(Screen):
         popup = Popup(
             title="Izaberi prodavnicu", content=content,
             size_hint=(0.9, 0.75), auto_dismiss=False,
+            overlay_color=(0, 0, 0, 0.85),
         )
 
         def choose_store(pid, naziv):
@@ -187,7 +188,10 @@ class ShoppingListScreen(Screen):
         btn_row2.add_widget(cancel_btn)
         content.add_widget(btn_row2)
 
-        popup = Popup(title="Dodaj proizvod", content=content, size_hint=(0.9, 0.85))
+        popup = Popup(
+            title="Dodaj proizvod", content=content, size_hint=(0.9, 0.85),
+            overlay_color=(0, 0, 0, 0.85),
+        )
         cancel_btn.bind(on_release=popup.dismiss)
 
         def confirm(*a):
