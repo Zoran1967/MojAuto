@@ -1,12 +1,5 @@
 #:import dp kivy.metrics.dp
 <HomeScreen>:
-    canvas.before:
-        Color:
-            rgba: 0.06, 0.06, 0.08, 1
-        Rectangle:
-            pos: self.pos
-            size: self.size
-
     BoxLayout:
         orientation: "vertical"
         padding: 30
@@ -16,37 +9,65 @@
             text: "Soping Lista"
             font_size: "30sp"
             bold: True
-            size_hint_y: 0.22
+            size_hint_y: 0.2
 
-        PrimaryButton:
-            text: "Nova lista za kupovinu"
-            font_size: "18sp"
-            size_hint_y: None
-            height: dp(56)
-            on_release: root.go_to_new_list()
+        GridLayout:
+            cols: 2
+            spacing: dp(16)
+            size_hint_y: 0.8
 
-        SecondaryButton:
-            text: "Istorija kupovina"
-            font_size: "18sp"
-            size_hint_y: None
-            height: dp(56)
-            on_release: root.go_to_history()
+            IconMenuButton:
+                orientation: "vertical"
+                spacing: dp(4)
+                on_release: root.go_to_new_list()
+                Image:
+                    source: "assets/icons/nova_lista.png"
+                    allow_stretch: True
+                    keep_ratio: True
+                Label:
+                    text: "Nova lista\nza kupovinu"
+                    halign: "center"
+                    size_hint_y: None
+                    height: dp(44)
 
-        SecondaryButton:
-            text: "Baza proizvoda i prodavnica"
-            font_size: "18sp"
-            size_hint_y: None
-            height: dp(56)
-            on_release: root.go_to_database()
+            IconMenuButton:
+                orientation: "vertical"
+                spacing: dp(4)
+                on_release: root.go_to_history()
+                Image:
+                    source: "assets/icons/istorija.png"
+                    allow_stretch: True
+                    keep_ratio: True
+                Label:
+                    text: "Istorija\nkupovina"
+                    halign: "center"
+                    size_hint_y: None
+                    height: dp(44)
 
-        SecondaryButton:
-            text: "Podesavanja"
-            font_size: "18sp"
-            size_hint_y: None
-            height: dp(56)
-            on_release: root.go_to_settings()
+            IconMenuButton:
+                orientation: "vertical"
+                spacing: dp(4)
+                on_release: root.go_to_database()
+                Image:
+                    source: "assets/icons/baza.png"
+                    allow_stretch: True
+                    keep_ratio: True
+                Label:
+                    text: "Baza proizvoda\ni prodavnica"
+                    halign: "center"
+                    size_hint_y: None
+                    height: dp(44)
 
-        Image:
-            source: app.assets_dir + "icon.png"
-            allow_stretch: True
-            keep_ratio: True
+            IconMenuButton:
+                orientation: "vertical"
+                spacing: dp(4)
+                on_release: root.go_to_settings()
+                Image:
+                    source: "assets/icons/podesavanja.png"
+                    allow_stretch: True
+                    keep_ratio: True
+                Label:
+                    text: "Podesavanja"
+                    halign: "center"
+                    size_hint_y: None
+                    height: dp(44)
