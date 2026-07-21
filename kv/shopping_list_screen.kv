@@ -10,9 +10,11 @@
             height: dp(48)
             spacing: 10
 
-            SecondaryButton:
-                text: "< Nazad"
-                size_hint_x: 0.3
+            Button:
+                size_hint_x: None
+                width: dp(110)
+                background_normal: "assets/nazad_btn.png"
+                background_down: "assets/nazad_btn.png"
                 on_release: root.go_back()
 
             Label:
