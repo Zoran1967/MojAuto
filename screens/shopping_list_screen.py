@@ -8,6 +8,11 @@ from kivy.uix.scrollview import ScrollView
 from kivy.metrics import dp
 
 from database import db
+from translations import prevedi
+
+
+def _jezik():
+    return db.get_setting("jezik", "sr")
 
 
 class ShoppingListScreen(Screen):
@@ -18,6 +23,8 @@ class ShoppingListScreen(Screen):
 
     Napomena o valutama: self.stavke_total se uvek drzi u RSD (bazna
     valuta). Za prikaz se koristi db.rsd_u_prikaz().
+    Tekstovi se prevode u letu preko prevedi() prema trenutno izabranom
+    jeziku (db.get_setting("jezik")).
     """
 
     def __init__(self, **kwargs):
@@ -35,16 +42,17 @@ class ShoppingListScreen(Screen):
         self.prodavnica_id = None
         self.stavke_total = 0.0
         self.ids.items_box.clear_widgets()
-        self.ids.store_label.text = "Prodavnica: (izbor dolazi)"
+        self.ids.store_label.text = prevedi("sl_store_label_empty", _jezik())
         self.ids.total_label.text = f"0.00 {db.valuta_oznaka()}"
 
     # ---------- Izbor prodavnice ----------
 
     def open_store_picker(self):
+        jezik = _jezik()
         content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
 
         search = StyledTextInput(
-            hint_text="Pretrazi ili unesi novu prodavnicu",
+            hint_text=prevedi("sl_search_store_hint", jezik),
             size_hint_y=None, height=dp(44), multiline=False,
         )
         content.add_widget(search)
@@ -56,7 +64,7 @@ class ShoppingListScreen(Screen):
         content.add_widget(scroll)
 
         popup = Popup(
-            title="Izaberi prodavnicu", content=content,
+            title=prevedi("sl_pick_store_title", jezik), content=content,
             size_hint=(0.9, 0.75), auto_dismiss=False,
             overlay_color=(0, 0, 0, 0.85),
         )
@@ -89,9 +97,9 @@ class ShoppingListScreen(Screen):
         search.bind(text=refresh_results)
 
         btn_row = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
-        add_btn = PrimaryButton(text="+ Prodavnica")
+        add_btn = PrimaryButton(text=prevedi("sl_add_store_btn", jezik))
         add_btn.bind(on_release=add_new_store)
-        cancel_btn = SecondaryButton(text="Otkazi")
+        cancel_btn = SecondaryButton(text=prevedi("sl_cancel", jezik))
         cancel_btn.bind(on_release=cancel)
         btn_row.add_widget(add_btn)
         btn_row.add_widget(cancel_btn)
@@ -102,7 +110,7 @@ class ShoppingListScreen(Screen):
 
     def set_store(self, prodavnica_id, naziv):
         self.prodavnica_id = prodavnica_id
-        self.ids.store_label.text = f"Prodavnica: {naziv}"
+        self.ids.store_label.text = prevedi("sl_store_label", _jezik()).format(naziv=naziv)
         if self.lista_id is None:
             self.lista_id = db.create_lista(prodavnica_id)
 
@@ -115,10 +123,11 @@ class ShoppingListScreen(Screen):
         self.open_add_item_popup()
 
     def open_add_item_popup(self):
+        jezik = _jezik()
         content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
 
         naziv_input = StyledTextInput(
-            hint_text="Naziv proizvoda", size_hint_y=None, height=dp(44), multiline=False,
+            hint_text=prevedi("sl_product_name_hint", jezik), size_hint_y=None, height=dp(44), multiline=False,
         )
         content.add_widget(naziv_input)
 
@@ -129,10 +138,10 @@ class ShoppingListScreen(Screen):
         content.add_widget(sugg_scroll)
 
         row = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
-        jedinica_input = StyledTextInput(hint_text="Jedinica (kg/l/kom)", multiline=False)
-        kolicina_input = StyledTextInput(hint_text="Kolicina", input_filter="float", multiline=False)
+        jedinica_input = StyledTextInput(hint_text=prevedi("sl_unit_hint", jezik), multiline=False)
+        kolicina_input = StyledTextInput(hint_text=prevedi("sl_qty_hint", jezik), input_filter="float", multiline=False)
         cena_input = StyledTextInput(
-            hint_text=f"Cena po jedinici ({db.valuta_oznaka()})",
+            hint_text=prevedi("sl_price_hint", jezik).format(valuta=db.valuta_oznaka()),
             input_filter="float", multiline=False,
         )
         row.add_widget(jedinica_input)
@@ -140,16 +149,19 @@ class ShoppingListScreen(Screen):
         row.add_widget(cena_input)
         content.add_widget(row)
 
-        total_label = Label(text=f"Total: 0.00 {db.valuta_oznaka()}", size_hint_y=None, height=dp(30))
+        total_label = Label(
+            text=prevedi("sl_total_prefix", jezik).format(total="0.00", valuta=db.valuta_oznaka()),
+            size_hint_y=None, height=dp(30),
+        )
         content.add_widget(total_label)
 
         def update_total(*a):
             try:
                 k = float(kolicina_input.text.replace(",", "."))
                 c = float(cena_input.text.replace(",", "."))
-                total_label.text = f"Total: {k * c:.2f} {db.valuta_oznaka()}"
+                total_label.text = prevedi("sl_total_prefix", jezik).format(total=f"{k * c:.2f}", valuta=db.valuta_oznaka())
             except ValueError:
-                total_label.text = f"Total: 0.00 {db.valuta_oznaka()}"
+                total_label.text = prevedi("sl_total_prefix", jezik).format(total="0.00", valuta=db.valuta_oznaka())
 
         kolicina_input.bind(text=update_total)
         cena_input.bind(text=update_total)
@@ -182,14 +194,14 @@ class ShoppingListScreen(Screen):
         naziv_input.bind(text=refresh_suggestions)
 
         btn_row2 = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
-        add_btn = PrimaryButton(text="Dodaj u listu")
-        cancel_btn = SecondaryButton(text="Otkazi")
+        add_btn = PrimaryButton(text=prevedi("sl_add_to_list_btn", jezik))
+        cancel_btn = SecondaryButton(text=prevedi("sl_cancel", jezik))
         btn_row2.add_widget(add_btn)
         btn_row2.add_widget(cancel_btn)
         content.add_widget(btn_row2)
 
         popup = Popup(
-            title="Dodaj proizvod", content=content, size_hint=(0.9, 0.85),
+            title=prevedi("sl_add_item_title", jezik), content=content, size_hint=(0.9, 0.85),
             overlay_color=(0, 0, 0, 0.85),
         )
         cancel_btn.bind(on_release=popup.dismiss)
