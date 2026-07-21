@@ -12,13 +12,8 @@ from widgets import PrimaryButton, SecondaryButton, DangerButton, Card
 class HistoryScreen(Screen):
     """
     Istorija kupovina - organizovano po prodavnicama.
-    Klik na prodavnicu -> spisak racuna (po datumu) za tu prodavnicu.
-    Klik na racun -> stavke (namirnice, kolicine, cene) tog racuna,
-    sa mogucnoscu trajnog brisanja tog racuna.
-
-    Napomena o valutama: sve vrednosti (ukupno, cena, total) dolaze iz
-    baze UVEK u RSD. Ovde se prikazuju konvertovane preko
-    db.rsd_u_prikaz(), prema trenutno izabranoj valuti u podesavanjima.
+    Napomena o valutama: sve vrednosti dolaze iz baze UVEK u RSD i
+    prikazuju se konvertovane preko db.rsd_u_prikaz().
     """
 
     def on_pre_enter(self, *args):
@@ -63,13 +58,15 @@ class HistoryScreen(Screen):
         scroll.add_widget(receipts_box)
         content.add_widget(scroll)
 
-        popup = Popup(title="Racuni", content=content, size_hint=(0.92, 0.8))
+        popup = Popup(
+            title="Racuni", content=content, size_hint=(0.92, 0.8),
+            overlay_color=(0, 0, 0, 0.85),
+        )
 
         def refresh_receipts():
             receipts_box.clear_widgets()
             liste = db.get_liste_za_prodavnicu(prodavnica_id)
             if not liste:
-                # Nema vise racuna za ovu prodavnicu (npr. svi obrisani) - zatvori popup
                 popup.dismiss()
                 self.load_history()
                 return
@@ -130,7 +127,10 @@ class HistoryScreen(Screen):
         total_row.add_widget(Label(text=f"{db.rsd_u_prikaz(ukupno_rsd):.2f} {db.valuta_oznaka()}", bold=True))
         content.add_widget(total_row)
 
-        detail_popup = Popup(title="Racun", content=content, size_hint=(0.94, 0.85))
+        detail_popup = Popup(
+            title="Racun", content=content, size_hint=(0.94, 0.85),
+            overlay_color=(0, 0, 0, 0.85),
+        )
 
         delete_state = {"confirm": False}
 
