@@ -2,23 +2,45 @@ from kivy.uix.screenmanager import Screen
 from kivy.uix.popup import Popup
 from kivy.uix.boxlayout import BoxLayout
 from kivy.metrics import dp
+from kivy.properties import StringProperty
 
 from database import db
 from widgets import PrimaryButton, SecondaryButton
+from translations import prevedi
 
 
 class HomeScreen(Screen):
     """
     Početni ekran: dugmad za Novu listu, Istoriju, Bazu proizvoda/prodavnica
     i Podešavanja, plus dugme za izbor jezika.
+
+    Tekstovi dugmadi su StringProperty (txt_...) - kv fajl na njih
+    reaguje automatski (bez potrebe za restartom) kad se jezik promeni.
     """
 
     JEZICI = [
         ("sr", "Srpski"),
         ("en", "English"),
-        ("sk", "Slovenčina"),
+        ("sk", "Slovencina"),
         ("uk", "Українська"),
     ]
+
+    txt_new_list = StringProperty("")
+    txt_history = StringProperty("")
+    txt_database = StringProperty("")
+    txt_settings = StringProperty("")
+    txt_language_label = StringProperty("")
+
+    def on_pre_enter(self, *args):
+        self.osvezi_tekstove()
+
+    def osvezi_tekstove(self):
+        jezik = db.get_setting("jezik", "sr")
+        self.txt_new_list = prevedi("home_new_list", jezik)
+        self.txt_history = prevedi("home_history", jezik)
+        self.txt_database = prevedi("home_database", jezik)
+        self.txt_settings = prevedi("home_settings", jezik)
+        self.txt_language_label = prevedi("home_language_label", jezik)
 
     def go_to_new_list(self):
         self.manager.get_screen("shopping_list").reset_for_new_list()
@@ -60,5 +82,6 @@ class HomeScreen(Screen):
 
     def choose_language(self, kod):
         db.set_setting("jezik", kod)
+        self.osvezi_tekstove()
         if hasattr(self, "_language_popup"):
             self._language_popup.dismiss()
