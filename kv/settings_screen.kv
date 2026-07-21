@@ -2,10 +2,6 @@
 <SettingsScreen>:
     BoxLayout:
         orientation: "vertical"
-        padding: 20#:import dp kivy.metrics.dp
-<SettingsScreen>:
-    BoxLayout:
-        orientation: "vertical"
         padding: 20
         spacing: 15
 
@@ -118,70 +114,4 @@
                     input_filter: "float"
                     on_text_validate: root.save_kurs(self.text)
                     on_focus: if not self.focus: root.save_kurs(self.text)
-        spacing: 15
-
-        BoxLayout:
-            size_hint_y: None
-            height: dp(48)
-            spacing: 10
-            Button:
-                size_hint_x: None
-                width: dp(110)
-                background_normal: "assets/nazad_btn.png"
-                background_down: "assets/nazad_btn.png"
-                on_release: root.go_back()
-            Label:
-                text: "Podesavanja"
-                font_size: "20sp"
-                bold: True
-
-        ScrollView:
-            BoxLayout:
-                orientation: "vertical"
-                size_hint_y: None
-                height: self.minimum_height
-                spacing: dp(15)
-                padding: 0, 0, 0, dp(20)
-
-                Label:
-                    text: "Boja teme aplikacije"
-                    font_size: "16sp"
-                    size_hint_y: None
-                    height: dp(30)
-                    color: 0.7, 0.7, 0.7, 1
-
-                BoxLayout:
-                    id: theme_box
-                    orientation: "vertical"
-                    size_hint_y: None
-                    height: self.minimum_height
-                    spacing: dp(10)
-
-                Label:
-                    text: "Valuta"
-                    font_size: "16sp"
-                    size_hint_y: None
-                    height: dp(30)
-                    color: 0.7, 0.7, 0.7, 1
-
-                BoxLayout:
-                    id: currency_box
-                    size_hint_y: None
-                    height: dp(48)
-                    spacing: dp(10)
-
-                Label:
-                    text: "Kurs (1 EUR = ? RSD)"
-                    font_size: "16sp"
-                    size_hint_y: None
-                    height: dp(30)
-                    color: 0.7, 0.7, 0.7, 1
-
-                StyledTextInput:
-                    id: kurs_input
-                    size_hint_y: None
-                    height: dp(48)
-                    multiline: False
-                    input_filter: "float"
-                    on_text_validate: root.save_kurs(self.text)
-                    on_focus: if not self.focus: root.save_kurs(self.text)
+ 
