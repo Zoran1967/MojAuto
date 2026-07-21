@@ -34,6 +34,14 @@ class ShoppingListScreen(Screen):
         self.stavke_total = 0.0
 
     def on_pre_enter(self, *args):
+        jezik = _jezik()
+        self.ids.col_product.text = prevedi("sl_col_product", jezik)
+        self.ids.col_qty.text = prevedi("sl_col_qty", jezik)
+        self.ids.col_price.text = prevedi("sl_col_price", jezik)
+        self.ids.col_total.text = prevedi("sl_col_total", jezik)
+        self.ids.add_product_btn.text = prevedi("sl_add_product_btn", jezik)
+        self.ids.total_word_label.text = prevedi("sl_total_label", jezik)
+        self.ids.close_list_btn.text = prevedi("sl_close_list", jezik)
         if self.lista_id is None:
             self.open_store_picker()
 
