@@ -12,10 +12,6 @@ from widgets import PrimaryButton, SecondaryButton, DangerButton, StyledTextInpu
 class DatabaseScreen(Screen):
     """
     Ekran za pregled sacuvanih proizvoda i prodavnica.
-    Tab "Proizvodi": svaki red su obicna Button dugmad (najpouzdanije u
-    Kivy-ju za klik na malom ekranu) koja otvaraju formu za izmenu
-    naziva/cene/jedinice ili trajno brisanje proizvoda iz baze.
-
     Napomena o valutama: cene u bazi su UVEK u RSD. Ovde se prikazuju
     i unose preko db.rsd_u_prikaz() / db.prikaz_u_rsd().
     """
@@ -103,7 +99,10 @@ class DatabaseScreen(Screen):
         error_label = Label(text="", size_hint_y=None, height=dp(24), color=(1, 0.4, 0.4, 1))
         content.add_widget(error_label)
 
-        popup = Popup(title="Izmeni proizvod", content=content, size_hint=(0.9, 0.6))
+        popup = Popup(
+            title="Izmeni proizvod", content=content, size_hint=(0.9, 0.6),
+            overlay_color=(0, 0, 0, 0.85),
+        )
 
         def save(*a):
             novi_naziv = naziv_input.text.strip()
@@ -120,7 +119,6 @@ class DatabaseScreen(Screen):
                 error_label.text = "Cena ne moze biti negativna."
                 return
 
-            # Korisnik je uneo cenu u TRENUTNOJ valuti -> konvertuj u RSD pre cuvanja
             nova_cena_rsd = db.prikaz_u_rsd(nova_cena_prikaz)
 
             uspeh = db.update_proizvod(proizvod_id, novi_naziv, nova_jedinica, nova_cena_rsd)
