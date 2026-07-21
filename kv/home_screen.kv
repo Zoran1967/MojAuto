@@ -16,58 +16,54 @@
             spacing: dp(16)
             size_hint_y: 0.8
 
-            IconMenuButton:
+            BoxLayout:
                 orientation: "vertical"
                 spacing: dp(4)
-                on_release: root.go_to_new_list()
                 Image:
                     source: "assets/icons/nova_lista.png"
                     allow_stretch: True
                     keep_ratio: True
-                Label:
+                PrimaryButton:
                     text: "Nova lista\nza kupovinu"
-                    halign: "center"
                     size_hint_y: None
-                    height: dp(44)
+                    height: dp(56)
+                    on_release: root.go_to_new_list()
 
-            IconMenuButton:
+            BoxLayout:
                 orientation: "vertical"
                 spacing: dp(4)
-                on_release: root.go_to_history()
                 Image:
                     source: "assets/icons/istorija.png"
                     allow_stretch: True
                     keep_ratio: True
-                Label:
+                SecondaryButton:
                     text: "Istorija\nkupovina"
-                    halign: "center"
                     size_hint_y: None
-                    height: dp(44)
+                    height: dp(56)
+                    on_release: root.go_to_history()
 
-            IconMenuButton:
+            BoxLayout:
                 orientation: "vertical"
                 spacing: dp(4)
-                on_release: root.go_to_database()
                 Image:
                     source: "assets/icons/baza.png"
                     allow_stretch: True
                     keep_ratio: True
-                Label:
+                SecondaryButton:
                     text: "Baza proizvoda\ni prodavnica"
-                    halign: "center"
                     size_hint_y: None
-                    height: dp(44)
+                    height: dp(56)
+                    on_release: root.go_to_database()
 
-            IconMenuButton:
+            BoxLayout:
                 orientation: "vertical"
                 spacing: dp(4)
-                on_release: root.go_to_settings()
                 Image:
                     source: "assets/icons/podesavanja.png"
                     allow_stretch: True
                     keep_ratio: True
-                Label:
+                SecondaryButton:
                     text: "Podesavanja"
-                    halign: "center"
                     size_hint_y: None
-                    height: dp(44)
+                    height: dp(56)
+                    on_release: root.go_to_settings()
