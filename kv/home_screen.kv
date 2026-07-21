@@ -9,18 +9,22 @@
             text: "Soping Lista"
             font_size: "30sp"
             bold: True
-            size_hint_y: 0.2
+            size_hint_y: None
+            height: dp(70)
 
         GridLayout:
             cols: 2
             spacing: dp(16)
-            size_hint_y: 0.8
 
             BoxLayout:
                 orientation: "vertical"
                 spacing: dp(4)
+                size_hint_y: None
+                height: dp(140)
                 Image:
                     source: "assets/icons/nova_lista.png"
+                    size_hint_y: None
+                    height: dp(80)
                     allow_stretch: True
                     keep_ratio: True
                 PrimaryButton:
@@ -32,8 +36,12 @@
             BoxLayout:
                 orientation: "vertical"
                 spacing: dp(4)
+                size_hint_y: None
+                height: dp(140)
                 Image:
                     source: "assets/icons/istorija.png"
+                    size_hint_y: None
+                    height: dp(80)
                     allow_stretch: True
                     keep_ratio: True
                 SecondaryButton:
@@ -45,8 +53,12 @@
             BoxLayout:
                 orientation: "vertical"
                 spacing: dp(4)
+                size_hint_y: None
+                height: dp(140)
                 Image:
                     source: "assets/icons/baza.png"
+                    size_hint_y: None
+                    height: dp(80)
                     allow_stretch: True
                     keep_ratio: True
                 SecondaryButton:
@@ -58,8 +70,12 @@
             BoxLayout:
                 orientation: "vertical"
                 spacing: dp(4)
+                size_hint_y: None
+                height: dp(140)
                 Image:
                     source: "assets/icons/podesavanja.png"
+                    size_hint_y: None
+                    height: dp(80)
                     allow_stretch: True
                     keep_ratio: True
                 SecondaryButton:
@@ -67,3 +83,5 @@
                     size_hint_y: None
                     height: dp(56)
                     on_release: root.go_to_settings()
+
+        Widget:
