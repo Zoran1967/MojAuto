@@ -5,25 +5,28 @@
         padding: 30
         spacing: 18
 
-        BoxLayout:
+        FloatLayout:
             size_hint_y: None
             height: dp(60)
+
             Label:
-                text: "Shopping"
+                markup: True
+                text: "[color=ff8c1a]Shopping[/color][color=3f8cff]List[/color]"
                 font_size: "30sp"
                 bold: True
-                color: 0.25, 0.55, 1, 1
-                halign: "right"
-                text_size: self.size
-                valign: "middle"
+                size_hint: None, None
+                size: self.texture_size
+                pos_hint: {"center_x": 0.503, "center_y": 0.46}
+                opacity: 0.55
+
             Label:
-                text: " List"
+                markup: True
+                text: "[color=3f8cff]Shopping[/color][color=ff8c1a]List[/color]"
                 font_size: "30sp"
                 bold: True
-                color: 1, 0.55, 0.1, 1
-                halign: "left"
-                text_size: self.size
-                valign: "middle"
+                size_hint: None, None
+                size: self.texture_size
+                pos_hint: {"center_x": 0.5, "center_y": 0.5}
 
         GridLayout:
             cols: 2
