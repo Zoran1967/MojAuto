@@ -123,7 +123,28 @@
                             size: self.size
                             radius: [dp(16)]
 
-        Image:
-            source: "assets/nova_lista.png"
-            allow_stretch: True
-            keep_ratio: True
+        FloatLayout:
+            Image:
+                source: "assets/nova_lista.png"
+                allow_stretch: True
+                keep_ratio: True
+                size_hint: 1, 1
+                pos_hint: {"x": 0, "y": 0}
+
+            Button:
+                text: "🌐"
+                font_size: "22sp"
+                size_hint: None, None
+                size: dp(52), dp(52)
+                pos_hint: {"right": 0.97, "y": 0.04}
+                background_normal: ""
+                background_down: ""
+                background_color: 0.15, 0.15, 0.18, 0.9
+                on_release: root.open_language_picker()
+                canvas.before:
+                    Color:
+                        rgba: 0.15, 0.15, 0.18, 0.9
+                    RoundedRectangle:
+                        pos: self.pos
+                        size: self.size
+                        radius: [dp(26)]
