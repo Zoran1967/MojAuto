@@ -40,10 +40,13 @@
                     size_hint: None, None
                     size: dp(64), dp(64)
                     pos_hint: {"center_x": 0.5}
-                SecondaryButton:
+                Button:
                     text: "Istorija\nkupovina"
                     size_hint_y: None
                     height: dp(56)
+                    background_normal: ""
+                    background_down: ""
+                    background_color: 0.20, 0.60, 0.20, 1
                     on_release: root.go_to_history()
 
             BoxLayout:
@@ -54,10 +57,13 @@
                     size_hint: None, None
                     size: dp(64), dp(64)
                     pos_hint: {"center_x": 0.5}
-                SecondaryButton:
+                Button:
                     text: "Baza proizvoda\ni prodavnica"
                     size_hint_y: None
                     height: dp(56)
+                    background_normal: ""
+                    background_down: ""
+                    background_color: 0.55, 0.25, 0.75, 1
                     on_release: root.go_to_database()
 
             BoxLayout:
@@ -68,10 +74,13 @@
                     size_hint: None, None
                     size: dp(64), dp(64)
                     pos_hint: {"center_x": 0.5}
-                SecondaryButton:
+                Button:
                     text: "Podesavanja"
                     size_hint_y: None
                     height: dp(56)
+                    background_normal: ""
+                    background_down: ""
+                    background_color: 0.85, 0.55, 0.10, 1
                     on_release: root.go_to_settings()
 
         Image:
