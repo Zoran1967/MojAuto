@@ -7,6 +7,11 @@ from kivy.metrics import dp
 
 from database import db
 from widgets import PrimaryButton, SecondaryButton, DangerButton, StyledTextInput
+from translations import prevedi
+
+
+def _jezik():
+    return db.get_setting("jezik", "sr")
 
 
 class DatabaseScreen(Screen):
@@ -14,27 +19,34 @@ class DatabaseScreen(Screen):
     Ekran za pregled sacuvanih proizvoda i prodavnica.
     Napomena o valutama: cene u bazi su UVEK u RSD. Ovde se prikazuju
     i unose preko db.rsd_u_prikaz() / db.prikaz_u_rsd().
+    Tekstovi se prevode preko prevedi() prema trenutno izabranom jeziku.
     """
 
     def on_pre_enter(self, *args):
+        jezik = _jezik()
+        self.ids.title_label.text = prevedi("db_title", jezik)
+        self.ids.tab_products.text = prevedi("db_tab_products", jezik)
+        self.ids.tab_stores.text = prevedi("db_tab_stores", jezik)
         self.show_proizvodi()
 
     def show_proizvodi(self):
+        jezik = _jezik()
         box = self.ids.database_box
         box.clear_widgets()
         proizvodi = db.get_proizvodi_sa_prodavnicom()
 
         header = BoxLayout(size_hint_y=None, height=dp(36))
-        header.add_widget(Label(text="Proizvod", bold=True, color=(1, 1, 1, 1)))
-        header.add_widget(Label(text="Jed.", bold=True, size_hint_x=0.3, color=(1, 1, 1, 1)))
+        header.add_widget(Label(text=prevedi("db_col_product", jezik), bold=True, color=(1, 1, 1, 1)))
+        header.add_widget(Label(text=prevedi("db_col_unit", jezik), bold=True, size_hint_x=0.3, color=(1, 1, 1, 1)))
         header.add_widget(Label(
-            text=f"Cena ({db.valuta_oznaka()})", bold=True, size_hint_x=0.4, color=(1, 1, 1, 1)
+            text=prevedi("db_col_price", jezik).format(valuta=db.valuta_oznaka()),
+            bold=True, size_hint_x=0.4, color=(1, 1, 1, 1)
         ))
         box.add_widget(header)
 
         if not proizvodi:
             box.add_widget(
-                Label(text="Nema unetih proizvoda.", size_hint_y=None,
+                Label(text=prevedi("db_empty_products", jezik), size_hint_y=None,
                       height=dp(40), color=(1, 1, 1, 1))
             )
             return
@@ -74,17 +86,18 @@ class DatabaseScreen(Screen):
             box.add_widget(row)
 
     def open_edit_popup(self, proizvod_id, naziv, jedinica, cena_rsd):
+        jezik = _jezik()
         content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
 
         row0 = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
         naziv_input = StyledTextInput(text=naziv, multiline=False)
-        row0.add_widget(Label(text="Naziv:", size_hint_x=0.4))
+        row0.add_widget(Label(text=prevedi("db_label_name", jezik), size_hint_x=0.4))
         row0.add_widget(naziv_input)
         content.add_widget(row0)
 
         row1 = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
         jedinica_input = StyledTextInput(text=jedinica, multiline=False)
-        row1.add_widget(Label(text="Jedinica:", size_hint_x=0.4))
+        row1.add_widget(Label(text=prevedi("db_label_unit", jezik), size_hint_x=0.4))
         row1.add_widget(jedinica_input)
         content.add_widget(row1)
 
@@ -92,7 +105,7 @@ class DatabaseScreen(Screen):
         cena_input = StyledTextInput(
             text=f"{db.rsd_u_prikaz(cena_rsd):.2f}", input_filter="float", multiline=False
         )
-        row2.add_widget(Label(text=f"Cena ({db.valuta_oznaka()}):", size_hint_x=0.4))
+        row2.add_widget(Label(text=prevedi("db_label_price", jezik).format(valuta=db.valuta_oznaka()), size_hint_x=0.4))
         row2.add_widget(cena_input)
         content.add_widget(row2)
 
@@ -100,7 +113,7 @@ class DatabaseScreen(Screen):
         content.add_widget(error_label)
 
         popup = Popup(
-            title="Izmeni proizvod", content=content, size_hint=(0.9, 0.6),
+            title=prevedi("db_edit_title", jezik), content=content, size_hint=(0.9, 0.6),
             overlay_color=(0, 0, 0, 0.85),
         )
 
@@ -108,22 +121,22 @@ class DatabaseScreen(Screen):
             novi_naziv = naziv_input.text.strip()
             nova_jedinica = jedinica_input.text.strip() or "kom"
             if not novi_naziv:
-                error_label.text = "Naziv ne moze biti prazan."
+                error_label.text = prevedi("db_err_empty_name", jezik)
                 return
             try:
                 nova_cena_prikaz = float(cena_input.text.replace(",", "."))
             except ValueError:
-                error_label.text = "Neispravna cena."
+                error_label.text = prevedi("db_err_bad_price", jezik)
                 return
             if nova_cena_prikaz < 0:
-                error_label.text = "Cena ne moze biti negativna."
+                error_label.text = prevedi("db_err_negative_price", jezik)
                 return
 
             nova_cena_rsd = db.prikaz_u_rsd(nova_cena_prikaz)
 
             uspeh = db.update_proizvod(proizvod_id, novi_naziv, nova_jedinica, nova_cena_rsd)
             if not uspeh:
-                error_label.text = "Vec postoji proizvod sa tim nazivom."
+                error_label.text = prevedi("db_err_duplicate", jezik)
                 return
 
             popup.dismiss()
@@ -134,33 +147,34 @@ class DatabaseScreen(Screen):
         def delete(instance):
             if not delete_state["confirm"]:
                 delete_state["confirm"] = True
-                instance.text = "Sigurno? Klikni jos jednom za brisanje"
+                instance.text = prevedi("db_confirm_delete", jezik)
                 return
             uspeh = db.delete_proizvod(proizvod_id)
             if not uspeh:
-                error_label.text = "Ne moze da se obrise - koriscen je u prethodnim kupovinama."
+                error_label.text = prevedi("db_err_in_use", jezik)
                 delete_state["confirm"] = False
-                instance.text = "Obrisi proizvod"
+                instance.text = prevedi("db_delete_product", jezik)
                 return
             popup.dismiss()
             self.show_proizvodi()
 
         btn_row = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
-        save_btn = PrimaryButton(text="Sacuvaj")
+        save_btn = PrimaryButton(text=prevedi("db_save", jezik))
         save_btn.bind(on_release=save)
-        cancel_btn = SecondaryButton(text="Otkazi")
+        cancel_btn = SecondaryButton(text=prevedi("sl_cancel", jezik))
         cancel_btn.bind(on_release=popup.dismiss)
         btn_row.add_widget(save_btn)
         btn_row.add_widget(cancel_btn)
         content.add_widget(btn_row)
 
-        delete_btn = DangerButton(text="Obrisi proizvod", size_hint_y=None, height=dp(44))
+        delete_btn = DangerButton(text=prevedi("db_delete_product", jezik), size_hint_y=None, height=dp(44))
         delete_btn.bind(on_release=delete)
         content.add_widget(delete_btn)
 
         popup.open()
 
     def show_prodavnice(self):
+        jezik = _jezik()
         box = self.ids.database_box
         box.clear_widgets()
         prodavnice = db.get_prodavnice()
@@ -168,7 +182,7 @@ class DatabaseScreen(Screen):
         if not prodavnice:
             box.add_widget(
                 Label(
-                    text="Nema unetih prodavnica jos.",
+                    text=prevedi("db_empty_stores", jezik),
                     size_hint_y=None, height=dp(40), color=(1, 1, 1, 1),
                 )
             )
