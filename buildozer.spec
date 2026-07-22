@@ -7,11 +7,11 @@ source.include_exts = py,kv,txt,png,jpg
 source.include_patterns = screens/*.py, kv/*.kv, database/*.py, database/__init__.py, screens/__init__.py, assets/*, assets/icons/*
 icon.filename = %(source.dir)s/assets/icon.png
 version = 0.1
-requirements = python3,kivy,sqlite3
+requirements = python3,kivy,sqlite3,plyer
 orientation = portrait
 fullscreen = 0
 
-android.permissions =
+android.permissions = CAMERA,WRITE_EXTERNAL_STORAGE
 android.api = 34
 android.minapi = 21
 android.ndk = 25b
