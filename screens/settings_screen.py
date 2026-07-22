@@ -3,12 +3,25 @@ from kivy.app import App
 
 from theme import THEMES, PALETA
 from database import db
+from translations import prevedi
+
+
+def _jezik():
+    return db.get_setting("jezik", "sr")
 
 
 class SettingsScreen(Screen):
     """Podesavanja - tema boje, pozadina ekrana, boja teksta u poljima, valuta i kurs."""
 
     def on_pre_enter(self, *args):
+        jezik = _jezik()
+        self.ids.title_label.text = prevedi("set_title", jezik)
+        self.ids.theme_label.text = prevedi("set_theme_label", jezik)
+        self.ids.bg_label.text = prevedi("set_bg_label", jezik)
+        self.ids.input_text_label.text = prevedi("set_input_text_label", jezik)
+        self.ids.currency_label.text = prevedi("set_currency_label", jezik)
+        self.ids.kurs_label.text = prevedi("set_kurs_label", jezik)
+
         self.build_theme_buttons()
         self.build_bg_buttons()
         self.build_input_text_buttons()
@@ -16,6 +29,7 @@ class SettingsScreen(Screen):
         self.load_kurs()
 
     def build_theme_buttons(self):
+        jezik = _jezik()
         box = self.ids.theme_box
         box.clear_widgets()
         from widgets import PrimaryButton, SecondaryButton
@@ -26,7 +40,7 @@ class SettingsScreen(Screen):
             is_current = naziv == app.theme.name
             btn_cls = PrimaryButton if is_current else SecondaryButton
             btn = btn_cls(
-                text=(f"{naziv}  (aktivna)" if is_current else naziv),
+                text=(naziv + prevedi("set_active_suffix", jezik) if is_current else naziv),
                 size_hint_y=None, height=dp(48),
             )
             btn.bind(on_release=lambda inst, n=naziv: self.choose_theme(n))
@@ -41,6 +55,7 @@ class SettingsScreen(Screen):
     # ---------- Boja pozadine ekrana ----------
 
     def build_bg_buttons(self):
+        jezik = _jezik()
         box = self.ids.bg_box
         box.clear_widgets()
         from widgets import PrimaryButton, SecondaryButton
@@ -51,7 +66,7 @@ class SettingsScreen(Screen):
             is_current = naziv == app.theme.bg_name
             btn_cls = PrimaryButton if is_current else SecondaryButton
             btn = btn_cls(
-                text=(f"{naziv}  (aktivna)" if is_current else naziv),
+                text=(naziv + prevedi("set_active_suffix", jezik) if is_current else naziv),
                 size_hint_y=None, height=dp(44),
             )
             btn.bind(on_release=lambda inst, n=naziv: self.choose_bg_color(n))
@@ -61,7 +76,7 @@ class SettingsScreen(Screen):
         app = App.get_running_app()
         uspeh = app.theme.set_bg_color(naziv)
         if not uspeh:
-            self.ids.bg_error.text = "Ta boja je ista/slicna boji teksta u poljima - izaberi drugu."
+            self.ids.bg_error.text = prevedi("set_bg_conflict", _jezik())
             return
         self.ids.bg_error.text = ""
         db.set_setting("bg_boja", naziv)
@@ -70,6 +85,7 @@ class SettingsScreen(Screen):
     # ---------- Boja teksta u poljima za unos ----------
 
     def build_input_text_buttons(self):
+        jezik = _jezik()
         box = self.ids.input_text_box
         box.clear_widgets()
         from widgets import PrimaryButton, SecondaryButton
@@ -80,7 +96,7 @@ class SettingsScreen(Screen):
             is_current = naziv == app.theme.input_text_name
             btn_cls = PrimaryButton if is_current else SecondaryButton
             btn = btn_cls(
-                text=(f"{naziv}  (aktivna)" if is_current else naziv),
+                text=(naziv + prevedi("set_active_suffix", jezik) if is_current else naziv),
                 size_hint_y=None, height=dp(44),
             )
             btn.bind(on_release=lambda inst, n=naziv: self.choose_input_text_color(n))
@@ -90,7 +106,7 @@ class SettingsScreen(Screen):
         app = App.get_running_app()
         uspeh = app.theme.set_input_text_color(naziv)
         if not uspeh:
-            self.ids.input_text_error.text = "Ta boja je ista/slicna boji pozadine - izaberi drugu."
+            self.ids.input_text_error.text = prevedi("set_input_conflict", _jezik())
             return
         self.ids.input_text_error.text = ""
         db.set_setting("input_boja", naziv)
@@ -99,6 +115,7 @@ class SettingsScreen(Screen):
     # ---------- Valuta ----------
 
     def build_currency_buttons(self):
+        jezik = _jezik()
         box = self.ids.currency_box
         box.clear_widgets()
         from widgets import PrimaryButton, SecondaryButton
@@ -109,7 +126,7 @@ class SettingsScreen(Screen):
             is_current = naziv == trenutna
             btn_cls = PrimaryButton if is_current else SecondaryButton
             btn = btn_cls(
-                text=(f"{naziv}  (aktivna)" if is_current else naziv),
+                text=(naziv + prevedi("set_active_suffix", jezik) if is_current else naziv),
                 size_hint_y=None, height=dp(48),
             )
             btn.bind(on_release=lambda inst, n=naziv: self.choose_currency(n))
