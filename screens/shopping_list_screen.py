@@ -1,18 +1,47 @@
+import os
 from kivy.uix.screenmanager import Screen
 from kivy.uix.popup import Popup
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
+from kivy.uix.image import Image as KivyImage
 from widgets import PrimaryButton, SecondaryButton, StyledTextInput
 from kivy.uix.label import Label
 from kivy.uix.scrollview import ScrollView
 from kivy.metrics import dp
+from kivy.app import App
 
 from database import db
 from translations import prevedi
 
+try:
+    from plyer import camera
+except Exception:
+    camera = None
+
 
 def _jezik():
     return db.get_setting("jezik", "sr")
+
+
+def _slika_putanja(oznaka):
+    """Putanja gde ce slika biti sacuvana - u privatnom, upisivom folderu app-a."""
+    app = App.get_running_app()
+    folder = app.user_data_dir
+    return os.path.join(folder, f"cena_{oznaka}.jpg")
+
+
+def _pokazi_sliku_popup(putanja_slike, jezik):
+    """Faza 1: samo prikazuje uslikanu sliku uvecanu, bez citanja cene."""
+    if not os.path.exists(putanja_slike):
+        return
+    content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
+    img = KivyImage(source=putanja_slike, allow_stretch=True, keep_ratio=True)
+    content.add_widget(img)
+    close_btn = SecondaryButton(text=prevedi("sl_cancel", jezik), size_hint_y=None, height=dp(48))
+    content.add_widget(close_btn)
+    popup = Popup(title="Foto", content=content, size_hint=(0.92, 0.85), overlay_color=(0, 0, 0, 0.85))
+    close_btn.bind(on_release=popup.dismiss)
+    popup.open()
 
 
 class ShoppingListScreen(Screen):
@@ -25,6 +54,9 @@ class ShoppingListScreen(Screen):
     valuta). Za prikaz se koristi db.rsd_u_prikaz().
     Tekstovi se prevode u letu preko prevedi() prema trenutno izabranom
     jeziku (db.get_setting("jezik")).
+
+    Faza 1 kamere: dugme sa kamericom samo slika i prikazuje fotografiju
+    (bez automatskog citanja cene) - to dolazi u Fazi 2.
     """
 
     def __init__(self, **kwargs):
@@ -32,6 +64,7 @@ class ShoppingListScreen(Screen):
         self.lista_id = None
         self.prodavnica_id = None
         self.stavke_total = 0.0
+        self._foto_brojac = 0
 
     def on_pre_enter(self, *args):
         jezik = _jezik()
@@ -52,6 +85,40 @@ class ShoppingListScreen(Screen):
         self.ids.items_box.clear_widgets()
         self.ids.store_label.text = prevedi("sl_store_label_empty", _jezik())
         self.ids.total_label.text = f"0.00 {db.valuta_oznaka()}"
+
+    # ---------- Kamera (Faza 1: slikaj i prikazi) ----------
+
+    def _sledeca_foto_putanja(self):
+        self._foto_brojac += 1
+        return _slika_putanja(self._foto_brojac)
+
+    def slikaj_za_novi_proizvod(self, cena_input_widget):
+        """Poziva se sa dugmeta kamere unutar popup-a za dodavanje proizvoda."""
+        if camera is None:
+            return
+        putanja = self._sledeca_foto_putanja()
+
+        def gotovo(*a):
+            _pokazi_sliku_popup(putanja, _jezik())
+
+        try:
+            camera.take_picture(filename=putanja, on_complete=gotovo)
+        except NotImplementedError:
+            pass
+
+    def slikaj_za_postojeci_red(self, naziv_proizvoda):
+        """Poziva se sa dugmeta kamere pored vec dodatog reda u listi."""
+        if camera is None:
+            return
+        putanja = self._sledeca_foto_putanja()
+
+        def gotovo(*a):
+            _pokazi_sliku_popup(putanja, _jezik())
+
+        try:
+            camera.take_picture(filename=putanja, on_complete=gotovo)
+        except NotImplementedError:
+            pass
 
     # ---------- Izbor prodavnice ----------
 
@@ -157,6 +224,12 @@ class ShoppingListScreen(Screen):
         row.add_widget(cena_input)
         content.add_widget(row)
 
+        cena_row = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
+        foto_btn = Button(text="[FOTO]", size_hint_x=None, width=dp(70))
+        foto_btn.bind(on_release=lambda inst: self.slikaj_za_novi_proizvod(cena_input))
+        cena_row.add_widget(foto_btn)
+        content.add_widget(cena_row)
+
         total_label = Label(
             text=prevedi("sl_total_prefix", jezik).format(total="0.00", valuta=db.valuta_oznaka()),
             size_hint_y=None, height=dp(30),
@@ -248,6 +321,11 @@ class ShoppingListScreen(Screen):
         row.add_widget(Label(text=f"{kolicina:g} {jedinica}", size_hint_x=0.4))
         row.add_widget(Label(text=f"{db.rsd_u_prikaz(cena_rsd):.2f}", size_hint_x=0.5))
         row.add_widget(Label(text=f"{db.rsd_u_prikaz(total_rsd):.2f}", size_hint_x=0.5))
+
+        foto_btn = Button(text="[F]", size_hint_x=None, width=dp(36))
+        foto_btn.bind(on_release=lambda inst, n=naziv: self.slikaj_za_postojeci_red(n))
+        row.add_widget(foto_btn)
+
         self.ids.items_box.add_widget(row)
 
     # ---------- Zatvaranje liste ----------
