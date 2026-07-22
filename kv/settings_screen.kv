@@ -16,6 +16,7 @@
                 background_down: "assets/nazad_btn.png"
                 on_release: root.go_back()
             Label:
+                id: title_label
                 text: "Podesavanja"
                 font_size: "20sp"
                 bold: True
@@ -29,6 +30,7 @@
                 padding: 0, 0, 0, dp(20)
 
                 Label:
+                    id: theme_label
                     text: "Boja teme aplikacije (dugmad)"
                     font_size: "16sp"
                     size_hint_y: None
@@ -43,6 +45,7 @@
                     spacing: dp(10)
 
                 Label:
+                    id: bg_label
                     text: "Boja pozadine ekrana"
                     font_size: "16sp"
                     size_hint_y: None
@@ -65,6 +68,7 @@
                     color: 1, 0.4, 0.4, 1
 
                 Label:
+                    id: input_text_label
                     text: "Boja teksta u poljima za unos"
                     font_size: "16sp"
                     size_hint_y: None
@@ -87,6 +91,7 @@
                     color: 1, 0.4, 0.4, 1
 
                 Label:
+                    id: currency_label
                     text: "Valuta"
                     font_size: "16sp"
                     size_hint_y: None
@@ -100,6 +105,7 @@
                     spacing: dp(10)
 
                 Label:
+                    id: kurs_label
                     text: "Kurs (1 EUR = ? RSD)"
                     font_size: "16sp"
                     size_hint_y: None
@@ -114,4 +120,3 @@
                     input_filter: "float"
                     on_text_validate: root.save_kurs(self.text)
                     on_focus: if not self.focus: root.save_kurs(self.text)
- 
