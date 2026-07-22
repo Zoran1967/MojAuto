@@ -3,6 +3,7 @@ from kivy.uix.screenmanager import Screen
 from kivy.uix.popup import Popup
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
+from kivy.uix.camera import Camera
 from kivy.uix.image import Image as KivyImage
 from widgets import PrimaryButton, SecondaryButton, StyledTextInput
 from kivy.uix.label import Label
@@ -13,35 +14,15 @@ from kivy.app import App
 from database import db
 from translations import prevedi
 
-try:
-    from plyer import camera
-except Exception:
-    camera = None
-
 
 def _jezik():
     return db.get_setting("jezik", "sr")
 
 
 def _slika_putanja(oznaka):
-    """Putanja gde ce slika biti sacuvana - u privatnom, upisivom folderu app-a."""
     app = App.get_running_app()
     folder = app.user_data_dir
     return os.path.join(folder, f"cena_{oznaka}.jpg")
-
-
-def _pokazi_sliku_popup(putanja_slike, jezik):
-    """Faza 1: samo prikazuje uslikanu sliku uvecanu, bez citanja cene."""
-    if not os.path.exists(putanja_slike):
-        return
-    content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
-    img = KivyImage(source=putanja_slike, allow_stretch=True, keep_ratio=True)
-    content.add_widget(img)
-    close_btn = SecondaryButton(text=prevedi("sl_cancel", jezik), size_hint_y=None, height=dp(48))
-    content.add_widget(close_btn)
-    popup = Popup(title="Foto", content=content, size_hint=(0.92, 0.85), overlay_color=(0, 0, 0, 0.85))
-    close_btn.bind(on_release=popup.dismiss)
-    popup.open()
 
 
 class ShoppingListScreen(Screen):
@@ -55,8 +36,12 @@ class ShoppingListScreen(Screen):
     Tekstovi se prevode u letu preko prevedi() prema trenutno izabranom
     jeziku (db.get_setting("jezik")).
 
-    Faza 1 kamere: dugme sa kamericom samo slika i prikazuje fotografiju
-    (bez automatskog citanja cene) - to dolazi u Fazi 2.
+    Faza 1 kamere: koristi se Kivy ugradjeni Camera widget (ziva slika
+    unutar popup-a), NE plyer/spoljasnja Camera app - to izbegava
+    FileUriExposedException koji nastaje na Androidu 7+ kad se pokusa
+    deliti fajl putanja sa spoljasnjom aplikacijom bez FileProvider-a.
+    Trenutno samo snima i prikazuje sliku, bez automatskog citanja cene
+    (to dolazi u Fazi 2).
     """
 
     def __init__(self, **kwargs):
@@ -86,39 +71,74 @@ class ShoppingListScreen(Screen):
         self.ids.store_label.text = prevedi("sl_store_label_empty", _jezik())
         self.ids.total_label.text = f"0.00 {db.valuta_oznaka()}"
 
-    # ---------- Kamera (Faza 1: slikaj i prikazi) ----------
+    # ---------- Kamera (Faza 1: ziva slika u popup-u, snimi, prikazi) ----------
 
     def _sledeca_foto_putanja(self):
         self._foto_brojac += 1
         return _slika_putanja(self._foto_brojac)
 
-    def slikaj_za_novi_proizvod(self, cena_input_widget):
-        """Poziva se sa dugmeta kamere unutar popup-a za dodavanje proizvoda."""
-        if camera is None:
-            return
-        putanja = self._sledeca_foto_putanja()
-
-        def gotovo(*a):
-            _pokazi_sliku_popup(putanja, _jezik())
+    def _otvori_kameru_popup(self, na_snimljeno=None):
+        """Otvara popup sa zivom slikom kamere i dugmetom Snimi.
+        na_snimljeno(putanja) se poziva posle uspesnog snimanja."""
+        jezik = _jezik()
+        content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
 
         try:
-            camera.take_picture(filename=putanja, on_complete=gotovo)
-        except NotImplementedError:
-            pass
+            cam_widget = Camera(play=True, resolution=(640, 480))
+        except Exception:
+            content.add_widget(Label(text="Kamera nije dostupna na ovom uredjaju."))
+            popup = Popup(title="Kamera", content=content, size_hint=(0.9, 0.7))
+            close_btn = SecondaryButton(text=prevedi("sl_cancel", jezik), size_hint_y=None, height=dp(48))
+            close_btn.bind(on_release=popup.dismiss)
+            content.add_widget(close_btn)
+            popup.open()
+            return
+
+        content.add_widget(cam_widget)
+
+        btn_row = BoxLayout(size_hint_y=None, height=dp(48), spacing=dp(8))
+        snimi_btn = PrimaryButton(text="Snimi")
+        otkazi_btn = SecondaryButton(text=prevedi("sl_cancel", jezik))
+        btn_row.add_widget(snimi_btn)
+        btn_row.add_widget(otkazi_btn)
+        content.add_widget(btn_row)
+
+        popup = Popup(title="Slikaj cenu", content=content, size_hint=(0.95, 0.9), overlay_color=(0, 0, 0, 0.85))
+        otkazi_btn.bind(on_release=lambda inst: (setattr(cam_widget, "play", False), popup.dismiss()))
+
+        def snimi(*a):
+            putanja = self._sledeca_foto_putanja()
+            try:
+                cam_widget.export_to_png(putanja)
+            except Exception:
+                return
+            cam_widget.play = False
+            popup.dismiss()
+            self._pokazi_snimljenu_sliku(putanja, na_snimljeno)
+
+        snimi_btn.bind(on_release=snimi)
+        popup.open()
+
+    def _pokazi_snimljenu_sliku(self, putanja_slike, na_snimljeno=None):
+        jezik = _jezik()
+        if not os.path.exists(putanja_slike):
+            return
+        content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
+        img = KivyImage(source=putanja_slike, allow_stretch=True, keep_ratio=True)
+        content.add_widget(img)
+        close_btn = SecondaryButton(text=prevedi("sl_cancel", jezik), size_hint_y=None, height=dp(48))
+        content.add_widget(close_btn)
+        popup = Popup(title="Foto", content=content, size_hint=(0.92, 0.85), overlay_color=(0, 0, 0, 0.85))
+        close_btn.bind(on_release=popup.dismiss)
+        popup.open()
+        if na_snimljeno:
+            na_snimljeno(putanja_slike)
+
+    def slikaj_za_novi_proizvod(self, cena_input_widget):
+        self._otvori_kameru_popup()
 
     def slikaj_za_postojeci_red(self, naziv_proizvoda):
-        """Poziva se sa dugmeta kamere pored vec dodatog reda u listi."""
-        if camera is None:
-            return
-        putanja = self._sledeca_foto_putanja()
-
-        def gotovo(*a):
-            _pokazi_sliku_popup(putanja, _jezik())
-
-        try:
-            camera.take_picture(filename=putanja, on_complete=gotovo)
-        except NotImplementedError:
-            pass
+        self._otvori_kameru_popup()
 
     # ---------- Izbor prodavnice ----------
 
