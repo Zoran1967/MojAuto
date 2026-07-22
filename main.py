@@ -23,7 +23,9 @@ from kivy.graphics import Color, Rectangle
 
 def _napravi_greska_sadrzaj(greska_tekst):
     """Pravi BoxLayout sa belom pozadinom i crnim tekstom - uvek citljivo
-    bez obzira na trenutnu temu boja aplikacije."""
+    bez obzira na trenutnu temu boja aplikacije. Sirina teksta prati
+    sirinu ekrana (Window.width) umesto fiksnog broja piksela, da se
+    tekst ne bi zbio u usku, neciljivu kolonu na velikim ekranima."""
     content = BoxLayout(orientation="vertical", padding=10, spacing=10)
 
     with content.canvas.before:
@@ -36,12 +38,23 @@ def _napravi_greska_sadrzaj(greska_tekst):
     label = Label(
         text=greska_tekst,
         size_hint_y=None,
-        text_size=(400, None),
+        size_hint_x=1,
         halign="left",
         valign="top",
         color=(0, 0, 0, 1),
+        font_size="13sp",
     )
-    label.bind(texture_size=lambda inst, val: setattr(label, "height", val[1]))
+
+    def _osvezi_sirinu(*a):
+        label.text_size = (Window.width - 40, None)
+
+    def _osvezi_visinu(*a):
+        label.height = label.texture_size[1]
+
+    label.bind(texture_size=_osvezi_visinu)
+    Window.bind(width=_osvezi_sirinu)
+    _osvezi_sirinu()
+
     scroll.add_widget(label)
     content.add_widget(scroll)
     return content
