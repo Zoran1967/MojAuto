@@ -1,3 +1,9 @@
+"""
+Prevodi tekstova aplikacije. Naziv aplikacije (Shopping List) ostaje
+uvek na engleskom, bez obzira na izabrani jezik - prevode se samo
+tekstovi unutar ekrana.
+"""
+
 PREVODI = {
     "sr": {
         "home_new_list": "Nova lista\nza kupovinu",
@@ -26,6 +32,22 @@ PREVODI = {
         "sl_price_hint": "Cena po jedinici ({valuta})",
         "sl_total_prefix": "Total: {total} {valuta}",
         "sl_add_to_list_btn": "Dodaj u listu",
+
+        "hist_title": "Istorija kupovina",
+        "hist_empty": "Nema jos zatvorenih listi.",
+        "hist_receipts_count": "{naziv}   ({broj} racun/a)",
+        "hist_receipts_popup_title": "Racuni",
+        "hist_receipt_total": "{datum}\nUkupno: {ukupno} {valuta}",
+        "hist_close": "Zatvori",
+        "hist_col_product": "Proizvod",
+        "hist_col_qty": "Kol.",
+        "hist_col_price": "Cena/j. ({valuta})",
+        "hist_col_total": "Total",
+        "hist_total_label": "UKUPNO:",
+        "hist_receipt_popup_title": "Racun",
+        "hist_back": "Nazad",
+        "hist_delete_receipt": "Obrisi ovaj racun",
+        "hist_confirm_delete": "Sigurno? Klikni jos jednom za trajno brisanje",
     },
     "en": {
         "home_new_list": "New list\nfor shopping",
@@ -54,6 +76,22 @@ PREVODI = {
         "sl_price_hint": "Price per unit ({valuta})",
         "sl_total_prefix": "Total: {total} {valuta}",
         "sl_add_to_list_btn": "Add to list",
+
+        "hist_title": "Shopping history",
+        "hist_empty": "No closed lists yet.",
+        "hist_receipts_count": "{naziv}   ({broj} receipt(s))",
+        "hist_receipts_popup_title": "Receipts",
+        "hist_receipt_total": "{datum}\nTotal: {ukupno} {valuta}",
+        "hist_close": "Close",
+        "hist_col_product": "Product",
+        "hist_col_qty": "Qty.",
+        "hist_col_price": "Price/u. ({valuta})",
+        "hist_col_total": "Total",
+        "hist_total_label": "TOTAL:",
+        "hist_receipt_popup_title": "Receipt",
+        "hist_back": "Back",
+        "hist_delete_receipt": "Delete this receipt",
+        "hist_confirm_delete": "Sure? Tap again to permanently delete",
     },
     "sk": {
         "home_new_list": "Novy zoznam\nna nakup",
@@ -82,6 +120,22 @@ PREVODI = {
         "sl_price_hint": "Cena za jednotku ({valuta})",
         "sl_total_prefix": "Spolu: {total} {valuta}",
         "sl_add_to_list_btn": "Pridat do zoznamu",
+
+        "hist_title": "Historia nakupov",
+        "hist_empty": "Zatial ziadne uzavrete zoznamy.",
+        "hist_receipts_count": "{naziv}   ({broj} uctenka/y)",
+        "hist_receipts_popup_title": "Uctenky",
+        "hist_receipt_total": "{datum}\nSpolu: {ukupno} {valuta}",
+        "hist_close": "Zatvorit",
+        "hist_col_product": "Produkt",
+        "hist_col_qty": "Mn.",
+        "hist_col_price": "Cena/j. ({valuta})",
+        "hist_col_total": "Spolu",
+        "hist_total_label": "SPOLU:",
+        "hist_receipt_popup_title": "Uctenka",
+        "hist_back": "Spat",
+        "hist_delete_receipt": "Vymazat tuto uctenku",
+        "hist_confirm_delete": "Naozaj? Klikni znova pre trvale vymazanie",
     },
     "uk": {
         "home_new_list": "Новий список\nдля покупок",
@@ -110,6 +164,22 @@ PREVODI = {
         "sl_price_hint": "Ціна за одиницю ({valuta})",
         "sl_total_prefix": "Всього: {total} {valuta}",
         "sl_add_to_list_btn": "Додати у список",
+
+        "hist_title": "Історія покупок",
+        "hist_empty": "Ще немає закритих списків.",
+        "hist_receipts_count": "{naziv}   ({broj} чек(ів))",
+        "hist_receipts_popup_title": "Чеки",
+        "hist_receipt_total": "{datum}\nВсього: {ukupno} {valuta}",
+        "hist_close": "Закрити",
+        "hist_col_product": "Товар",
+        "hist_col_qty": "К-сть",
+        "hist_col_price": "Ціна/од. ({valuta})",
+        "hist_col_total": "Всього",
+        "hist_total_label": "РАЗОМ:",
+        "hist_receipt_popup_title": "Чек",
+        "hist_back": "Назад",
+        "hist_delete_receipt": "Видалити цей чек",
+        "hist_confirm_delete": "Точно? Натисніть ще раз для остаточного видалення",
     },
 }
 
@@ -117,3 +187,4 @@ PREVODI = {
 def prevedi(kljuc, jezik):
     """Vraca prevod za dati kljuc i jezik. Ako ne postoji, vraca srpski."""
     return PREVODI.get(jezik, PREVODI["sr"]).get(kljuc, PREVODI["sr"].get(kljuc, kljuc))
+    
