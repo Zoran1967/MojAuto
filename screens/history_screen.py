@@ -1,189 +1,172 @@
-"""
-Prevodi tekstova aplikacije. Naziv aplikacije (Shopping List) ostaje
-uvek na engleskom, bez obzira na izabrani jezik - prevode se samo
-tekstovi unutar ekrana.
-"""
+from kivy.uix.screenmanager import Screen
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.label import Label
+from kivy.uix.popup import Popup
+from kivy.uix.scrollview import ScrollView
+from kivy.metrics import dp
 
-PREVODI = {
-    "sr": {
-        "home_new_list": "Nova lista\nza kupovinu",
-        "home_history": "Istorija\nkupovina",
-        "home_database": "Baza proizvoda\ni prodavnica",
-        "home_settings": "Podesavanja",
-        "home_language_label": "Jezik",
-
-        "sl_store_label_empty": "Prodavnica: (izbor dolazi)",
-        "sl_store_label": "Prodavnica: {naziv}",
-        "sl_col_product": "Proizvod",
-        "sl_col_qty": "Kol.",
-        "sl_col_price": "Cena/j.",
-        "sl_col_total": "Total",
-        "sl_add_product_btn": "+ Dodaj proizvod",
-        "sl_total_label": "UKUPNO:",
-        "sl_close_list": "Zatvori listu",
-        "sl_pick_store_title": "Izaberi prodavnicu",
-        "sl_search_store_hint": "Pretrazi ili unesi novu prodavnicu",
-        "sl_add_store_btn": "+ Prodavnica",
-        "sl_cancel": "Otkazi",
-        "sl_add_item_title": "Dodaj proizvod",
-        "sl_product_name_hint": "Naziv proizvoda",
-        "sl_unit_hint": "Jedinica (kg/l/kom)",
-        "sl_qty_hint": "Kolicina",
-        "sl_price_hint": "Cena po jedinici ({valuta})",
-        "sl_total_prefix": "Total: {total} {valuta}",
-        "sl_add_to_list_btn": "Dodaj u listu",
-
-        "hist_title": "Istorija kupovina",
-        "hist_empty": "Nema jos zatvorenih listi.",
-        "hist_receipts_count": "{naziv}   ({broj} racun/a)",
-        "hist_receipts_popup_title": "Racuni",
-        "hist_receipt_total": "{datum}\nUkupno: {ukupno} {valuta}",
-        "hist_close": "Zatvori",
-        "hist_col_product": "Proizvod",
-        "hist_col_qty": "Kol.",
-        "hist_col_price": "Cena/j. ({valuta})",
-        "hist_col_total": "Total",
-        "hist_total_label": "UKUPNO:",
-        "hist_receipt_popup_title": "Racun",
-        "hist_back": "Nazad",
-        "hist_delete_receipt": "Obrisi ovaj racun",
-        "hist_confirm_delete": "Sigurno? Klikni jos jednom za trajno brisanje",
-    },
-    "en": {
-        "home_new_list": "New list\nfor shopping",
-        "home_history": "Shopping\nhistory",
-        "home_database": "Product\ndatabase",
-        "home_settings": "Settings",
-        "home_language_label": "Language",
-
-        "sl_store_label_empty": "Store: (selection coming)",
-        "sl_store_label": "Store: {naziv}",
-        "sl_col_product": "Product",
-        "sl_col_qty": "Qty.",
-        "sl_col_price": "Price/u.",
-        "sl_col_total": "Total",
-        "sl_add_product_btn": "+ Add product",
-        "sl_total_label": "TOTAL:",
-        "sl_close_list": "Close list",
-        "sl_pick_store_title": "Choose a store",
-        "sl_search_store_hint": "Search or enter a new store",
-        "sl_add_store_btn": "+ Store",
-        "sl_cancel": "Cancel",
-        "sl_add_item_title": "Add product",
-        "sl_product_name_hint": "Product name",
-        "sl_unit_hint": "Unit (kg/l/pcs)",
-        "sl_qty_hint": "Quantity",
-        "sl_price_hint": "Price per unit ({valuta})",
-        "sl_total_prefix": "Total: {total} {valuta}",
-        "sl_add_to_list_btn": "Add to list",
-
-        "hist_title": "Shopping history",
-        "hist_empty": "No closed lists yet.",
-        "hist_receipts_count": "{naziv}   ({broj} receipt(s))",
-        "hist_receipts_popup_title": "Receipts",
-        "hist_receipt_total": "{datum}\nTotal: {ukupno} {valuta}",
-        "hist_close": "Close",
-        "hist_col_product": "Product",
-        "hist_col_qty": "Qty.",
-        "hist_col_price": "Price/u. ({valuta})",
-        "hist_col_total": "Total",
-        "hist_total_label": "TOTAL:",
-        "hist_receipt_popup_title": "Receipt",
-        "hist_back": "Back",
-        "hist_delete_receipt": "Delete this receipt",
-        "hist_confirm_delete": "Sure? Tap again to permanently delete",
-    },
-    "sk": {
-        "home_new_list": "Novy zoznam\nna nakup",
-        "home_history": "Historia\nnakupov",
-        "home_database": "Databaza\nproduktov",
-        "home_settings": "Nastavenia",
-        "home_language_label": "Jazyk",
-
-        "sl_store_label_empty": "Obchod: (vyber prichadza)",
-        "sl_store_label": "Obchod: {naziv}",
-        "sl_col_product": "Produkt",
-        "sl_col_qty": "Mn.",
-        "sl_col_price": "Cena/j.",
-        "sl_col_total": "Spolu",
-        "sl_add_product_btn": "+ Pridat produkt",
-        "sl_total_label": "SPOLU:",
-        "sl_close_list": "Zatvorit zoznam",
-        "sl_pick_store_title": "Vyber obchod",
-        "sl_search_store_hint": "Hladaj alebo zadaj novy obchod",
-        "sl_add_store_btn": "+ Obchod",
-        "sl_cancel": "Zrusit",
-        "sl_add_item_title": "Pridat produkt",
-        "sl_product_name_hint": "Nazov produktu",
-        "sl_unit_hint": "Jednotka (kg/l/ks)",
-        "sl_qty_hint": "Mnozstvo",
-        "sl_price_hint": "Cena za jednotku ({valuta})",
-        "sl_total_prefix": "Spolu: {total} {valuta}",
-        "sl_add_to_list_btn": "Pridat do zoznamu",
-
-        "hist_title": "Historia nakupov",
-        "hist_empty": "Zatial ziadne uzavrete zoznamy.",
-        "hist_receipts_count": "{naziv}   ({broj} uctenka/y)",
-        "hist_receipts_popup_title": "Uctenky",
-        "hist_receipt_total": "{datum}\nSpolu: {ukupno} {valuta}",
-        "hist_close": "Zatvorit",
-        "hist_col_product": "Produkt",
-        "hist_col_qty": "Mn.",
-        "hist_col_price": "Cena/j. ({valuta})",
-        "hist_col_total": "Spolu",
-        "hist_total_label": "SPOLU:",
-        "hist_receipt_popup_title": "Uctenka",
-        "hist_back": "Spat",
-        "hist_delete_receipt": "Vymazat tuto uctenku",
-        "hist_confirm_delete": "Naozaj? Klikni znova pre trvale vymazanie",
-    },
-    "uk": {
-        "home_new_list": "Новий список\nдля покупок",
-        "home_history": "Історія\nпокупок",
-        "home_database": "База\nтоварів",
-        "home_settings": "Налаштування",
-        "home_language_label": "Мова",
-
-        "sl_store_label_empty": "Магазин: (вибір буде тут)",
-        "sl_store_label": "Магазин: {naziv}",
-        "sl_col_product": "Товар",
-        "sl_col_qty": "К-сть",
-        "sl_col_price": "Ціна/од.",
-        "sl_col_total": "Всього",
-        "sl_add_product_btn": "+ Додати товар",
-        "sl_total_label": "РАЗОМ:",
-        "sl_close_list": "Закрити список",
-        "sl_pick_store_title": "Виберіть магазин",
-        "sl_search_store_hint": "Пошук або новий магазин",
-        "sl_add_store_btn": "+ Магазин",
-        "sl_cancel": "Скасувати",
-        "sl_add_item_title": "Додати товар",
-        "sl_product_name_hint": "Назва товару",
-        "sl_unit_hint": "Одиниця (кг/л/шт)",
-        "sl_qty_hint": "Кількість",
-        "sl_price_hint": "Ціна за одиницю ({valuta})",
-        "sl_total_prefix": "Всього: {total} {valuta}",
-        "sl_add_to_list_btn": "Додати у список",
-
-        "hist_title": "Історія покупок",
-        "hist_empty": "Ще немає закритих списків.",
-        "hist_receipts_count": "{naziv}   ({broj} чек(ів))",
-        "hist_receipts_popup_title": "Чеки",
-        "hist_receipt_total": "{datum}\nВсього: {ukupno} {valuta}",
-        "hist_close": "Закрити",
-        "hist_col_product": "Товар",
-        "hist_col_qty": "К-сть",
-        "hist_col_price": "Ціна/од. ({valuta})",
-        "hist_col_total": "Всього",
-        "hist_total_label": "РАЗОМ:",
-        "hist_receipt_popup_title": "Чек",
-        "hist_back": "Назад",
-        "hist_delete_receipt": "Видалити цей чек",
-        "hist_confirm_delete": "Точно? Натисніть ще раз для остаточного видалення",
-    },
-}
+from database import db
+from widgets import PrimaryButton, SecondaryButton, DangerButton, Card
+from translations import prevedi
 
 
-def prevedi(kljuc, jezik):
-    """Vraca prevod za dati kljuc i jezik. Ako ne postoji, vraca srpski."""
-    return PREVODI.get(jezik, PREVODI["sr"]).get(kljuc, PREVODI["sr"].get(kljuc, kljuc))
+def _jezik():
+    return db.get_setting("jezik", "sr")
+
+
+class HistoryScreen(Screen):
+    """
+    Istorija kupovina - organizovano po prodavnicama.
+    Napomena o valutama: sve vrednosti dolaze iz baze UVEK u RSD i
+    prikazuju se konvertovane preko db.rsd_u_prikaz().
+    Tekstovi se prevode preko prevedi() prema trenutno izabranom jeziku.
+    """
+
+    def on_pre_enter(self, *args):
+        jezik = _jezik()
+        self.ids.title_label.text = prevedi("hist_title", jezik)
+        self.load_history()
+
+    def load_history(self):
+        jezik = _jezik()
+        box = self.ids.history_box
+        box.clear_widgets()
+        prodavnice = db.get_prodavnice_sa_istorijom()
+
+        if not prodavnice:
+            box.add_widget(
+                Label(
+                    text=prevedi("hist_empty", jezik),
+                    size_hint_y=None, height=dp(60), color=(0.7, 0.7, 0.7, 1),
+                )
+            )
+            return
+
+        for pid, naziv, broj_racuna in prodavnice:
+            btn = SecondaryButton(
+                text=prevedi("hist_receipts_count", jezik).format(naziv=naziv, broj=broj_racuna),
+                size_hint_y=None, height=dp(52), font_size="16sp",
+            )
+            btn.bind(
+                on_release=lambda inst, pid=pid, naziv=naziv: self.open_store_history(pid, naziv)
+            )
+            box.add_widget(btn)
+
+    # ---------- Nivo 1: racuni jedne prodavnice ----------
+
+    def open_store_history(self, prodavnica_id, naziv):
+        jezik = _jezik()
+        content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
+        content.add_widget(
+            Label(text=naziv, bold=True, font_size="18sp",
+                  size_hint_y=None, height=dp(32))
+        )
+
+        receipts_box = BoxLayout(orientation="vertical", size_hint_y=None, spacing=dp(6))
+        receipts_box.bind(minimum_height=receipts_box.setter("height"))
+        scroll = ScrollView(size_hint_y=1)
+        scroll.add_widget(receipts_box)
+        content.add_widget(scroll)
+
+        popup = Popup(
+            title=prevedi("hist_receipts_popup_title", jezik), content=content, size_hint=(0.92, 0.8),
+            overlay_color=(0, 0, 0, 0.85),
+        )
+
+        def refresh_receipts():
+            receipts_box.clear_widgets()
+            liste = db.get_liste_za_prodavnicu(prodavnica_id)
+            if not liste:
+                popup.dismiss()
+                self.load_history()
+                return
+            for lista_id, datum, ukupno_rsd in liste:
+                ukupno_prikaz = db.rsd_u_prikaz(ukupno_rsd)
+                btn = SecondaryButton(
+                    text=prevedi("hist_receipt_total", jezik).format(
+                        datum=datum, ukupno=f"{ukupno_prikaz:.2f}", valuta=db.valuta_oznaka()
+                    ),
+                    size_hint_y=None, height=dp(56), halign="center",
+                )
+                btn.bind(
+                    on_release=lambda inst, lid=lista_id, d=datum, u=ukupno_rsd:
+                        self.open_receipt_detail(lid, d, u, popup, refresh_receipts)
+                )
+                receipts_box.add_widget(btn)
+
+        close_btn = SecondaryButton(text=prevedi("hist_close", jezik), size_hint_y=None, height=dp(48))
+        close_btn.bind(on_release=popup.dismiss)
+        content.add_widget(close_btn)
+
+        refresh_receipts()
+        popup.open()
+
+    # ---------- Nivo 2: stavke jednog racuna ----------
+
+    def open_receipt_detail(self, lista_id, datum, ukupno_rsd, parent_popup, refresh_parent):
+        jezik = _jezik()
+        content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
+        content.add_widget(
+            Label(text=datum, bold=True, font_size="16sp",
+                  size_hint_y=None, height=dp(28))
+        )
+
+        header = BoxLayout(size_hint_y=None, height=dp(30))
+        header.add_widget(Label(text=prevedi("hist_col_product", jezik), bold=True, font_size="13sp"))
+        header.add_widget(Label(text=prevedi("hist_col_qty", jezik), bold=True, size_hint_x=0.4, font_size="13sp"))
+        header.add_widget(Label(
+            text=prevedi("hist_col_price", jezik).format(valuta=db.valuta_oznaka()),
+            bold=True, size_hint_x=0.5, font_size="13sp"
+        ))
+        header.add_widget(Label(text=prevedi("hist_col_total", jezik), bold=True, size_hint_x=0.5, font_size="13sp"))
+        content.add_widget(header)
+
+        items_box = BoxLayout(orientation="vertical", size_hint_y=None, spacing=dp(2))
+        items_box.bind(minimum_height=items_box.setter("height"))
+        scroll = ScrollView(size_hint_y=1)
+        scroll.add_widget(items_box)
+        content.add_widget(scroll)
+
+        stavke = db.get_lista_stavke(lista_id)
+        for naziv, kolicina, cena_rsd, total_rsd in stavke:
+            row = BoxLayout(size_hint_y=None, height=dp(36))
+            row.add_widget(Label(text=naziv, font_size="13sp"))
+            row.add_widget(Label(text=f"{kolicina:g}", size_hint_x=0.4, font_size="13sp"))
+            row.add_widget(Label(text=f"{db.rsd_u_prikaz(cena_rsd):.2f}", size_hint_x=0.5, font_size="13sp"))
+            row.add_widget(Label(text=f"{db.rsd_u_prikaz(total_rsd):.2f}", size_hint_x=0.5, font_size="13sp"))
+            items_box.add_widget(row)
+
+        total_row = BoxLayout(size_hint_y=None, height=dp(36))
+        total_row.add_widget(Label(text=prevedi("hist_total_label", jezik), bold=True))
+        total_row.add_widget(Label(text=f"{db.rsd_u_prikaz(ukupno_rsd):.2f} {db.valuta_oznaka()}", bold=True))
+        content.add_widget(total_row)
+
+        detail_popup = Popup(
+            title=prevedi("hist_receipt_popup_title", jezik), content=content, size_hint=(0.94, 0.85),
+            overlay_color=(0, 0, 0, 0.85),
+        )
+
+        delete_state = {"confirm": False}
+
+        def delete(instance):
+            if not delete_state["confirm"]:
+                delete_state["confirm"] = True
+                instance.text = prevedi("hist_confirm_delete", jezik)
+                return
+            db.delete_lista(lista_id)
+            detail_popup.dismiss()
+            refresh_parent()
+
+        btn_row = BoxLayout(size_hint_y=None, height=dp(48), spacing=dp(6))
+        back_btn = SecondaryButton(text=prevedi("hist_back", jezik))
+        back_btn.bind(on_release=detail_popup.dismiss)
+        delete_btn = DangerButton(text=prevedi("hist_delete_receipt", jezik))
+        delete_btn.bind(on_release=delete)
+        btn_row.add_widget(back_btn)
+        btn_row.add_widget(delete_btn)
+        content.add_widget(btn_row)
+
+        detail_popup.open()
+
+    def go_back(self):
+        self.manager.current = "home"
