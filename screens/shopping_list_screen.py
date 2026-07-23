@@ -3,7 +3,6 @@ from kivy.uix.screenmanager import Screen
 from kivy.uix.popup import Popup
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
-from kivy.uix.camera import Camera
 from kivy.uix.image import Image as KivyImage
 from widgets import PrimaryButton, SecondaryButton, StyledTextInput
 from kivy.uix.label import Label
@@ -15,15 +14,14 @@ from kivy.utils import platform
 from database import db
 from translations import prevedi
 
+try:
+    from camera4kivy import Preview
+except Exception:
+    Preview = None
+
 
 def _jezik():
     return db.get_setting("jezik", "sr")
-
-
-def _slika_putanja(oznaka):
-    app = App.get_running_app()
-    folder = app.user_data_dir
-    return os.path.join(folder, f"cena_{oznaka}.jpg")
 
 
 class ShoppingListScreen(Screen):
@@ -37,11 +35,11 @@ class ShoppingListScreen(Screen):
     Tekstovi se prevode u letu preko prevedi() prema trenutno izabranom
     jeziku (db.get_setting("jezik")).
 
-    Faza 1 kamere: koristi se Kivy ugradjeni Camera widget (ziva slika
-    unutar popup-a). Pre otvaranja kamere se eksplicitno trazi runtime
-    dozvola za CAMERA (na Androidu 6+ manifest dozvola sama po sebi
-    nije dovoljna). Trenutno samo snima i prikazuje sliku, bez
-    automatskog citanja cene (to dolazi u Fazi 2).
+    Faza 1 kamere: koristi se camera4kivy (CameraX/AndroidX) - moderna,
+    aktivno odrzavana biblioteka koja resava poznati problem da Kivy-jev
+    ugradjeni Camera widget koristi zastarelu Camera1 API koju mnogi
+    noviji telefoni ne podrzavaju (crna slika bez greske). Trenutno
+    samo snima i prikazuje sliku, bez automatskog citanja cene (Faza 2).
     """
 
     def __init__(self, **kwargs):
@@ -49,7 +47,7 @@ class ShoppingListScreen(Screen):
         self.lista_id = None
         self.prodavnica_id = None
         self.stavke_total = 0.0
-        self._foto_brojac = 0
+        self._aktivni_preview = None
 
     def on_pre_enter(self, *args):
         jezik = _jezik()
@@ -71,65 +69,24 @@ class ShoppingListScreen(Screen):
         self.ids.store_label.text = prevedi("sl_store_label_empty", _jezik())
         self.ids.total_label.text = f"0.00 {db.valuta_oznaka()}"
 
-    # ---------- Kamera (Faza 1: ziva slika u popup-u, snimi, prikazi) ----------
-
-    def _sledeca_foto_putanja(self):
-        self._foto_brojac += 1
-        return _slika_putanja(self._foto_brojac)
-
-    def _zatrazi_dozvolu_pa_otvori_kameru(self, na_snimljeno=None):
-        """Na Androidu prvo trazi CAMERA runtime dozvolu, tek onda otvara
-        kameru. Na drugim platformama (test na racunaru) preskace direktno."""
-        if platform == "android":
-            try:
-                from android.permissions import request_permissions, Permission, check_permission
-
-                if check_permission(Permission.CAMERA):
-                    self._otvori_kameru_popup(na_snimljeno)
-                    return
-
-                def callback(permissions, results):
-                    if all(results):
-                        from kivy.clock import Clock
-                        Clock.schedule_once(lambda dt: self._otvori_kameru_popup(na_snimljeno), 0)
-                    else:
-                        self._prikazi_gresku_dozvole()
-
-                request_permissions([Permission.CAMERA], callback)
-                return
-            except Exception:
-                pass
-
-        self._otvori_kameru_popup(na_snimljeno)
-
-    def _prikazi_gresku_dozvole(self):
-        jezik = _jezik()
-        content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
-        content.add_widget(Label(text="Dozvola za kameru nije odobrena.\nProveri Podesavanja telefona -> Aplikacije -> Shoping -> Dozvole."))
-        popup = Popup(title="Kamera", content=content, size_hint=(0.85, 0.4))
-        close_btn = SecondaryButton(text=prevedi("sl_cancel", jezik), size_hint_y=None, height=dp(48))
-        close_btn.bind(on_release=popup.dismiss)
-        content.add_widget(close_btn)
-        popup.open()
+    # ---------- Kamera (camera4kivy - CameraX/AndroidX) ----------
 
     def _otvori_kameru_popup(self, na_snimljeno=None):
-        """Otvara popup sa zivom slikom kamere i dugmetom Snimi.
-        na_snimljeno(putanja) se poziva posle uspesnog snimanja."""
         jezik = _jezik()
-        content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
 
-        try:
-            cam_widget = Camera(play=True, resolution=(640, 480))
-        except Exception:
-            content.add_widget(Label(text="Kamera nije dostupna na ovom uredjaju."))
-            popup = Popup(title="Kamera", content=content, size_hint=(0.9, 0.7))
+        if Preview is None:
+            content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
+            content.add_widget(Label(text="Kamera biblioteka nije dostupna (camera4kivy)."))
+            popup = Popup(title="Kamera", content=content, size_hint=(0.9, 0.5))
             close_btn = SecondaryButton(text=prevedi("sl_cancel", jezik), size_hint_y=None, height=dp(48))
             close_btn.bind(on_release=popup.dismiss)
             content.add_widget(close_btn)
             popup.open()
             return
 
-        content.add_widget(cam_widget)
+        content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
+        preview = Preview()
+        content.add_widget(preview)
 
         btn_row = BoxLayout(size_hint_y=None, height=dp(48), spacing=dp(8))
         snimi_btn = PrimaryButton(text="Snimi")
@@ -139,24 +96,49 @@ class ShoppingListScreen(Screen):
         content.add_widget(btn_row)
 
         popup = Popup(title="Slikaj cenu", content=content, size_hint=(0.95, 0.9), overlay_color=(0, 0, 0, 0.85))
-        otkazi_btn.bind(on_release=lambda inst: (setattr(cam_widget, "play", False), popup.dismiss()))
+
+        def zatvori(*a):
+            try:
+                preview.disconnect_camera()
+            except Exception:
+                pass
+            popup.dismiss()
+
+        otkazi_btn.bind(on_release=zatvori)
+
+        def na_uslikano(putanja):
+            def _posle(dt):
+                popup.dismiss()
+                try:
+                    preview.disconnect_camera()
+                except Exception:
+                    pass
+                self._pokazi_snimljenu_sliku(putanja, na_snimljeno)
+            from kivy.clock import Clock
+            Clock.schedule_once(_posle, 0)
 
         def snimi(*a):
-            putanja = self._sledeca_foto_putanja()
             try:
-                cam_widget.export_to_png(putanja)
+                preview.capture_photo(location="private", subdir="cene", name="cena", callback=na_uslikano)
             except Exception:
-                return
-            cam_widget.play = False
-            popup.dismiss()
-            self._pokazi_snimljenu_sliku(putanja, na_snimljeno)
+                pass
 
         snimi_btn.bind(on_release=snimi)
+
         popup.open()
+
+        try:
+            preview.connect_camera(camera_id="0")
+        except Exception:
+            content.clear_widgets()
+            content.add_widget(Label(text="Ne mogu da pokrenem kameru na ovom uredjaju."))
+            close_btn2 = SecondaryButton(text=prevedi("sl_cancel", jezik), size_hint_y=None, height=dp(48))
+            close_btn2.bind(on_release=popup.dismiss)
+            content.add_widget(close_btn2)
 
     def _pokazi_snimljenu_sliku(self, putanja_slike, na_snimljeno=None):
         jezik = _jezik()
-        if not os.path.exists(putanja_slike):
+        if not putanja_slike or not os.path.exists(putanja_slike):
             return
         content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
         img = KivyImage(source=putanja_slike, allow_stretch=True, keep_ratio=True)
@@ -170,10 +152,10 @@ class ShoppingListScreen(Screen):
             na_snimljeno(putanja_slike)
 
     def slikaj_za_novi_proizvod(self, cena_input_widget):
-        self._zatrazi_dozvolu_pa_otvori_kameru()
+        self._otvori_kameru_popup()
 
     def slikaj_za_postojeci_red(self, naziv_proizvoda):
-        self._zatrazi_dozvolu_pa_otvori_kameru()
+        self._otvori_kameru_popup()
 
     # ---------- Izbor prodavnice ----------
 
