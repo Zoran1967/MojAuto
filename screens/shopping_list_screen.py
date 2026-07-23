@@ -10,6 +10,7 @@ from kivy.uix.label import Label
 from kivy.uix.scrollview import ScrollView
 from kivy.metrics import dp
 from kivy.app import App
+from kivy.utils import platform
 
 from database import db
 from translations import prevedi
@@ -37,11 +38,10 @@ class ShoppingListScreen(Screen):
     jeziku (db.get_setting("jezik")).
 
     Faza 1 kamere: koristi se Kivy ugradjeni Camera widget (ziva slika
-    unutar popup-a), NE plyer/spoljasnja Camera app - to izbegava
-    FileUriExposedException koji nastaje na Androidu 7+ kad se pokusa
-    deliti fajl putanja sa spoljasnjom aplikacijom bez FileProvider-a.
-    Trenutno samo snima i prikazuje sliku, bez automatskog citanja cene
-    (to dolazi u Fazi 2).
+    unutar popup-a). Pre otvaranja kamere se eksplicitno trazi runtime
+    dozvola za CAMERA (na Androidu 6+ manifest dozvola sama po sebi
+    nije dovoljna). Trenutno samo snima i prikazuje sliku, bez
+    automatskog citanja cene (to dolazi u Fazi 2).
     """
 
     def __init__(self, **kwargs):
@@ -76,6 +76,41 @@ class ShoppingListScreen(Screen):
     def _sledeca_foto_putanja(self):
         self._foto_brojac += 1
         return _slika_putanja(self._foto_brojac)
+
+    def _zatrazi_dozvolu_pa_otvori_kameru(self, na_snimljeno=None):
+        """Na Androidu prvo trazi CAMERA runtime dozvolu, tek onda otvara
+        kameru. Na drugim platformama (test na racunaru) preskace direktno."""
+        if platform == "android":
+            try:
+                from android.permissions import request_permissions, Permission, check_permission
+
+                if check_permission(Permission.CAMERA):
+                    self._otvori_kameru_popup(na_snimljeno)
+                    return
+
+                def callback(permissions, results):
+                    if all(results):
+                        from kivy.clock import Clock
+                        Clock.schedule_once(lambda dt: self._otvori_kameru_popup(na_snimljeno), 0)
+                    else:
+                        self._prikazi_gresku_dozvole()
+
+                request_permissions([Permission.CAMERA], callback)
+                return
+            except Exception:
+                pass
+
+        self._otvori_kameru_popup(na_snimljeno)
+
+    def _prikazi_gresku_dozvole(self):
+        jezik = _jezik()
+        content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
+        content.add_widget(Label(text="Dozvola za kameru nije odobrena.\nProveri Podesavanja telefona -> Aplikacije -> Shoping -> Dozvole."))
+        popup = Popup(title="Kamera", content=content, size_hint=(0.85, 0.4))
+        close_btn = SecondaryButton(text=prevedi("sl_cancel", jezik), size_hint_y=None, height=dp(48))
+        close_btn.bind(on_release=popup.dismiss)
+        content.add_widget(close_btn)
+        popup.open()
 
     def _otvori_kameru_popup(self, na_snimljeno=None):
         """Otvara popup sa zivom slikom kamere i dugmetom Snimi.
@@ -135,10 +170,10 @@ class ShoppingListScreen(Screen):
             na_snimljeno(putanja_slike)
 
     def slikaj_za_novi_proizvod(self, cena_input_widget):
-        self._otvori_kameru_popup()
+        self._zatrazi_dozvolu_pa_otvori_kameru()
 
     def slikaj_za_postojeci_red(self, naziv_proizvoda):
-        self._otvori_kameru_popup()
+        self._zatrazi_dozvolu_pa_otvori_kameru()
 
     # ---------- Izbor prodavnice ----------
 
