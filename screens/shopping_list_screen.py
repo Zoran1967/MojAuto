@@ -1,4 +1,5 @@
 import os
+import traceback
 from kivy.uix.screenmanager import Screen
 from kivy.uix.popup import Popup
 from kivy.uix.boxlayout import BoxLayout
@@ -14,10 +15,12 @@ from kivy.utils import platform
 from database import db
 from translations import prevedi
 
+Preview = None
+_greska_uvoza_kamere = None
 try:
     from camera4kivy import Preview
 except Exception:
-    Preview = None
+    _greska_uvoza_kamere = traceback.format_exc()
 
 
 def _jezik():
@@ -35,10 +38,7 @@ class ShoppingListScreen(Screen):
     Tekstovi se prevode u letu preko prevedi() prema trenutno izabranom
     jeziku (db.get_setting("jezik")).
 
-    Faza 1 kamere: koristi se camera4kivy (CameraX/AndroidX) - moderna,
-    aktivno odrzavana biblioteka koja resava poznati problem da Kivy-jev
-    ugradjeni Camera widget koristi zastarelu Camera1 API koju mnogi
-    noviji telefoni ne podrzavaju (crna slika bez greske). Trenutno
+    Faza 1 kamere: koristi se camera4kivy (CameraX/AndroidX). Trenutno
     samo snima i prikazuje sliku, bez automatskog citanja cene (Faza 2).
     """
 
@@ -47,7 +47,6 @@ class ShoppingListScreen(Screen):
         self.lista_id = None
         self.prodavnica_id = None
         self.stavke_total = 0.0
-        self._aktivni_preview = None
 
     def on_pre_enter(self, *args):
         jezik = _jezik()
@@ -76,11 +75,19 @@ class ShoppingListScreen(Screen):
 
         if Preview is None:
             content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
-            content.add_widget(Label(text="Kamera biblioteka nije dostupna (camera4kivy)."))
-            popup = Popup(title="Kamera", content=content, size_hint=(0.9, 0.5))
+            scroll = ScrollView()
+            poruka = _greska_uvoza_kamere or "Nepoznata greska pri ucitavanju kamere."
+            lbl = Label(
+                text=poruka, size_hint_y=None, halign="left", valign="top",
+                text_size=(dp(320), None),
+            )
+            lbl.bind(texture_size=lambda inst, val: setattr(lbl, "height", val[1]))
+            scroll.add_widget(lbl)
+            content.add_widget(scroll)
             close_btn = SecondaryButton(text=prevedi("sl_cancel", jezik), size_hint_y=None, height=dp(48))
-            close_btn.bind(on_release=popup.dismiss)
             content.add_widget(close_btn)
+            popup = Popup(title="Greska kamere", content=content, size_hint=(0.92, 0.85))
+            close_btn.bind(on_release=popup.dismiss)
             popup.open()
             return
 
