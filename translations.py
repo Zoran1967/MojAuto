@@ -69,6 +69,9 @@ PREVODI = {
         "db_save": "Sacuvaj",
         "db_delete_product": "Obrisi proizvod",
         "db_confirm_delete": "Sigurno? Klikni jos jednom za brisanje",
+        "db_edit_store_title": "Izmeni prodavnicu",
+        "db_label_store_name": "Naziv prodavnice:",
+        "db_err_duplicate_store": "Vec postoji prodavnica sa tim nazivom.",
 
         "set_title": "Podesavanja",
         "set_theme_label": "Boja teme aplikacije (dugmad)",
@@ -144,6 +147,9 @@ PREVODI = {
         "db_save": "Save",
         "db_delete_product": "Delete product",
         "db_confirm_delete": "Sure? Tap again to delete",
+        "db_edit_store_title": "Edit store",
+        "db_label_store_name": "Store name:",
+        "db_err_duplicate_store": "A store with that name already exists.",
 
         "set_title": "Settings",
         "set_theme_label": "App theme color (buttons)",
@@ -219,6 +225,9 @@ PREVODI = {
         "db_save": "Ulozit",
         "db_delete_product": "Vymazat produkt",
         "db_confirm_delete": "Naozaj? Klikni znova pre vymazanie",
+        "db_edit_store_title": "Upravit obchod",
+        "db_label_store_name": "Nazov obchodu:",
+        "db_err_duplicate_store": "Obchod s takym nazvom uz existuje.",
 
         "set_title": "Nastavenia",
         "set_theme_label": "Farba temy aplikacie (tlacidla)",
@@ -294,6 +303,9 @@ PREVODI = {
         "db_save": "Зберегти",
         "db_delete_product": "Видалити товар",
         "db_confirm_delete": "Точно? Натисніть ще раз для видалення",
+        "db_edit_store_title": "Редагувати магазин",
+        "db_label_store_name": "Назва магазину:",
+        "db_err_duplicate_store": "Магазин з такою назвою вже існує.",
 
         "set_title": "Налаштування",
         "set_theme_label": "Колір теми додатку (кнопки)",
