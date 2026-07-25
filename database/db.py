@@ -133,6 +133,23 @@ def add_prodavnica(naziv):
     return pid
 
 
+def update_prodavnica(prodavnica_id, novi_naziv):
+    """Preimenuje prodavnicu. Vraca False ako vec postoji prodavnica sa tim imenom."""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute(
+        "SELECT id FROM prodavnice WHERE LOWER(naziv) = LOWER(?) AND id != ?",
+        (novi_naziv, prodavnica_id),
+    )
+    if c.fetchone():
+        conn.close()
+        return False
+    c.execute("UPDATE prodavnice SET naziv = ? WHERE id = ?", (novi_naziv, prodavnica_id))
+    conn.commit()
+    conn.close()
+    return True
+
+
 # ---------- Proizvodi ----------
 
 def search_proizvodi(query, limit=8):
