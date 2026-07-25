@@ -1,9 +1,9 @@
 import os
-import traceback
 from kivy.uix.screenmanager import Screen
 from kivy.uix.popup import Popup
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
+from kivy.uix.camera import Camera
 from kivy.uix.image import Image as KivyImage
 from widgets import PrimaryButton, SecondaryButton, StyledTextInput
 from kivy.uix.label import Label
@@ -15,16 +15,15 @@ from kivy.utils import platform
 from database import db
 from translations import prevedi
 
-Preview = None
-_greska_uvoza_kamere = None
-try:
-    from camera4kivy import Preview
-except Exception:
-    _greska_uvoza_kamere = traceback.format_exc()
-
 
 def _jezik():
     return db.get_setting("jezik", "sr")
+
+
+def _slika_putanja(oznaka):
+    app = App.get_running_app()
+    folder = app.user_data_dir
+    return os.path.join(folder, f"cena_{oznaka}.jpg")
 
 
 class ShoppingListScreen(Screen):
@@ -38,8 +37,9 @@ class ShoppingListScreen(Screen):
     Tekstovi se prevode u letu preko prevedi() prema trenutno izabranom
     jeziku (db.get_setting("jezik")).
 
-    Faza 1 kamere: koristi se camera4kivy (CameraX/AndroidX). Trenutno
-    samo snima i prikazuje sliku, bez automatskog citanja cene (Faza 2).
+    Popup prozori za dodavanje proizvoda i izbor prodavnice imaju
+    auto_dismiss=False - ne zatvaraju se slucajnim dodirom van prozora,
+    samo eksplicitnim klikom na dugme (sprecava gubljenje unetih podataka).
     """
 
     def __init__(self, **kwargs):
@@ -47,6 +47,7 @@ class ShoppingListScreen(Screen):
         self.lista_id = None
         self.prodavnica_id = None
         self.stavke_total = 0.0
+        self._foto_brojac = 0
 
     def on_pre_enter(self, *args):
         jezik = _jezik()
@@ -68,32 +69,61 @@ class ShoppingListScreen(Screen):
         self.ids.store_label.text = prevedi("sl_store_label_empty", _jezik())
         self.ids.total_label.text = f"0.00 {db.valuta_oznaka()}"
 
-    # ---------- Kamera (camera4kivy - CameraX/AndroidX) ----------
+    # ---------- Kamera (Faza 1: ziva slika u popup-u, snimi, prikazi) ----------
+
+    def _sledeca_foto_putanja(self):
+        self._foto_brojac += 1
+        return _slika_putanja(self._foto_brojac)
+
+    def _zatrazi_dozvolu_pa_otvori_kameru(self, na_snimljeno=None):
+        if platform == "android":
+            try:
+                from android.permissions import request_permissions, Permission, check_permission
+
+                if check_permission(Permission.CAMERA):
+                    self._otvori_kameru_popup(na_snimljeno)
+                    return
+
+                def callback(permissions, results):
+                    if all(results):
+                        from kivy.clock import Clock
+                        Clock.schedule_once(lambda dt: self._otvori_kameru_popup(na_snimljeno), 0)
+                    else:
+                        self._prikazi_gresku_dozvole()
+
+                request_permissions([Permission.CAMERA], callback)
+                return
+            except Exception:
+                pass
+
+        self._otvori_kameru_popup(na_snimljeno)
+
+    def _prikazi_gresku_dozvole(self):
+        jezik = _jezik()
+        content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
+        content.add_widget(Label(text="Dozvola za kameru nije odobrena.\nProveri Podesavanja telefona -> Aplikacije -> Shoping -> Dozvole."))
+        popup = Popup(title="Kamera", content=content, size_hint=(0.85, 0.4))
+        close_btn = SecondaryButton(text=prevedi("sl_cancel", jezik), size_hint_y=None, height=dp(48))
+        close_btn.bind(on_release=popup.dismiss)
+        content.add_widget(close_btn)
+        popup.open()
 
     def _otvori_kameru_popup(self, na_snimljeno=None):
         jezik = _jezik()
+        content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
 
-        if Preview is None:
-            content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
-            scroll = ScrollView()
-            poruka = _greska_uvoza_kamere or "Nepoznata greska pri ucitavanju kamere."
-            lbl = Label(
-                text=poruka, size_hint_y=None, halign="left", valign="top",
-                text_size=(dp(320), None),
-            )
-            lbl.bind(texture_size=lambda inst, val: setattr(lbl, "height", val[1]))
-            scroll.add_widget(lbl)
-            content.add_widget(scroll)
+        try:
+            cam_widget = Camera(play=True, resolution=(640, 480))
+        except Exception:
+            content.add_widget(Label(text="Kamera nije dostupna na ovom uredjaju."))
+            popup = Popup(title="Kamera", content=content, size_hint=(0.9, 0.7))
             close_btn = SecondaryButton(text=prevedi("sl_cancel", jezik), size_hint_y=None, height=dp(48))
-            content.add_widget(close_btn)
-            popup = Popup(title="Greska kamere", content=content, size_hint=(0.92, 0.85))
             close_btn.bind(on_release=popup.dismiss)
+            content.add_widget(close_btn)
             popup.open()
             return
 
-        content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
-        preview = Preview()
-        content.add_widget(preview)
+        content.add_widget(cam_widget)
 
         btn_row = BoxLayout(size_hint_y=None, height=dp(48), spacing=dp(8))
         snimi_btn = PrimaryButton(text="Snimi")
@@ -102,46 +132,24 @@ class ShoppingListScreen(Screen):
         btn_row.add_widget(otkazi_btn)
         content.add_widget(btn_row)
 
-        popup = Popup(title="Slikaj cenu", content=content, size_hint=(0.95, 0.9), overlay_color=(0, 0, 0, 0.85))
-
-        def zatvori(*a):
-            try:
-                preview.disconnect_camera()
-            except Exception:
-                pass
-            popup.dismiss()
-
-        otkazi_btn.bind(on_release=zatvori)
-
-        def na_uslikano(putanja):
-            def _posle(dt):
-                popup.dismiss()
-                try:
-                    preview.disconnect_camera()
-                except Exception:
-                    pass
-                self._pokazi_snimljenu_sliku(putanja, na_snimljeno)
-            from kivy.clock import Clock
-            Clock.schedule_once(_posle, 0)
+        popup = Popup(
+            title="Slikaj cenu", content=content, size_hint=(0.95, 0.9),
+            overlay_color=(0, 0, 0, 0.85), auto_dismiss=False,
+        )
+        otkazi_btn.bind(on_release=lambda inst: (setattr(cam_widget, "play", False), popup.dismiss()))
 
         def snimi(*a):
+            putanja = self._sledeca_foto_putanja()
             try:
-                preview.capture_photo(location="private", subdir="cene", name="cena", callback=na_uslikano)
+                cam_widget.export_to_png(putanja)
             except Exception:
-                pass
+                return
+            cam_widget.play = False
+            popup.dismiss()
+            self._pokazi_snimljenu_sliku(putanja, na_snimljeno)
 
         snimi_btn.bind(on_release=snimi)
-
         popup.open()
-
-        try:
-            preview.connect_camera(camera_id="0")
-        except Exception:
-            content.clear_widgets()
-            content.add_widget(Label(text="Ne mogu da pokrenem kameru na ovom uredjaju."))
-            close_btn2 = SecondaryButton(text=prevedi("sl_cancel", jezik), size_hint_y=None, height=dp(48))
-            close_btn2.bind(on_release=popup.dismiss)
-            content.add_widget(close_btn2)
 
     def _pokazi_snimljenu_sliku(self, putanja_slike, na_snimljeno=None):
         jezik = _jezik()
@@ -159,10 +167,10 @@ class ShoppingListScreen(Screen):
             na_snimljeno(putanja_slike)
 
     def slikaj_za_novi_proizvod(self, cena_input_widget):
-        self._otvori_kameru_popup()
+        self._zatrazi_dozvolu_pa_otvori_kameru()
 
     def slikaj_za_postojeci_red(self, naziv_proizvoda):
-        self._otvori_kameru_popup()
+        self._zatrazi_dozvolu_pa_otvori_kameru()
 
     # ---------- Izbor prodavnice ----------
 
@@ -327,7 +335,7 @@ class ShoppingListScreen(Screen):
 
         popup = Popup(
             title=prevedi("sl_add_item_title", jezik), content=content, size_hint=(0.9, 0.85),
-            overlay_color=(0, 0, 0, 0.85),
+            overlay_color=(0, 0, 0, 0.85), auto_dismiss=False,
         )
         cancel_btn.bind(on_release=popup.dismiss)
 
