@@ -114,7 +114,7 @@ class DatabaseScreen(Screen):
 
         popup = Popup(
             title=prevedi("db_edit_title", jezik), content=content, size_hint=(0.9, 0.6),
-            overlay_color=(0, 0, 0, 0.85),
+            overlay_color=(0, 0, 0, 0.85), auto_dismiss=False,
         )
 
         def save(*a):
@@ -189,9 +189,56 @@ class DatabaseScreen(Screen):
             return
 
         for pid, naziv in prodavnice:
-            row = BoxLayout(size_hint_y=None, height=dp(40))
-            row.add_widget(Label(text=naziv, color=(1, 1, 1, 1)))
-            box.add_widget(row)
+            btn = Button(
+                text=naziv, size_hint_y=None, height=dp(44),
+                background_normal="", background_color=(0.16, 0.16, 0.18, 1),
+                color=(1, 1, 1, 1),
+            )
+            btn.bind(
+                on_release=lambda inst, pid=pid, naziv=naziv: self.open_edit_store_popup(pid, naziv)
+            )
+            box.add_widget(btn)
+
+    def open_edit_store_popup(self, prodavnica_id, naziv):
+        jezik = _jezik()
+        content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
+
+        row0 = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
+        naziv_input = StyledTextInput(text=naziv, multiline=False)
+        row0.add_widget(Label(text=prevedi("db_label_store_name", jezik), size_hint_x=0.5))
+        row0.add_widget(naziv_input)
+        content.add_widget(row0)
+
+        error_label = Label(text="", size_hint_y=None, height=dp(24), color=(1, 0.4, 0.4, 1))
+        content.add_widget(error_label)
+
+        popup = Popup(
+            title=prevedi("db_edit_store_title", jezik), content=content, size_hint=(0.9, 0.45),
+            overlay_color=(0, 0, 0, 0.85), auto_dismiss=False,
+        )
+
+        def save(*a):
+            novi_naziv = naziv_input.text.strip()
+            if not novi_naziv:
+                error_label.text = prevedi("db_err_empty_name", jezik)
+                return
+            uspeh = db.update_prodavnica(prodavnica_id, novi_naziv)
+            if not uspeh:
+                error_label.text = prevedi("db_err_duplicate_store", jezik)
+                return
+            popup.dismiss()
+            self.show_prodavnice()
+
+        btn_row = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
+        save_btn = PrimaryButton(text=prevedi("db_save", jezik))
+        save_btn.bind(on_release=save)
+        cancel_btn = SecondaryButton(text=prevedi("sl_cancel", jezik))
+        cancel_btn.bind(on_release=popup.dismiss)
+        btn_row.add_widget(save_btn)
+        btn_row.add_widget(cancel_btn)
+        content.add_widget(btn_row)
+
+        popup.open()
 
     def go_back(self):
         self.manager.current = "home"
