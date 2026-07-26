@@ -150,6 +150,28 @@ def update_prodavnica(prodavnica_id, novi_naziv):
     return True
 
 
+def delete_prodavnica(prodavnica_id):
+    """
+    Brise prodavnicu trajno. Vraca False ako je koriscena u nekoj listi
+    (otvorenoj ili zatvorenoj) ili je vezana za neki proizvod - u tom
+    slucaju se ne brise, da se ne pokvari istorija ili baza proizvoda.
+    """
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT COUNT(*) FROM liste WHERE prodavnica_id = ?", (prodavnica_id,))
+    if c.fetchone()[0] > 0:
+        conn.close()
+        return False
+    c.execute("SELECT COUNT(*) FROM proizvodi WHERE prodavnica_id = ?", (prodavnica_id,))
+    if c.fetchone()[0] > 0:
+        conn.close()
+        return False
+    c.execute("DELETE FROM prodavnice WHERE id = ?", (prodavnica_id,))
+    conn.commit()
+    conn.close()
+    return True
+
+
 # ---------- Proizvodi ----------
 
 def search_proizvodi(query, limit=8):
