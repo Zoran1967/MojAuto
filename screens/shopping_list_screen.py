@@ -37,9 +37,13 @@ class ShoppingListScreen(Screen):
     Tekstovi se prevode u letu preko prevedi() prema trenutno izabranom
     jeziku (db.get_setting("jezik")).
 
-    Popup prozori za dodavanje proizvoda i izbor prodavnice imaju
-    auto_dismiss=False - ne zatvaraju se slucajnim dodirom van prozora,
-    samo eksplicitnim klikom na dugme (sprecava gubljenje unetih podataka).
+    add_product_to_current_list() je javna metoda koju koriste i ovaj
+    ekran (brzo dugme + pored predloga) i DatabaseScreen (dugme
+    "Dodaj u listu" u popup-u za izmenu proizvoda), da izbegnemo
+    dupliranje logike za dodavanje stavke.
+
+    Popup prozori imaju auto_dismiss=False - ne zatvaraju se slucajnim
+    dodirom van prozora.
     """
 
     def __init__(self, **kwargs):
@@ -68,6 +72,24 @@ class ShoppingListScreen(Screen):
         self.ids.items_box.clear_widgets()
         self.ids.store_label.text = prevedi("sl_store_label_empty", _jezik())
         self.ids.total_label.text = f"0.00 {db.valuta_oznaka()}"
+
+    # ---------- Zajednicka logika dodavanja stavke (koristi i DatabaseScreen) ----------
+
+    def add_product_to_current_list(self, naziv, jedinica, kolicina, cena_rsd):
+        """
+        Dodaje proizvod u trenutno aktivnu listu. Vraca True ako je uspelo,
+        False ako nema aktivne liste (lista_id is None).
+        """
+        if self.lista_id is None:
+            return False
+
+        proizvod_id = db.add_or_update_proizvod(naziv, jedinica, cena_rsd, self.prodavnica_id)
+        total_rsd = db.add_stavka(self.lista_id, proizvod_id, naziv, kolicina, cena_rsd)
+
+        self.add_item_row(naziv, kolicina, jedinica, cena_rsd, total_rsd)
+        self.stavke_total += total_rsd
+        self.ids.total_label.text = f"{db.rsd_u_prikaz(self.stavke_total):.2f} {db.valuta_oznaka()}"
+        return True
 
     # ---------- Kamera (Faza 1: ziva slika u popup-u, snimi, prikazi) ----------
 
@@ -308,6 +330,14 @@ class ShoppingListScreen(Screen):
             update_total()
             suggestions_box.clear_widgets()
 
+        def brzo_dodaj(naziv, jedinica, cena_rsd):
+            """Brzo dodavanje sa kolicinom 1, bez potrebe za rucnom potvrdom."""
+            self.add_product_to_current_list(naziv, jedinica, 1.0, cena_rsd)
+            naziv_input.text = ""
+            kolicina_input.text = ""
+            cena_input.text = ""
+            suggestions_box.clear_widgets()
+
         def refresh_suggestions(*a):
             suggestions_box.clear_widgets()
             query = naziv_input.text.strip().lower()
@@ -315,14 +345,21 @@ class ShoppingListScreen(Screen):
                 return
             for pid, naziv, jedinica, cena_rsd in db.search_proizvodi(query):
                 cena_prikaz = db.rsd_u_prikaz(cena_rsd)
+                sugg_row = BoxLayout(size_hint_y=None, height=dp(36), spacing=dp(4))
                 btn = SecondaryButton(
                     text=f"{naziv}  ({jedinica}, {cena_prikaz:.2f} {db.valuta_oznaka()})",
-                    size_hint_y=None, height=dp(36),
+                    size_hint_x=1,
                 )
                 btn.bind(
                     on_release=lambda inst, n=naziv, j=jedinica, c=cena_rsd: pick_suggestion(n, j, c)
                 )
-                suggestions_box.add_widget(btn)
+                brzi_btn = Button(text="+", size_hint_x=None, width=dp(40))
+                brzi_btn.bind(
+                    on_release=lambda inst, n=naziv, j=jedinica, c=cena_rsd: brzo_dodaj(n, j, c)
+                )
+                sugg_row.add_widget(btn)
+                sugg_row.add_widget(brzi_btn)
+                suggestions_box.add_widget(sugg_row)
 
         naziv_input.bind(text=refresh_suggestions)
 
@@ -354,14 +391,7 @@ class ShoppingListScreen(Screen):
                 return
 
             cena_rsd = db.prikaz_u_rsd(cena_prikaz)
-
-            proizvod_id = db.add_or_update_proizvod(naziv, jedinica, cena_rsd, self.prodavnica_id)
-            total_rsd = db.add_stavka(self.lista_id, proizvod_id, naziv, kolicina, cena_rsd)
-
-            self.add_item_row(naziv, kolicina, jedinica, cena_rsd, total_rsd)
-            self.stavke_total += total_rsd
-            self.ids.total_label.text = f"{db.rsd_u_prikaz(self.stavke_total):.2f} {db.valuta_oznaka()}"
-
+            self.add_product_to_current_list(naziv, jedinica, kolicina, cena_rsd)
             popup.dismiss()
 
         add_btn.bind(on_release=confirm)
