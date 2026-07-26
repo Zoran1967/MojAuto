@@ -213,7 +213,7 @@ class DatabaseScreen(Screen):
         content.add_widget(error_label)
 
         popup = Popup(
-            title=prevedi("db_edit_store_title", jezik), content=content, size_hint=(0.9, 0.45),
+            title=prevedi("db_edit_store_title", jezik), content=content, size_hint=(0.9, 0.55),
             overlay_color=(0, 0, 0, 0.85), auto_dismiss=False,
         )
 
@@ -229,6 +229,22 @@ class DatabaseScreen(Screen):
             popup.dismiss()
             self.show_prodavnice()
 
+        delete_state = {"confirm": False}
+
+        def delete(instance):
+            if not delete_state["confirm"]:
+                delete_state["confirm"] = True
+                instance.text = prevedi("db_confirm_delete_store", jezik)
+                return
+            uspeh = db.delete_prodavnica(prodavnica_id)
+            if not uspeh:
+                error_label.text = prevedi("db_err_store_in_use", jezik)
+                delete_state["confirm"] = False
+                instance.text = prevedi("db_delete_store", jezik)
+                return
+            popup.dismiss()
+            self.show_prodavnice()
+
         btn_row = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
         save_btn = PrimaryButton(text=prevedi("db_save", jezik))
         save_btn.bind(on_release=save)
@@ -237,6 +253,10 @@ class DatabaseScreen(Screen):
         btn_row.add_widget(save_btn)
         btn_row.add_widget(cancel_btn)
         content.add_widget(btn_row)
+
+        delete_btn = DangerButton(text=prevedi("db_delete_store", jezik), size_hint_y=None, height=dp(44))
+        delete_btn.bind(on_release=delete)
+        content.add_widget(delete_btn)
 
         popup.open()
 
