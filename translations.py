@@ -32,6 +32,7 @@ PREVODI = {
         "sl_price_hint": "Cena po jedinici ({valuta})",
         "sl_total_prefix": "Total: {total} {valuta}",
         "sl_add_to_list_btn": "Dodaj u listu",
+        "sl_no_active_list": "Prvo pokreni 'Nova lista za kupovinu' na pocetnom ekranu.",
 
         "hist_title": "Istorija kupovina",
         "hist_empty": "Nema jos zatvorenih listi.",
@@ -75,6 +76,9 @@ PREVODI = {
         "db_delete_store": "Obrisi prodavnicu",
         "db_err_store_in_use": "Ne moze da se obrise - koriscena je u proizvodima ili istoriji kupovina.",
         "db_confirm_delete_store": "Sigurno? Klikni jos jednom za brisanje",
+        "db_add_to_list_btn": "Dodaj u listu",
+        "db_qty_prompt_title": "Kolicina",
+        "db_qty_hint": "Kolicina",
 
         "set_title": "Podesavanja",
         "set_theme_label": "Boja teme aplikacije (dugmad)",
@@ -113,6 +117,7 @@ PREVODI = {
         "sl_price_hint": "Price per unit ({valuta})",
         "sl_total_prefix": "Total: {total} {valuta}",
         "sl_add_to_list_btn": "Add to list",
+        "sl_no_active_list": "Start 'New list for shopping' from the home screen first.",
 
         "hist_title": "Shopping history",
         "hist_empty": "No closed lists yet.",
@@ -156,6 +161,9 @@ PREVODI = {
         "db_delete_store": "Delete store",
         "db_err_store_in_use": "Cannot delete - used in products or purchase history.",
         "db_confirm_delete_store": "Sure? Tap again to delete",
+        "db_add_to_list_btn": "Add to list",
+        "db_qty_prompt_title": "Quantity",
+        "db_qty_hint": "Quantity",
 
         "set_title": "Settings",
         "set_theme_label": "App theme color (buttons)",
@@ -194,6 +202,7 @@ PREVODI = {
         "sl_price_hint": "Cena za jednotku ({valuta})",
         "sl_total_prefix": "Spolu: {total} {valuta}",
         "sl_add_to_list_btn": "Pridat do zoznamu",
+        "sl_no_active_list": "Najprv spusti 'Novy zoznam na nakup' na uvodnej obrazovke.",
 
         "hist_title": "Historia nakupov",
         "hist_empty": "Zatial ziadne uzavrete zoznamy.",
@@ -237,6 +246,9 @@ PREVODI = {
         "db_delete_store": "Vymazat obchod",
         "db_err_store_in_use": "Nemoze sa vymazat - pouzity v produktoch alebo historii nakupov.",
         "db_confirm_delete_store": "Naozaj? Klikni znova pre vymazanie",
+        "db_add_to_list_btn": "Pridat do zoznamu",
+        "db_qty_prompt_title": "Mnozstvo",
+        "db_qty_hint": "Mnozstvo",
 
         "set_title": "Nastavenia",
         "set_theme_label": "Farba temy aplikacie (tlacidla)",
@@ -275,6 +287,7 @@ PREVODI = {
         "sl_price_hint": "Ціна за одиницю ({valuta})",
         "sl_total_prefix": "Всього: {total} {valuta}",
         "sl_add_to_list_btn": "Додати у список",
+        "sl_no_active_list": "Спочатку запустіть 'Новий список для покупок' на головному екрані.",
 
         "hist_title": "Історія покупок",
         "hist_empty": "Ще немає закритих списків.",
@@ -318,6 +331,9 @@ PREVODI = {
         "db_delete_store": "Видалити магазин",
         "db_err_store_in_use": "Неможливо видалити - використано в товарах або історії покупок.",
         "db_confirm_delete_store": "Точно? Натисніть ще раз для видалення",
+        "db_add_to_list_btn": "Додати у список",
+        "db_qty_prompt_title": "Кількість",
+        "db_qty_hint": "Кількість",
 
         "set_title": "Налаштування",
         "set_theme_label": "Колір теми додатку (кнопки)",
