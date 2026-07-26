@@ -79,6 +79,9 @@ PREVODI = {
         "db_add_to_list_btn": "Dodaj u listu",
         "db_qty_prompt_title": "Kolicina",
         "db_qty_hint": "Kolicina",
+        "db_label_store": "Prodavnica:",
+        "db_pick_store_title": "Izaberi prodavnicu",
+        "db_no_store": "Bez prodavnice",
 
         "set_title": "Podesavanja",
         "set_theme_label": "Boja teme aplikacije (dugmad)",
@@ -164,6 +167,9 @@ PREVODI = {
         "db_add_to_list_btn": "Add to list",
         "db_qty_prompt_title": "Quantity",
         "db_qty_hint": "Quantity",
+        "db_label_store": "Store:",
+        "db_pick_store_title": "Choose a store",
+        "db_no_store": "No store",
 
         "set_title": "Settings",
         "set_theme_label": "App theme color (buttons)",
@@ -249,6 +255,9 @@ PREVODI = {
         "db_add_to_list_btn": "Pridat do zoznamu",
         "db_qty_prompt_title": "Mnozstvo",
         "db_qty_hint": "Mnozstvo",
+        "db_label_store": "Obchod:",
+        "db_pick_store_title": "Vyber obchod",
+        "db_no_store": "Bez obchodu",
 
         "set_title": "Nastavenia",
         "set_theme_label": "Farba temy aplikacie (tlacidla)",
@@ -334,6 +343,9 @@ PREVODI = {
         "db_add_to_list_btn": "Додати у список",
         "db_qty_prompt_title": "Кількість",
         "db_qty_hint": "Кількість",
+        "db_label_store": "Магазин:",
+        "db_pick_store_title": "Виберіть магазин",
+        "db_no_store": "Без магазину",
 
         "set_title": "Налаштування",
         "set_theme_label": "Колір теми додатку (кнопки)",
