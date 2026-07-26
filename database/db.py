@@ -186,10 +186,11 @@ def search_proizvodi(query, limit=8):
 
 
 def get_proizvodi_sa_prodavnicom():
+    """Vraca (id, naziv, jedinica_mere, zadnja_cena, naziv_prodavnice, prodavnica_id)."""
     conn = get_connection()
     rows = conn.execute(
         """SELECT p.id, p.naziv, p.jedinica_mere, p.zadnja_cena,
-                  COALESCE(pr.naziv, '-')
+                  COALESCE(pr.naziv, '-'), p.prodavnica_id
            FROM proizvodi p
            LEFT JOIN prodavnice pr ON p.prodavnica_id = pr.id
            ORDER BY p.naziv"""
@@ -222,7 +223,13 @@ def add_or_update_proizvod(naziv, jedinica_mere, cena, prodavnica_id=None):
     return pid
 
 
-def update_proizvod(proizvod_id, naziv, jedinica_mere, cena):
+def update_proizvod(proizvod_id, naziv, jedinica_mere, cena, prodavnica_id=None):
+    """
+    prodavnica_id: None znaci "bez prodavnice" (eksplicitno brise vezu),
+    ako ne zelis da diras prodavnicu iz nekog drugog poziva, prosledi
+    trenutnu vrednost - ovaj poziv je uvek eksplicitan (postavlja tacno
+    onu vrednost koja se posalje).
+    """
     conn = get_connection()
     c = conn.cursor()
     c.execute(
@@ -233,8 +240,9 @@ def update_proizvod(proizvod_id, naziv, jedinica_mere, cena):
         conn.close()
         return False
     c.execute(
-        "UPDATE proizvodi SET naziv = ?, jedinica_mere = ?, zadnja_cena = ? WHERE id = ?",
-        (naziv, jedinica_mere, cena, proizvod_id),
+        "UPDATE proizvodi SET naziv = ?, jedinica_mere = ?, zadnja_cena = ?, "
+        "prodavnica_id = ? WHERE id = ?",
+        (naziv, jedinica_mere, cena, prodavnica_id, proizvod_id),
     )
     conn.commit()
     conn.close()
