@@ -20,6 +20,10 @@ class DatabaseScreen(Screen):
     Napomena o valutama: cene u bazi su UVEK u RSD. Ovde se prikazuju
     i unose preko db.rsd_u_prikaz() / db.prikaz_u_rsd().
     Tekstovi se prevode preko prevedi() prema trenutno izabranom jeziku.
+
+    Dugme "Dodaj u listu" u popup-u za izmenu proizvoda koristi
+    ShoppingListScreen.add_product_to_current_list() - ako nema aktivne
+    liste, prikazuje poruku da prvo treba pokrenuti Novu listu.
     """
 
     def on_pre_enter(self, *args):
@@ -113,7 +117,7 @@ class DatabaseScreen(Screen):
         content.add_widget(error_label)
 
         popup = Popup(
-            title=prevedi("db_edit_title", jezik), content=content, size_hint=(0.9, 0.6),
+            title=prevedi("db_edit_title", jezik), content=content, size_hint=(0.9, 0.75),
             overlay_color=(0, 0, 0, 0.85), auto_dismiss=False,
         )
 
@@ -158,6 +162,14 @@ class DatabaseScreen(Screen):
             popup.dismiss()
             self.show_proizvodi()
 
+        def dodaj_u_listu(*a):
+            sl_screen = self.manager.get_screen("shopping_list")
+            if sl_screen.lista_id is None:
+                error_label.text = prevedi("sl_no_active_list", jezik)
+                return
+            self.open_qty_popup(proizvod_id, naziv_input.text.strip() or naziv,
+                                 jedinica_input.text.strip() or jedinica, cena_rsd, popup)
+
         btn_row = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
         save_btn = PrimaryButton(text=prevedi("db_save", jezik))
         save_btn.bind(on_release=save)
@@ -167,11 +179,60 @@ class DatabaseScreen(Screen):
         btn_row.add_widget(cancel_btn)
         content.add_widget(btn_row)
 
+        add_to_list_btn = PrimaryButton(text=prevedi("db_add_to_list_btn", jezik), size_hint_y=None, height=dp(44))
+        add_to_list_btn.bind(on_release=dodaj_u_listu)
+        content.add_widget(add_to_list_btn)
+
         delete_btn = DangerButton(text=prevedi("db_delete_product", jezik), size_hint_y=None, height=dp(44))
         delete_btn.bind(on_release=delete)
         content.add_widget(delete_btn)
 
         popup.open()
+
+    def open_qty_popup(self, proizvod_id, naziv, jedinica, cena_rsd, parent_popup):
+        """Mali popup koji trazi kolicinu, pa dodaje proizvod u aktivnu listu."""
+        jezik = _jezik()
+        content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
+
+        qty_input = StyledTextInput(
+            text="1", hint_text=prevedi("db_qty_hint", jezik),
+            input_filter="float", multiline=False,
+        )
+        content.add_widget(qty_input)
+
+        error_label = Label(text="", size_hint_y=None, height=dp(24), color=(1, 0.4, 0.4, 1))
+        content.add_widget(error_label)
+
+        qty_popup = Popup(
+            title=prevedi("db_qty_prompt_title", jezik), content=content, size_hint=(0.8, 0.4),
+            overlay_color=(0, 0, 0, 0.85), auto_dismiss=False,
+        )
+
+        def confirm(*a):
+            try:
+                kolicina = float(qty_input.text.replace(",", "."))
+            except ValueError:
+                error_label.text = prevedi("db_err_bad_price", jezik)
+                return
+            if kolicina <= 0:
+                error_label.text = prevedi("db_err_bad_price", jezik)
+                return
+
+            sl_screen = self.manager.get_screen("shopping_list")
+            sl_screen.add_product_to_current_list(naziv, jedinica, kolicina, cena_rsd)
+            qty_popup.dismiss()
+            parent_popup.dismiss()
+
+        btn_row = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
+        confirm_btn = PrimaryButton(text=prevedi("db_add_to_list_btn", jezik))
+        confirm_btn.bind(on_release=confirm)
+        cancel_btn = SecondaryButton(text=prevedi("sl_cancel", jezik))
+        cancel_btn.bind(on_release=qty_popup.dismiss)
+        btn_row.add_widget(confirm_btn)
+        btn_row.add_widget(cancel_btn)
+        content.add_widget(btn_row)
+
+        qty_popup.open()
 
     def show_prodavnice(self):
         jezik = _jezik()
