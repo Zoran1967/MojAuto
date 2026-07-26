@@ -72,6 +72,9 @@ PREVODI = {
         "db_edit_store_title": "Izmeni prodavnicu",
         "db_label_store_name": "Naziv prodavnice:",
         "db_err_duplicate_store": "Vec postoji prodavnica sa tim nazivom.",
+        "db_delete_store": "Obrisi prodavnicu",
+        "db_err_store_in_use": "Ne moze da se obrise - koriscena je u proizvodima ili istoriji kupovina.",
+        "db_confirm_delete_store": "Sigurno? Klikni jos jednom za brisanje",
 
         "set_title": "Podesavanja",
         "set_theme_label": "Boja teme aplikacije (dugmad)",
@@ -150,6 +153,9 @@ PREVODI = {
         "db_edit_store_title": "Edit store",
         "db_label_store_name": "Store name:",
         "db_err_duplicate_store": "A store with that name already exists.",
+        "db_delete_store": "Delete store",
+        "db_err_store_in_use": "Cannot delete - used in products or purchase history.",
+        "db_confirm_delete_store": "Sure? Tap again to delete",
 
         "set_title": "Settings",
         "set_theme_label": "App theme color (buttons)",
@@ -228,6 +234,9 @@ PREVODI = {
         "db_edit_store_title": "Upravit obchod",
         "db_label_store_name": "Nazov obchodu:",
         "db_err_duplicate_store": "Obchod s takym nazvom uz existuje.",
+        "db_delete_store": "Vymazat obchod",
+        "db_err_store_in_use": "Nemoze sa vymazat - pouzity v produktoch alebo historii nakupov.",
+        "db_confirm_delete_store": "Naozaj? Klikni znova pre vymazanie",
 
         "set_title": "Nastavenia",
         "set_theme_label": "Farba temy aplikacie (tlacidla)",
@@ -306,6 +315,9 @@ PREVODI = {
         "db_edit_store_title": "Редагувати магазин",
         "db_label_store_name": "Назва магазину:",
         "db_err_duplicate_store": "Магазин з такою назвою вже існує.",
+        "db_delete_store": "Видалити магазин",
+        "db_err_store_in_use": "Неможливо видалити - використано в товарах або історії покупок.",
+        "db_confirm_delete_store": "Точно? Натисніть ще раз для видалення",
 
         "set_title": "Налаштування",
         "set_theme_label": "Колір теми додатку (кнопки)",
