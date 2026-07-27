@@ -3,16 +3,17 @@
     FloatLayout:
         BoxLayout:
             orientation: "vertical"
-            padding: 15
+            padding: [15, 15, 15, dp(80)]
             spacing: 10
             size_hint: 1, 1
+            pos_hint: {"x": 0, "y": 0}
 
             Label:
                 id: title_label
                 text: "Baza proizvoda i prodavnica"
                 font_size: "15sp"
                 size_hint_y: None
-                height: dp(36)
+                height: dp(30)
 
             BoxLayout:
                 size_hint_y: None
@@ -26,6 +27,10 @@
                     id: tab_stores
                     text: "Prodavnice"
                     on_release: root.show_prodavnice()
+                PrimaryButton:
+                    id: tab_categories
+                    text: "Kategorije"
+                    on_release: root.show_kategorije()
 
             ScrollView:
                 BoxLayout:
@@ -37,8 +42,8 @@
 
         Button:
             size_hint: None, None
-            size: dp(110), dp(50)
-            pos_hint: {"x": 0.02, "y": 0.02}
+            size: dp(110), dp(48)
+            pos_hint: {"x": 0.03, "y": 0.03}
             background_normal: "assets/nazad_btn.png"
             background_down: "assets/nazad_btn.png"
             on_release: root.go_back()
