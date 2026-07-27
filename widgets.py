@@ -108,26 +108,20 @@ Builder.load_string("""
 
 
 class PrimaryButton(Button):
-    """Glavno dugme - akcentna boja teme."""
     pass
 
 
 class SecondaryButton(Button):
-    """Sporedno dugme - neutralno sivo."""
     pass
 
 
 class DangerButton(Button):
-    """Dugme za brisanje/opasne akcije - crveno."""
     pass
 
 
 class Card(BoxLayout):
-    """Kartica sa zaobljenom pozadinom, za redove liste."""
     pass
 
 
 class StyledTextInput(TextInput):
-    """Polje za unos teksta prilagodjeno tamnoj temi - tamna pozadina,
-    svetla slova, akcentna ivica kad je fokusirano."""
     pass
