@@ -22,10 +22,6 @@ from kivy.graphics import Color, Rectangle
 
 
 def _napravi_greska_sadrzaj(greska_tekst):
-    """Pravi BoxLayout sa belom pozadinom i crnim tekstom - uvek citljivo
-    bez obzira na trenutnu temu boja aplikacije. Sirina teksta prati
-    sirinu ekrana (Window.width) umesto fiksnog broja piksela, da se
-    tekst ne bi zbio u usku, neciljivu kolonu na velikim ekranima."""
     content = BoxLayout(orientation="vertical", padding=10, spacing=10)
 
     with content.canvas.before:
@@ -61,8 +57,6 @@ def _napravi_greska_sadrzaj(greska_tekst):
 
 
 class CrashPopupHandler(ExceptionHandler):
-    """Hvata greske koje se dese DOK app vec radi (npr. klik na dugme)."""
-
     def handle_exception(self, inst):
         greska = traceback.format_exc()
         print(greska)
@@ -80,10 +74,6 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 class CrashApp(App):
-    """Minimalna app koja samo prikazuje tekst greske - koristi se ako
-    glavna aplikacija ne uspe da se pokrene (npr. greska u kv fajlu,
-    u theme.py, ili slicno) - da se app ne bi samo ugasila bez poruke."""
-
     def __init__(self, greska_tekst, **kwargs):
         super().__init__(**kwargs)
         self.greska_tekst = greska_tekst
