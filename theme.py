@@ -6,7 +6,6 @@ novu boju kad se tema promeni - bez potrebe da se app restartuje.
 from kivy.event import EventDispatcher
 from kivy.properties import ListProperty, StringProperty
 
-# naziv teme -> (r, g, b, a) akcentna boja za dugmad (postojeci sistem, nepromenjen)
 THEMES = {
     "Plava": (0.16, 0.50, 0.85, 1),
     "Zelena": (0.20, 0.62, 0.35, 1),
@@ -18,8 +17,6 @@ THEMES = {
 
 DEFAULT_THEME = "Plava"
 
-# Paleta za boju POZADINE ekrana i boju TEKSTA u poljima za unos.
-# Plava i zelena imaju po 4 nijanse, ostale boje po jednu.
 PALETA = {
     "Plava - svetla": (0.40, 0.65, 0.95, 1),
     "Plava": (0.16, 0.50, 0.85, 1),
@@ -43,7 +40,6 @@ DEFAULT_INPUT_TEXT = "Zuta"
 
 
 def _boje_su_slicne(boja1, boja2, tolerancija=0.12):
-    """Provera da li su dve (r,g,b,a) boje vizuelno preblizu jedna drugoj."""
     r1, g1, b1, _ = boja1
     r2, g2, b2, _ = boja2
     razlika = abs(r1 - r2) + abs(g1 - g2) + abs(b1 - b2)
@@ -70,7 +66,6 @@ class Theme(EventDispatcher):
         return (r * factor, g * factor, b * factor, a)
 
     def set_bg_color(self, naziv):
-        """Vraca True ako je uspesno postavljeno, False ako se kosi sa bojom teksta."""
         if naziv not in PALETA:
             return False
         nova_boja = PALETA[naziv]
@@ -81,7 +76,6 @@ class Theme(EventDispatcher):
         return True
 
     def set_input_text_color(self, naziv):
-        """Vraca True ako je uspesno postavljeno, False ako se kosi sa bojom pozadine."""
         if naziv not in PALETA:
             return False
         nova_boja = PALETA[naziv]
