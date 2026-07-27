@@ -1,16 +1,21 @@
 """
 Database modul - SQLite konekcija i upiti.
-Faza 2: puna funkcionalnost.
 
 Tabele:
 - prodavnice (id, naziv)
-- proizvodi (id, naziv, jedinica_mere, zadnja_cena, prodavnica_id)
+- kategorije (id, naziv)
+- podkategorije (id, naziv, kategorija_id)
+- proizvodi (id, naziv, jedinica_mere, zadnja_cena, prodavnica_id, kategorija_id, podkategorija_id)
 - liste (id, datum, prodavnica_id, ukupno, zatvorena)
 - lista_stavke (id, lista_id, proizvod_id, naziv, kolicina, cena_po_jedinici, total)
 
 Napomena o valutama: sve cene se u bazi CUVAJU UVEK U RSD (bazna valuta).
 Prikaz i unos se preracunavaju u letu prema trenutno izabranoj valuti
 (funkcije rsd_u_prikaz / prikaz_u_rsd na dnu fajla).
+
+Napomena o kategorijama: brisanje kategorije/potkategorije NIKAD ne
+brise proizvode - samo im postavlja kategorija_id/podkategorija_id na
+NULL (proizvod postaje "Nekategorisano").
 """
 import sqlite3
 import os
@@ -51,11 +56,42 @@ SEED_PROIZVODI = [
     ("Toalet papir", "kom", 350.00),
 ]
 
+SEED_KATEGORIJE = [
+    "Voce",
+    "Povrce",
+    "Meso",
+    "Riba",
+    "Mlecni proizvodi",
+    "Hleb i peciva",
+    "Testenine",
+    "Pirinac",
+    "Konzervirana hrana",
+    "Grickalice",
+    "Slatkisi",
+    "Bezalkoholna pica",
+    "Sokovi",
+    "Voda",
+    "Kafa",
+    "Caj",
+    "Alkoholna pica",
+    "Zamrznuti proizvodi",
+    "Sredstva za ciscenje",
+    "Kozmetika",
+    "Higijena",
+    "Hrana za kucne ljubimce",
+    "Decija hrana",
+]
+
 
 def get_connection():
     conn = sqlite3.connect(DB_PATH)
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
+
+
+def _kolona_postoji(conn, tabela, kolona):
+    info = conn.execute(f"PRAGMA table_info({tabela})").fetchall()
+    return any(red[1] == kolona for red in info)
 
 
 def init_db():
@@ -64,6 +100,17 @@ def init_db():
     c.execute("""CREATE TABLE IF NOT EXISTS prodavnice (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         naziv TEXT UNIQUE NOT NULL
+    )""")
+    c.execute("""CREATE TABLE IF NOT EXISTS kategorije (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        naziv TEXT UNIQUE NOT NULL
+    )""")
+    c.execute("""CREATE TABLE IF NOT EXISTS podkategorije (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        naziv TEXT NOT NULL,
+        kategorija_id INTEGER NOT NULL,
+        FOREIGN KEY (kategorija_id) REFERENCES kategorije(id),
+        UNIQUE(naziv, kategorija_id)
     )""")
     c.execute("""CREATE TABLE IF NOT EXISTS proizvodi (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -98,6 +145,16 @@ def init_db():
     )""")
     conn.commit()
 
+    # Migracija: dodaj kategorija_id / podkategorija_id u proizvodi ako fale
+    # (bez gubitka postojecih podataka - stari proizvodi ostaju kakvi jesu,
+    # samo dobijaju NULL u ovim novim kolonama = "Nekategorisano").
+    if not _kolona_postoji(conn, "proizvodi", "kategorija_id"):
+        c.execute("ALTER TABLE proizvodi ADD COLUMN kategorija_id INTEGER REFERENCES kategorije(id)")
+        conn.commit()
+    if not _kolona_postoji(conn, "proizvodi", "podkategorija_id"):
+        c.execute("ALTER TABLE proizvodi ADD COLUMN podkategorija_id INTEGER REFERENCES podkategorije(id)")
+        conn.commit()
+
     c.execute("SELECT COUNT(*) FROM proizvodi")
     if c.fetchone()[0] == 0:
         c.executemany(
@@ -106,6 +163,15 @@ def init_db():
             SEED_PROIZVODI,
         )
         conn.commit()
+
+    c.execute("SELECT COUNT(*) FROM kategorije")
+    if c.fetchone()[0] == 0:
+        c.executemany(
+            "INSERT INTO kategorije (naziv) VALUES (?)",
+            [(k,) for k in SEED_KATEGORIJE],
+        )
+        conn.commit()
+
     conn.close()
 
 
@@ -134,7 +200,6 @@ def add_prodavnica(naziv):
 
 
 def update_prodavnica(prodavnica_id, novi_naziv):
-    """Preimenuje prodavnicu. Vraca False ako vec postoji prodavnica sa tim imenom."""
     conn = get_connection()
     c = conn.cursor()
     c.execute(
@@ -151,11 +216,6 @@ def update_prodavnica(prodavnica_id, novi_naziv):
 
 
 def delete_prodavnica(prodavnica_id):
-    """
-    Brise prodavnicu trajno. Vraca False ako je koriscena u nekoj listi
-    (otvorenoj ili zatvorenoj) ili je vezana za neki proizvod - u tom
-    slucaju se ne brise, da se ne pokvari istorija ili baza proizvoda.
-    """
     conn = get_connection()
     c = conn.cursor()
     c.execute("SELECT COUNT(*) FROM liste WHERE prodavnica_id = ?", (prodavnica_id,))
@@ -167,6 +227,130 @@ def delete_prodavnica(prodavnica_id):
         conn.close()
         return False
     c.execute("DELETE FROM prodavnice WHERE id = ?", (prodavnica_id,))
+    conn.commit()
+    conn.close()
+    return True
+
+
+# ---------- Kategorije ----------
+
+def get_kategorije():
+    conn = get_connection()
+    rows = conn.execute("SELECT id, naziv FROM kategorije ORDER BY naziv").fetchall()
+    conn.close()
+    return rows
+
+
+def add_kategorija(naziv):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT id FROM kategorije WHERE LOWER(naziv) = LOWER(?)", (naziv,))
+    row = c.fetchone()
+    if row:
+        conn.close()
+        return row[0]
+    c.execute("INSERT INTO kategorije (naziv) VALUES (?)", (naziv,))
+    conn.commit()
+    kid = c.lastrowid
+    conn.close()
+    return kid
+
+
+def update_kategorija(kategorija_id, novi_naziv):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute(
+        "SELECT id FROM kategorije WHERE LOWER(naziv) = LOWER(?) AND id != ?",
+        (novi_naziv, kategorija_id),
+    )
+    if c.fetchone():
+        conn.close()
+        return False
+    c.execute("UPDATE kategorije SET naziv = ? WHERE id = ?", (novi_naziv, kategorija_id))
+    conn.commit()
+    conn.close()
+    return True
+
+
+def delete_kategorija(kategorija_id):
+    """
+    Brise kategoriju trajno. Proizvodi koji su bili u ovoj kategoriji
+    NE BRISU SE - samo im se kategorija_id i podkategorija_id postavljaju
+    na NULL (postaju "Nekategorisano"). Sve potkategorije ove kategorije
+    se takodje brisu (ali ne i proizvodi).
+    """
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute(
+        "UPDATE proizvodi SET kategorija_id = NULL, podkategorija_id = NULL "
+        "WHERE kategorija_id = ?",
+        (kategorija_id,),
+    )
+    c.execute("DELETE FROM podkategorije WHERE kategorija_id = ?", (kategorija_id,))
+    c.execute("DELETE FROM kategorije WHERE id = ?", (kategorija_id,))
+    conn.commit()
+    conn.close()
+    return True
+
+
+# ---------- Potkategorije ----------
+
+def get_podkategorije(kategorija_id):
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT id, naziv FROM podkategorije WHERE kategorija_id = ? ORDER BY naziv",
+        (kategorija_id,),
+    ).fetchall()
+    conn.close()
+    return rows
+
+
+def add_podkategorija(naziv, kategorija_id):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute(
+        "SELECT id FROM podkategorije WHERE LOWER(naziv) = LOWER(?) AND kategorija_id = ?",
+        (naziv, kategorija_id),
+    )
+    row = c.fetchone()
+    if row:
+        conn.close()
+        return row[0]
+    c.execute("INSERT INTO podkategorije (naziv, kategorija_id) VALUES (?, ?)", (naziv, kategorija_id))
+    conn.commit()
+    pkid = c.lastrowid
+    conn.close()
+    return pkid
+
+
+def update_podkategorija(podkategorija_id, novi_naziv):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT kategorija_id FROM podkategorije WHERE id = ?", (podkategorija_id,))
+    row = c.fetchone()
+    if not row:
+        conn.close()
+        return False
+    kategorija_id = row[0]
+    c.execute(
+        "SELECT id FROM podkategorije WHERE LOWER(naziv) = LOWER(?) AND kategorija_id = ? AND id != ?",
+        (novi_naziv, kategorija_id, podkategorija_id),
+    )
+    if c.fetchone():
+        conn.close()
+        return False
+    c.execute("UPDATE podkategorije SET naziv = ? WHERE id = ?", (novi_naziv, podkategorija_id))
+    conn.commit()
+    conn.close()
+    return True
+
+
+def delete_podkategorija(podkategorija_id):
+    """Brise potkategoriju. Proizvodi ostaju, samo im se podkategorija_id postavlja na NULL."""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("UPDATE proizvodi SET podkategorija_id = NULL WHERE podkategorija_id = ?", (podkategorija_id,))
+    c.execute("DELETE FROM podkategorije WHERE id = ?", (podkategorija_id,))
     conn.commit()
     conn.close()
     return True
@@ -186,14 +370,18 @@ def search_proizvodi(query, limit=8):
 
 
 def get_proizvodi_sa_prodavnicom():
-    """Vraca (id, naziv, jedinica_mere, zadnja_cena, naziv_prodavnice, prodavnica_id)."""
+    """Vraca (id, naziv, jedinica_mere, zadnja_cena, naziv_prodavnice, prodavnica_id,
+    kategorija_id, naziv_kategorije, podkategorija_id, naziv_podkategorije)."""
     conn = get_connection()
     rows = conn.execute(
         """SELECT p.id, p.naziv, p.jedinica_mere, p.zadnja_cena,
-                  COALESCE(pr.naziv, '-'), p.prodavnica_id
+                  COALESCE(pr.naziv, '-'), p.prodavnica_id,
+                  p.kategorija_id, k.naziv, p.podkategorija_id, pk.naziv
            FROM proizvodi p
            LEFT JOIN prodavnice pr ON p.prodavnica_id = pr.id
-           ORDER BY p.naziv"""
+           LEFT JOIN kategorije k ON p.kategorija_id = k.id
+           LEFT JOIN podkategorije pk ON p.podkategorija_id = pk.id
+           ORDER BY COALESCE(k.naziv, 'zzz'), p.naziv"""
     ).fetchall()
     conn.close()
     return rows
@@ -223,13 +411,8 @@ def add_or_update_proizvod(naziv, jedinica_mere, cena, prodavnica_id=None):
     return pid
 
 
-def update_proizvod(proizvod_id, naziv, jedinica_mere, cena, prodavnica_id=None):
-    """
-    prodavnica_id: None znaci "bez prodavnice" (eksplicitno brise vezu),
-    ako ne zelis da diras prodavnicu iz nekog drugog poziva, prosledi
-    trenutnu vrednost - ovaj poziv je uvek eksplicitan (postavlja tacno
-    onu vrednost koja se posalje).
-    """
+def update_proizvod(proizvod_id, naziv, jedinica_mere, cena, prodavnica_id=None,
+                     kategorija_id=None, podkategorija_id=None):
     conn = get_connection()
     c = conn.cursor()
     c.execute(
@@ -241,8 +424,8 @@ def update_proizvod(proizvod_id, naziv, jedinica_mere, cena, prodavnica_id=None)
         return False
     c.execute(
         "UPDATE proizvodi SET naziv = ?, jedinica_mere = ?, zadnja_cena = ?, "
-        "prodavnica_id = ? WHERE id = ?",
-        (naziv, jedinica_mere, cena, prodavnica_id, proizvod_id),
+        "prodavnica_id = ?, kategorija_id = ?, podkategorija_id = ? WHERE id = ?",
+        (naziv, jedinica_mere, cena, prodavnica_id, kategorija_id, podkategorija_id, proizvod_id),
     )
     conn.commit()
     conn.close()
