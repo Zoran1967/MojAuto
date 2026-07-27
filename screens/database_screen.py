@@ -22,9 +22,9 @@ class DatabaseScreen(Screen):
     i unose preko db.rsd_u_prikaz() / db.prikaz_u_rsd().
     Tekstovi se prevode preko prevedi() prema trenutno izabranom jeziku.
 
-    U popup-u za izmenu proizvoda sad postoji i dugme za izbor/promenu
-    prodavnice (otvara mali picker sa spiskom svih prodavnica + opcija
-    "Bez prodavnice"), pored postojeceg dugmeta "Dodaj u listu".
+    U popup-u za izmenu proizvoda postoji polje za kolicinu direktno
+    (bez zasebnog dodatnog popup-a) - dugme "Dodaj u listu" koristi tu
+    vrednost odmah.
     """
 
     def on_pre_enter(self, *args):
@@ -132,11 +132,20 @@ class DatabaseScreen(Screen):
 
         store_btn.bind(on_release=lambda inst: self.open_store_pick_popup(on_store_chosen))
 
+        row4 = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
+        kolicina_input = StyledTextInput(
+            text="1", hint_text=prevedi("db_qty_hint", jezik),
+            input_filter="float", multiline=False,
+        )
+        row4.add_widget(Label(text=prevedi("db_label_qty", jezik), size_hint_x=0.4))
+        row4.add_widget(kolicina_input)
+        content.add_widget(row4)
+
         error_label = Label(text="", size_hint_y=None, height=dp(24), color=(1, 0.4, 0.4, 1))
         content.add_widget(error_label)
 
         popup = Popup(
-            title=prevedi("db_edit_title", jezik), content=content, size_hint=(0.9, 0.85),
+            title=prevedi("db_edit_title", jezik), content=content, size_hint=(0.9, 0.9),
             overlay_color=(0, 0, 0, 0.85), auto_dismiss=False,
         )
 
@@ -188,8 +197,22 @@ class DatabaseScreen(Screen):
             if sl_screen.lista_id is None:
                 error_label.text = prevedi("sl_no_active_list", jezik)
                 return
-            self.open_qty_popup(proizvod_id, naziv_input.text.strip() or naziv,
-                                 jedinica_input.text.strip() or jedinica, cena_rsd, popup)
+            try:
+                kolicina = float(kolicina_input.text.replace(",", "."))
+            except ValueError:
+                error_label.text = prevedi("db_err_bad_price", jezik)
+                return
+            if kolicina <= 0:
+                error_label.text = prevedi("db_err_bad_price", jezik)
+                return
+
+            sl_screen.add_product_to_current_list(
+                naziv_input.text.strip() or naziv,
+                jedinica_input.text.strip() or jedinica,
+                kolicina,
+                cena_rsd,
+            )
+            popup.dismiss()
 
         btn_row = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
         save_btn = PrimaryButton(text=prevedi("db_save", jezik))
@@ -246,51 +269,6 @@ class DatabaseScreen(Screen):
         content.add_widget(close_btn)
 
         pick_popup.open()
-
-    def open_qty_popup(self, proizvod_id, naziv, jedinica, cena_rsd, parent_popup):
-        """Mali popup koji trazi kolicinu, pa dodaje proizvod u aktivnu listu."""
-        jezik = _jezik()
-        content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
-
-        qty_input = StyledTextInput(
-            text="1", hint_text=prevedi("db_qty_hint", jezik),
-            input_filter="float", multiline=False,
-        )
-        content.add_widget(qty_input)
-
-        error_label = Label(text="", size_hint_y=None, height=dp(24), color=(1, 0.4, 0.4, 1))
-        content.add_widget(error_label)
-
-        qty_popup = Popup(
-            title=prevedi("db_qty_prompt_title", jezik), content=content, size_hint=(0.8, 0.4),
-            overlay_color=(0, 0, 0, 0.85), auto_dismiss=False,
-        )
-
-        def confirm(*a):
-            try:
-                kolicina = float(qty_input.text.replace(",", "."))
-            except ValueError:
-                error_label.text = prevedi("db_err_bad_price", jezik)
-                return
-            if kolicina <= 0:
-                error_label.text = prevedi("db_err_bad_price", jezik)
-                return
-
-            sl_screen = self.manager.get_screen("shopping_list")
-            sl_screen.add_product_to_current_list(naziv, jedinica, kolicina, cena_rsd)
-            qty_popup.dismiss()
-            parent_popup.dismiss()
-
-        btn_row = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
-        confirm_btn = PrimaryButton(text=prevedi("db_add_to_list_btn", jezik))
-        confirm_btn.bind(on_release=confirm)
-        cancel_btn = SecondaryButton(text=prevedi("sl_cancel", jezik))
-        cancel_btn.bind(on_release=qty_popup.dismiss)
-        btn_row.add_widget(confirm_btn)
-        btn_row.add_widget(cancel_btn)
-        content.add_widget(btn_row)
-
-        qty_popup.open()
 
     def show_prodavnice(self):
         jezik = _jezik()
