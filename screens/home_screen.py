@@ -14,10 +14,11 @@ class HomeScreen(Screen):
     Početni ekran: dugmad za Novu listu, Istoriju, Bazu proizvoda/prodavnica
     i Podešavanja, plus dugme za izbor jezika.
 
-    Napomena: go_to_new_list() vise NE brise automatski aktivnu listu ako
-    je vec u toku (ima lista_id na shopping_list ekranu) - samo je
-    nastavlja. Lista se brise/resetuje jedino kad korisnik eksplicitno
-    zatvori listu (close_list na shopping_list ekranu).
+    Napomena: aplikacija sad podrzava VISE istovremeno otvorenih lista
+    (po jedna po prodavnici) - vidi database.get_otvorene_liste() i
+    screens/shopping_list_screen.py. go_to_new_list() zato vise ne radi
+    nikakav "reset" - ShoppingListScreen sam ucitava sve trenutno
+    otvorene liste iz baze svaki put kad se ekran otvori.
     """
 
     JEZICI = [
@@ -45,9 +46,6 @@ class HomeScreen(Screen):
         self.txt_language_label = prevedi("home_language_label", jezik)
 
     def go_to_new_list(self):
-        sl_screen = self.manager.get_screen("shopping_list")
-        if sl_screen.lista_id is None:
-            sl_screen.reset_for_new_list()
         self.manager.current = "shopping_list"
 
     def go_to_history(self):
