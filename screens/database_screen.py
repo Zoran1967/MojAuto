@@ -331,9 +331,17 @@ class DatabaseScreen(Screen):
         popup.open()
 
     def open_store_pick_popup(self, on_chosen):
-        """Mali picker za izbor prodavnice - koristi se iz open_edit_popup."""
+        """Picker za izbor prodavnice - koristi se iz open_edit_popup.
+        Sad ima i polje za direktno dodavanje nove prodavnice (da ne bude
+        cor sokak kad lista jos nema nijednu)."""
         jezik = _jezik()
         content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
+
+        naziv_input = StyledTextInput(
+            hint_text=prevedi("sl_search_store_hint", jezik),
+            size_hint_y=None, height=dp(44), multiline=False,
+        )
+        content.add_widget(naziv_input)
 
         results_box = BoxLayout(orientation="vertical", size_hint_y=None, spacing=dp(4))
         results_box.bind(minimum_height=results_box.setter("height"))
@@ -342,7 +350,7 @@ class DatabaseScreen(Screen):
         content.add_widget(scroll)
 
         pick_popup = Popup(
-            title=prevedi("db_pick_store_title", jezik), content=content, size_hint=(0.85, 0.7),
+            title=prevedi("db_pick_store_title", jezik), content=content, size_hint=(0.85, 0.8),
             overlay_color=(0, 0, 0, 0.85), auto_dismiss=False,
         )
 
@@ -350,20 +358,39 @@ class DatabaseScreen(Screen):
             on_chosen(pid, naziv)
             pick_popup.dismiss()
 
-        no_store_btn = SecondaryButton(
-            text=prevedi("db_no_store", jezik), size_hint_y=None, height=dp(44)
-        )
-        no_store_btn.bind(on_release=lambda inst: choose(None, ""))
-        results_box.add_widget(no_store_btn)
+        def refresh_results(*a):
+            results_box.clear_widgets()
+            query = naziv_input.text.strip().lower()
+            no_store_btn = SecondaryButton(
+                text=prevedi("db_no_store", jezik), size_hint_y=None, height=dp(44)
+            )
+            no_store_btn.bind(on_release=lambda inst: choose(None, ""))
+            results_box.add_widget(no_store_btn)
+            for pid, naziv in db.get_prodavnice():
+                if query in naziv.lower():
+                    btn = SecondaryButton(text=naziv, size_hint_y=None, height=dp(44))
+                    btn.bind(on_release=lambda inst, pid=pid, naziv=naziv: choose(pid, naziv))
+                    results_box.add_widget(btn)
 
-        for pid, naziv in db.get_prodavnice():
-            btn = SecondaryButton(text=naziv, size_hint_y=None, height=dp(44))
-            btn.bind(on_release=lambda inst, pid=pid, naziv=naziv: choose(pid, naziv))
-            results_box.add_widget(btn)
+        naziv_input.bind(text=refresh_results)
 
-        close_btn = SecondaryButton(text=prevedi("sl_cancel", jezik), size_hint_y=None, height=dp(48))
+        def dodaj_novu(*a):
+            naziv = naziv_input.text.strip()
+            if not naziv:
+                return
+            pid = db.add_prodavnica(naziv)
+            choose(pid, naziv)
+
+        btn_row = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
+        add_btn = PrimaryButton(text=prevedi("sl_add_store_btn", jezik))
+        add_btn.bind(on_release=dodaj_novu)
+        close_btn = SecondaryButton(text=prevedi("sl_cancel", jezik))
         close_btn.bind(on_release=pick_popup.dismiss)
-        content.add_widget(close_btn)
+        btn_row.add_widget(add_btn)
+        btn_row.add_widget(close_btn)
+        content.add_widget(btn_row)
+
+        refresh_results()
 
         pick_popup.open()
 
@@ -459,6 +486,13 @@ class DatabaseScreen(Screen):
         jezik = _jezik()
         box = self.ids.database_box
         box.clear_widgets()
+
+        novi_btn = PrimaryButton(
+            text=prevedi("sl_add_store_btn", jezik), size_hint_y=None, height=dp(48),
+        )
+        novi_btn.bind(on_release=lambda inst: self.open_new_prodavnica_popup())
+        box.add_widget(novi_btn)
+
         prodavnice = db.get_prodavnice()
 
         if not prodavnice:
@@ -480,6 +514,44 @@ class DatabaseScreen(Screen):
                 on_release=lambda inst, pid=pid, naziv=naziv: self.open_edit_store_popup(pid, naziv)
             )
             box.add_widget(btn)
+
+    def open_new_prodavnica_popup(self):
+        jezik = _jezik()
+        content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
+
+        naziv_input = StyledTextInput(
+            hint_text=prevedi("db_label_store_name", jezik), multiline=False,
+            size_hint_y=None, height=dp(44),
+        )
+        content.add_widget(naziv_input)
+
+        error_label = Label(text="", size_hint_y=None, height=dp(24), color=(1, 0.4, 0.4, 1))
+        content.add_widget(error_label)
+
+        popup = Popup(
+            title=prevedi("sl_add_store_btn", jezik), content=content, size_hint=(0.85, 0.4),
+            overlay_color=(0, 0, 0, 0.85), auto_dismiss=False,
+        )
+
+        def dodaj(*a):
+            naziv = naziv_input.text.strip()
+            if not naziv:
+                error_label.text = prevedi("db_err_empty_name", jezik)
+                return
+            db.add_prodavnica(naziv)
+            popup.dismiss()
+            self.show_prodavnice()
+
+        btn_row = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
+        save_btn = PrimaryButton(text=prevedi("db_save", jezik))
+        save_btn.bind(on_release=dodaj)
+        cancel_btn = SecondaryButton(text=prevedi("sl_cancel", jezik))
+        cancel_btn.bind(on_release=popup.dismiss)
+        btn_row.add_widget(save_btn)
+        btn_row.add_widget(cancel_btn)
+        content.add_widget(btn_row)
+
+        popup.open()
 
     def open_edit_store_popup(self, prodavnica_id, naziv):
         jezik = _jezik()
