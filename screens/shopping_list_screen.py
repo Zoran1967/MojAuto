@@ -248,7 +248,12 @@ class ShoppingListScreen(Screen):
     def add_item(self):
         prva = db.get_prva_prodavnica()
         if prva is None:
-            self._prikazi_poruku(prevedi("sl_no_stores_yet", _jezik()))
+            # Nema nijedne prodavnice - umesto da samo blokiramo porukom,
+            # odmah otvaramo picker koji ima "+ Prodavnica" dugme za
+            # dodavanje, pa nastavljamo direktno na dodavanje proizvoda.
+            def posle_dodavanja_prodavnice(pid, naziv):
+                self.open_add_item_popup(pid, naziv)
+            self.open_store_picker_popup(posle_dodavanja_prodavnice)
             return
         self.open_add_item_popup(prva[0], prva[1])
 
