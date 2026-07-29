@@ -860,8 +860,7 @@ def prikaz_u_rsd(cena_prikaz):
 
 
 def valuta_oznaka():
-    return "в‚¬" if get_valuta() == "EUR" else "din"
-
+    return "€" if get_valuta() == "EUR" else "RSD"
 
 # ---------- Cene po prodavnicama (istorija/poredjenje) ----------
 
