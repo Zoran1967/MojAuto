@@ -126,8 +126,8 @@ class ShoppingListScreen(Screen):
             )
             row.bind(
                 on_release=lambda inst, sid=stavka_id, n=naziv, k=kolicina, c=cena_rsd,
-                                  pid=prodavnica_id, pnaziv=prodavnica_naziv:
-                    self.open_edit_item_popup(sid, n, k, c, pid, pnaziv)
+                                  pid=prodavnica_id, pnaziv=prodavnica_naziv, prid=proizvod_id:
+                    self.open_edit_item_popup(sid, n, k, c, pid, pnaziv, prid)
             )
             card.add_widget(row)
 
@@ -171,6 +171,8 @@ class ShoppingListScreen(Screen):
         lista_id = db.get_or_create_otvorena_lista(prodavnica_id)
         proizvod_id = db.add_or_update_proizvod(naziv, jedinica, cena_rsd, prodavnica_id)
         db.add_stavka(lista_id, proizvod_id, naziv, kolicina, cena_rsd)
+        # Pamti ovu cenu za ovu konkretnu prodavnicu (za buduce poredjenje)
+        db.zabelezi_cenu_za_prodavnicu(proizvod_id, prodavnica_id, cena_rsd)
         return True
 
     # ---------- Poruka (npr. "nema prodavnica") ----------
@@ -291,6 +293,15 @@ class ShoppingListScreen(Screen):
         row.add_widget(cena_input)
         content.add_widget(row)
 
+        cene_pregled_label = Label(
+            text="", size_hint_y=None, height=dp(0), font_size="12sp",
+            color=(0.6, 0.85, 1, 1), halign="left",
+        )
+        cene_pregled_label.bind(
+            texture_size=lambda inst, val: setattr(inst, "height", val[1] + dp(6))
+        )
+        content.add_widget(cene_pregled_label)
+
         total_label = Label(
             text=prevedi("sl_total_prefix", jezik).format(total="0.00", valuta=db.valuta_oznaka()),
             size_hint_y=None, height=dp(30),
@@ -308,28 +319,46 @@ class ShoppingListScreen(Screen):
         kolicina_input.bind(text=update_total)
         cena_input.bind(text=update_total)
 
-        def pick_suggestion(naziv, jedinica, cena_rsd):
+        trenutni_proizvod = {"id": None}
+
+        def osvezi_pregled_cena():
+            if trenutni_proizvod["id"] is None:
+                cene_pregled_label.text = ""
+                return
+            sve_cene = db.get_sve_cene_proizvoda(trenutni_proizvod["id"])
+            if not sve_cene:
+                cene_pregled_label.text = ""
+                return
+            linije = []
+            for prodavnica_naziv, cena_rsd, datum in sve_cene:
+                cena_prikaz = db.rsd_u_prikaz(cena_rsd)
+                oznaka = " <--" if prodavnica_naziv == store_state["naziv"] else ""
+                linije.append(f"{prodavnica_naziv}: {cena_prikaz:.2f} {db.valuta_oznaka()}{oznaka}")
+            cene_pregled_label.text = "\\n".join(linije)
+
+        def pick_suggestion(proizvod_id, naziv, jedinica):
             naziv_input.unbind(text=refresh_suggestions)
             naziv_input.text = naziv
             naziv_input.bind(text=refresh_suggestions)
             jedinica_input.text = jedinica
-            cena_input.text = f"{db.rsd_u_prikaz(cena_rsd):.2f}"
-            update_total()
+            trenutni_proizvod["id"] = proizvod_id
+            osvezi_pregled_cena()
             suggestions_box.clear_widgets()
 
         def refresh_suggestions(*a):
             suggestions_box.clear_widgets()
+            trenutni_proizvod["id"] = None
+            cene_pregled_label.text = ""
             query = naziv_input.text.strip().lower()
             if not query:
                 return
             for pid, naziv, jedinica, cena_rsd in db.search_proizvodi(query):
-                cena_prikaz = db.rsd_u_prikaz(cena_rsd)
                 btn = SecondaryButton(
-                    text=f"{naziv}  ({jedinica}, {cena_prikaz:.2f} {db.valuta_oznaka()})",
+                    text=f"{naziv}  ({jedinica})",
                     size_hint_y=None, height=dp(36),
                 )
                 btn.bind(
-                    on_release=lambda inst, n=naziv, j=jedinica, c=cena_rsd: pick_suggestion(n, j, c)
+                    on_release=lambda inst, i=pid, n=naziv, j=jedinica: pick_suggestion(i, n, j)
                 )
                 suggestions_box.add_widget(btn)
 
@@ -339,6 +368,7 @@ class ShoppingListScreen(Screen):
             store_state["id"] = pid
             store_state["naziv"] = pnaziv
             store_btn.text = prevedi("sl_store_label", jezik).format(naziv=pnaziv)
+            osvezi_pregled_cena()
 
         store_btn.bind(on_release=lambda inst: self.open_store_picker_popup(on_store_chosen))
 
@@ -379,7 +409,7 @@ class ShoppingListScreen(Screen):
 
     # ---------- Izmena/brisanje/pomeranje pojedinacne stavke (zahtev 6) ----------
 
-    def open_edit_item_popup(self, stavka_id, naziv, kolicina, cena_rsd, prodavnica_id, prodavnica_naziv):
+    def open_edit_item_popup(self, stavka_id, naziv, kolicina, cena_rsd, prodavnica_id, prodavnica_naziv, proizvod_id=None):
         jezik = _jezik()
         content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
 
@@ -441,6 +471,8 @@ class ShoppingListScreen(Screen):
                 db.move_stavka_prodavnica(stavka_id, store_state["id"])
 
             db.update_stavka(stavka_id, nova_kolicina, nova_cena_rsd)
+            if proizvod_id is not None:
+                db.zabelezi_cenu_za_prodavnicu(proizvod_id, store_state["id"], nova_cena_rsd)
             popup.dismiss()
             self.load_open_lists()
 
