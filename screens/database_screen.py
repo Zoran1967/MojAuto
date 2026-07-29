@@ -18,17 +18,21 @@ def _jezik():
 class DatabaseScreen(Screen):
     """
     Ekran za pregled sacuvanih proizvoda, prodavnica i kategorija.
+    Tri taba: Proizvodi, Prodavnice, Kategorije.
+
     Napomena o valutama: cene u bazi su UVEK u RSD. Ovde se prikazuju
     i unose preko db.rsd_u_prikaz() / db.prikaz_u_rsd().
     Tekstovi se prevode preko prevedi() prema trenutno izabranom jeziku.
 
-    Proizvodi (show_proizvodi) su grupisani po kategoriji, sa header
-    redom za svaku kategoriju (i "Nekategorisano" na kraju za proizvode
-    bez kategorije).
+    Napomena o kategorijama (novo): svaki proizvod moze imati kategoriju
+    i podkategoriju (birane iz baze kategorije). Korisnik moze dodavati,
+    menjati i brisati svoje kategorije i podkategorije u tabu
+    "Kategorije" - brisanje je zasticeno (ne moze se obrisati kategorija
+    koja ima podkategorije ili je u upotrebi kod nekog proizvoda).
 
-    Brisanje kategorije/potkategorije NIKAD ne brise proizvode - samo im
-    postavlja kategorija_id/podkategorija_id na NULL (to je vec
-    implementirano u database.py).
+    Napomena o "Dodaj u listu": ne postoji vise pojam jedne "trenutne"
+    liste - dodaj_u_listu koristi prvu prodavnicu iz baze kao default
+    (isto pravilo kao i na ekranu Liste za kupovinu).
     """
 
     def on_pre_enter(self, *args):
@@ -39,20 +43,15 @@ class DatabaseScreen(Screen):
         self.ids.tab_categories.text = prevedi("db_tab_categories", jezik)
         self.show_proizvodi()
 
-    # ================= PROIZVODI (grupisano po kategoriji) =================
+    # =========================================================
+    # TAB: Proizvodi
+    # =========================================================
 
     def show_proizvodi(self):
         jezik = _jezik()
         box = self.ids.database_box
         box.clear_widgets()
-        proizvodi = db.get_proizvodi_sa_prodavnicom()
-
-        if not proizvodi:
-            box.add_widget(
-                Label(text=prevedi("db_empty_products", jezik), size_hint_y=None,
-                      height=dp(40), color=(1, 1, 1, 1))
-            )
-            return
+        proizvodi = db.get_proizvodi_puno()
 
         header = BoxLayout(size_hint_y=None, height=dp(36))
         header.add_widget(Label(text=prevedi("db_col_product", jezik), bold=True, color=(1, 1, 1, 1)))
@@ -63,30 +62,30 @@ class DatabaseScreen(Screen):
         ))
         box.add_widget(header)
 
-        trenutna_kategorija = object()  # nikad jednako nicem na pocetku
+        if not proizvodi:
+            box.add_widget(
+                Label(text=prevedi("db_empty_products", jezik), size_hint_y=None,
+                      height=dp(40), color=(1, 1, 1, 1))
+            )
+            return
 
         for (pid, naziv, jedinica, cena_rsd, prodavnica_naziv, prodavnica_id,
-             kategorija_id, kategorija_naziv, podkategorija_id, podkategorija_naziv) in proizvodi:
-
-            kategorija_kljuc = kategorija_id if kategorija_id else "NEKATEGORISANO"
-            if kategorija_kljuc != trenutna_kategorija:
-                trenutna_kategorija = kategorija_kljuc
-                naslov = kategorija_naziv if kategorija_id else prevedi("db_uncategorized_header", jezik)
-                kat_header = Label(
-                    text=naslov, bold=True, size_hint_y=None, height=dp(30),
-                    color=(0.6, 0.8, 1, 1),
-                )
-                box.add_widget(kat_header)
+             kategorija_id, kategorija_naziv, podkategorija_id, podkategorija_naziv,
+             podrazumevana_kolicina) in proizvodi:
 
             row = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(2))
 
             def make_handler(pid=pid, naziv=naziv, jedinica=jedinica, cena_rsd=cena_rsd,
                               prodavnica_id=prodavnica_id, prodavnica_naziv=prodavnica_naziv,
                               kategorija_id=kategorija_id, kategorija_naziv=kategorija_naziv,
-                              podkategorija_id=podkategorija_id, podkategorija_naziv=podkategorija_naziv):
+                              podkategorija_id=podkategorija_id, podkategorija_naziv=podkategorija_naziv,
+                              podrazumevana_kolicina=podrazumevana_kolicina):
                 def handler(instance):
-                    self.open_edit_popup(pid, naziv, jedinica, cena_rsd, prodavnica_id, prodavnica_naziv,
-                                          kategorija_id, kategorija_naziv, podkategorija_id, podkategorija_naziv)
+                    self.open_edit_popup(
+                        pid, naziv, jedinica, cena_rsd, prodavnica_id, prodavnica_naziv,
+                        kategorija_id, kategorija_naziv, podkategorija_id, podkategorija_naziv,
+                        podrazumevana_kolicina,
+                    )
                 return handler
 
             handler = make_handler()
@@ -102,7 +101,7 @@ class DatabaseScreen(Screen):
                 background_normal="", background_color=(0.16, 0.16, 0.18, 1),
             )
             btn_cena = Button(
-                text=f"{db.rsd_u_prikaz(cena_rsd):.2f}", size_hint_x=0.4,
+                text=(f"{db.rsd_u_prikaz(cena_rsd):.2f}" if cena_rsd else "-"), size_hint_x=0.4,
                 background_normal="", background_color=(0.16, 0.16, 0.18, 1),
             )
 
@@ -116,12 +115,16 @@ class DatabaseScreen(Screen):
             box.add_widget(row)
 
     def open_edit_popup(self, proizvod_id, naziv, jedinica, cena_rsd, prodavnica_id, prodavnica_naziv,
-                         kategorija_id, kategorija_naziv, podkategorija_id, podkategorija_naziv):
+                         kategorija_id, kategorija_naziv, podkategorija_id, podkategorija_naziv,
+                         podrazumevana_kolicina):
         jezik = _jezik()
         content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
-        scroll = ScrollView()
+
+        scroll = ScrollView(size_hint_y=1)
         inner = BoxLayout(orientation="vertical", spacing=dp(8), size_hint_y=None)
         inner.bind(minimum_height=inner.setter("height"))
+        scroll.add_widget(inner)
+        content.add_widget(scroll)
 
         row0 = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
         naziv_input = StyledTextInput(text=naziv, multiline=False)
@@ -137,7 +140,9 @@ class DatabaseScreen(Screen):
 
         row2 = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
         cena_input = StyledTextInput(
-            text=f"{db.rsd_u_prikaz(cena_rsd):.2f}", input_filter="float", multiline=False
+            text=(f"{db.rsd_u_prikaz(cena_rsd):.2f}" if cena_rsd else ""),
+            hint_text=prevedi("db_label_price", jezik).format(valuta=db.valuta_oznaka()),
+            input_filter="float", multiline=False
         )
         row2.add_widget(Label(text=prevedi("db_label_price", jezik).format(valuta=db.valuta_oznaka()), size_hint_x=0.4))
         row2.add_widget(cena_input)
@@ -152,68 +157,75 @@ class DatabaseScreen(Screen):
         )
         row3.add_widget(store_btn)
         inner.add_widget(row3)
-        store_btn.bind(on_release=lambda inst: self.open_store_pick_popup(
-            lambda pid, pnaziv: (
-                prodavnica_state.update(id=pid, naziv=pnaziv),
-                setattr(store_btn, "text", pnaziv if pid else prevedi("db_no_store", jezik)),
-            )
-        ))
 
-        kategorija_state = {"id": kategorija_id, "naziv": kategorija_naziv,
-                             "pod_id": podkategorija_id, "pod_naziv": podkategorija_naziv}
+        def on_store_chosen(pid, pnaziv):
+            prodavnica_state["id"] = pid
+            prodavnica_state["naziv"] = pnaziv
+            store_btn.text = pnaziv if pid else prevedi("db_no_store", jezik)
 
-        row4 = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
-        row4.add_widget(Label(text=prevedi("db_label_category", jezik), size_hint_x=0.4))
-        cat_btn = SecondaryButton(
+        store_btn.bind(on_release=lambda inst: self.open_store_pick_popup(on_store_chosen))
+
+        # ---- Kategorija ----
+        kategorija_state = {"id": kategorija_id, "naziv": kategorija_naziv}
+
+        row_kat = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
+        row_kat.add_widget(Label(text=prevedi("db_label_category", jezik), size_hint_x=0.4))
+        kategorija_btn = SecondaryButton(
             text=(kategorija_naziv if kategorija_id else prevedi("db_no_category", jezik))
         )
-        row4.add_widget(cat_btn)
-        inner.add_widget(row4)
+        row_kat.add_widget(kategorija_btn)
+        inner.add_widget(row_kat)
 
-        row5 = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
-        row5.add_widget(Label(text=prevedi("db_label_subcategory", jezik), size_hint_x=0.4))
-        subcat_btn = SecondaryButton(
-            text=(podkategorija_naziv if podkategorija_id else prevedi("db_no_subcategory", jezik))
+        # ---- Podkategorija ----
+        podkategorija_state = {"id": podkategorija_id, "naziv": podkategorija_naziv}
+
+        row_podkat = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
+        row_podkat.add_widget(Label(text=prevedi("db_label_subcategory", jezik), size_hint_x=0.4))
+        podkategorija_btn = SecondaryButton(
+            text=(podkategorija_naziv if podkategorija_id else prevedi("db_no_category", jezik))
         )
-        row5.add_widget(subcat_btn)
-        inner.add_widget(row5)
+        row_podkat.add_widget(podkategorija_btn)
+        inner.add_widget(row_podkat)
 
-        def on_cat_chosen(kid, knaziv):
+        def on_kategorija_chosen(kid, knaziv):
             kategorija_state["id"] = kid
-            kategorija_state["naziv"] = kناziv if False else knaziv
-            kategorija_state["pod_id"] = None
-            kategorija_state["pod_naziv"] = ""
-            cat_btn.text = knaziv if kid else prevedi("db_no_category", jezik)
-            subcat_btn.text = prevedi("db_no_subcategory", jezik)
+            kategorija_state["naziv"] = knaziv
+            kategorija_btn.text = knaziv if kid else prevedi("db_no_category", jezik)
+            # Promena glavne kategorije brise dotad izabranu podkategoriju
+            # (podkategorija pripada tacno jednoj kategoriji)
+            podkategorija_state["id"] = None
+            podkategorija_state["naziv"] = None
+            podkategorija_btn.text = prevedi("db_no_category", jezik)
 
-        cat_btn.bind(on_release=lambda inst: self.open_category_pick_popup(on_cat_chosen))
+        kategorija_btn.bind(
+            on_release=lambda inst: self.open_kategorija_pick_popup(on_kategorija_chosen)
+        )
 
-        def on_subcat_chosen(skid, snaziv):
-            kategorija_state["pod_id"] = skid
-            kategorija_state["pod_naziv"] = snaziv
-            subcat_btn.text = snaziv if skid else prevedi("db_no_subcategory", jezik)
+        def on_podkategorija_chosen(kid, knaziv):
+            podkategorija_state["id"] = kid
+            podkategorija_state["naziv"] = knaziv
+            podkategorija_btn.text = knaziv if kid else prevedi("db_no_category", jezik)
 
-        def otvori_subcat(*a):
-            if not kategorija_state["id"]:
+        def otvori_podkategoriju(inst):
+            if kategorija_state["id"] is None:
+                self._prikazi_kratku_poruku(prevedi("db_pick_subcategory_first_msg", jezik))
                 return
-            self.open_subcategory_pick_popup(kategorija_state["id"], on_subcat_chosen)
+            self.open_podkategorija_pick_popup(kategorija_state["id"], on_podkategorija_chosen)
 
-        subcat_btn.bind(on_release=otvori_subcat)
+        podkategorija_btn.bind(on_release=otvori_podkategoriju)
 
-        row6 = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
+        row4 = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
         kolicina_input = StyledTextInput(
-            text="1", hint_text=prevedi("db_qty_hint", jezik),
+            text=(f"{podrazumevana_kolicina:g}" if podrazumevana_kolicina else ""),
+            hint_text=prevedi("db_qty_hint", jezik),
             input_filter="float", multiline=False,
         )
-        row6.add_widget(Label(text=prevedi("db_label_qty", jezik), size_hint_x=0.4))
-        row6.add_widget(kolicina_input)
-        inner.add_widget(row6)
+        row4.add_widget(Label(text=prevedi("db_label_qty", jezik), size_hint_x=0.4))
+        row4.add_widget(kolicina_input)
+        inner.add_widget(row4)
 
         error_label = Label(text="", size_hint_y=None, height=dp(24), color=(1, 0.4, 0.4, 1))
         inner.add_widget(error_label)
-
-        scroll.add_widget(inner)
-        content.add_widget(scroll)
 
         popup = Popup(
             title=prevedi("db_edit_title", jezik), content=content, size_hint=(0.92, 0.92),
@@ -226,20 +238,35 @@ class DatabaseScreen(Screen):
             if not novi_naziv:
                 error_label.text = prevedi("db_err_empty_name", jezik)
                 return
-            try:
-                nova_cena_prikaz = float(cena_input.text.replace(",", "."))
-            except ValueError:
-                error_label.text = prevedi("db_err_bad_price", jezik)
-                return
-            if nova_cena_prikaz < 0:
-                error_label.text = prevedi("db_err_negative_price", jezik)
-                return
+
+            cena_tekst = cena_input.text.strip()
+            if cena_tekst:
+                try:
+                    nova_cena_prikaz = float(cena_tekst.replace(",", "."))
+                except ValueError:
+                    error_label.text = prevedi("db_err_bad_price", jezik)
+                    return
+                if nova_cena_prikaz < 0:
+                    error_label.text = prevedi("db_err_negative_price", jezik)
+                    return
+            else:
+                nova_cena_prikaz = 0
+
+            kolicina_tekst = kolicina_input.text.strip()
+            if kolicina_tekst:
+                try:
+                    nova_kolicina = float(kolicina_tekst.replace(",", "."))
+                except ValueError:
+                    nova_kolicina = None
+            else:
+                nova_kolicina = None
 
             nova_cena_rsd = db.prikaz_u_rsd(nova_cena_prikaz)
 
             uspeh = db.update_proizvod(
-                proizvod_id, novi_naziv, nova_jedinica, nova_cena_rsd, prodavnica_state["id"],
-                kategorija_state["id"], kategorija_state["pod_id"],
+                proizvod_id, novi_naziv, nova_jedinica, nova_cena_rsd,
+                prodavnica_state["id"], kategorija_state["id"], podkategorija_state["id"],
+                nova_kolicina,
             )
             if not uspeh:
                 error_label.text = prevedi("db_err_duplicate", jezik)
@@ -266,9 +293,6 @@ class DatabaseScreen(Screen):
 
         def dodaj_u_listu(*a):
             sl_screen = self.manager.get_screen("shopping_list")
-            if sl_screen.lista_id is None:
-                error_label.text = prevedi("sl_no_active_list", jezik)
-                return
             try:
                 kolicina = float(kolicina_input.text.replace(",", "."))
             except ValueError:
@@ -278,12 +302,15 @@ class DatabaseScreen(Screen):
                 error_label.text = prevedi("db_err_bad_price", jezik)
                 return
 
-            sl_screen.add_product_to_current_list(
+            uspeh = sl_screen.add_product_to_current_list(
                 naziv_input.text.strip() or naziv,
                 jedinica_input.text.strip() or jedinica,
                 kolicina,
                 cena_rsd,
             )
+            if not uspeh:
+                error_label.text = prevedi("sl_no_stores_yet", jezik)
+                return
             popup.dismiss()
 
         btn_row = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
@@ -305,9 +332,29 @@ class DatabaseScreen(Screen):
 
         popup.open()
 
-    def open_store_pick_popup(self, on_chosen):
+    def _prikazi_kratku_poruku(self, tekst):
         jezik = _jezik()
         content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
+        content.add_widget(Label(text=tekst))
+        popup = Popup(title="", content=content, size_hint=(0.8, 0.3), overlay_color=(0, 0, 0, 0.85))
+        close_btn = SecondaryButton(text=prevedi("sl_cancel", jezik), size_hint_y=None, height=dp(44))
+        close_btn.bind(on_release=popup.dismiss)
+        content.add_widget(close_btn)
+        popup.open()
+
+    def open_store_pick_popup(self, on_chosen):
+        """Picker za izbor prodavnice - koristi se iz open_edit_popup.
+        Sad ima i polje za direktno dodavanje nove prodavnice (da ne bude
+        cor sokak kad lista jos nema nijednu)."""
+        jezik = _jezik()
+        content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
+
+        naziv_input = StyledTextInput(
+            hint_text=prevedi("sl_search_store_hint", jezik),
+            size_hint_y=None, height=dp(44), multiline=False,
+        )
+        content.add_widget(naziv_input)
+
         results_box = BoxLayout(orientation="vertical", size_hint_y=None, spacing=dp(4))
         results_box.bind(minimum_height=results_box.setter("height"))
         scroll = ScrollView(size_hint_y=1)
@@ -315,7 +362,7 @@ class DatabaseScreen(Screen):
         content.add_widget(scroll)
 
         pick_popup = Popup(
-            title=prevedi("db_pick_store_title", jezik), content=content, size_hint=(0.85, 0.7),
+            title=prevedi("db_pick_store_title", jezik), content=content, size_hint=(0.85, 0.8),
             overlay_color=(0, 0, 0, 0.85), auto_dismiss=False,
         )
 
@@ -323,24 +370,47 @@ class DatabaseScreen(Screen):
             on_chosen(pid, naziv)
             pick_popup.dismiss()
 
-        no_store_btn = SecondaryButton(text=prevedi("db_no_store", jezik), size_hint_y=None, height=dp(44))
-        no_store_btn.bind(on_release=lambda inst: choose(None, ""))
-        results_box.add_widget(no_store_btn)
+        def refresh_results(*a):
+            results_box.clear_widgets()
+            query = naziv_input.text.strip().lower()
+            no_store_btn = SecondaryButton(
+                text=prevedi("db_no_store", jezik), size_hint_y=None, height=dp(44)
+            )
+            no_store_btn.bind(on_release=lambda inst: choose(None, ""))
+            results_box.add_widget(no_store_btn)
+            for pid, naziv in db.get_prodavnice():
+                if query in naziv.lower():
+                    btn = SecondaryButton(text=naziv, size_hint_y=None, height=dp(44))
+                    btn.bind(on_release=lambda inst, pid=pid, naziv=naziv: choose(pid, naziv))
+                    results_box.add_widget(btn)
 
-        for pid, naziv in db.get_prodavnice():
-            btn = SecondaryButton(text=naziv, size_hint_y=None, height=dp(44))
-            btn.bind(on_release=lambda inst, pid=pid, naziv=naziv: choose(pid, naziv))
-            results_box.add_widget(btn)
+        naziv_input.bind(text=refresh_results)
 
-        close_btn = SecondaryButton(text=prevedi("sl_cancel", jezik), size_hint_y=None, height=dp(48))
+        def dodaj_novu(*a):
+            naziv = naziv_input.text.strip()
+            if not naziv:
+                return
+            pid = db.add_prodavnica(naziv)
+            choose(pid, naziv)
+
+        btn_row = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
+        add_btn = PrimaryButton(text=prevedi("sl_add_store_btn", jezik))
+        add_btn.bind(on_release=dodaj_novu)
+        close_btn = SecondaryButton(text=prevedi("sl_cancel", jezik))
         close_btn.bind(on_release=pick_popup.dismiss)
-        content.add_widget(close_btn)
+        btn_row.add_widget(add_btn)
+        btn_row.add_widget(close_btn)
+        content.add_widget(btn_row)
+
+        refresh_results()
 
         pick_popup.open()
 
-    def open_category_pick_popup(self, on_chosen):
+    def open_kategorija_pick_popup(self, on_chosen):
+        """Picker za izbor GLAVNE kategorije - koristi se iz open_edit_popup."""
         jezik = _jezik()
         content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
+
         results_box = BoxLayout(orientation="vertical", size_hint_y=None, spacing=dp(4))
         results_box.bind(minimum_height=results_box.setter("height"))
         scroll = ScrollView(size_hint_y=1)
@@ -356,11 +426,18 @@ class DatabaseScreen(Screen):
             on_chosen(kid, naziv)
             pick_popup.dismiss()
 
-        no_cat_btn = SecondaryButton(text=prevedi("db_no_category", jezik), size_hint_y=None, height=dp(44))
-        no_cat_btn.bind(on_release=lambda inst: choose(None, ""))
+        no_cat_btn = SecondaryButton(
+            text=prevedi("db_no_category", jezik), size_hint_y=None, height=dp(44)
+        )
+        no_cat_btn.bind(on_release=lambda inst: choose(None, None))
         results_box.add_widget(no_cat_btn)
 
-        for kid, naziv in db.get_kategorije():
+        kategorije = db.get_kategorije(roditelj_id=None)
+        if not kategorije:
+            results_box.add_widget(Label(
+                text=prevedi("db_categories_empty", jezik), size_hint_y=None, height=dp(40)
+            ))
+        for kid, naziv in kategorije:
             btn = SecondaryButton(text=naziv, size_hint_y=None, height=dp(44))
             btn.bind(on_release=lambda inst, kid=kid, naziv=naziv: choose(kid, naziv))
             results_box.add_widget(btn)
@@ -371,9 +448,11 @@ class DatabaseScreen(Screen):
 
         pick_popup.open()
 
-    def open_subcategory_pick_popup(self, kategorija_id, on_chosen):
+    def open_podkategorija_pick_popup(self, roditelj_kategorija_id, on_chosen):
+        """Picker za izbor PODKATEGORIJE (unutar vec izabrane glavne kategorije)."""
         jezik = _jezik()
         content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
+
         results_box = BoxLayout(orientation="vertical", size_hint_y=None, spacing=dp(4))
         results_box.bind(minimum_height=results_box.setter("height"))
         scroll = ScrollView(size_hint_y=1)
@@ -381,27 +460,28 @@ class DatabaseScreen(Screen):
         content.add_widget(scroll)
 
         pick_popup = Popup(
-            title=prevedi("db_pick_subcategory_title", jezik), content=content, size_hint=(0.85, 0.7),
+            title=prevedi("db_pick_subcategory_title", jezik), content=content, size_hint=(0.85, 0.8),
             overlay_color=(0, 0, 0, 0.85), auto_dismiss=False,
         )
 
-        def choose(skid, naziv):
-            on_chosen(skid, naziv)
+        def choose(kid, naziv):
+            on_chosen(kid, naziv)
             pick_popup.dismiss()
 
-        no_sub_btn = SecondaryButton(text=prevedi("db_no_subcategory", jezik), size_hint_y=None, height=dp(44))
-        no_sub_btn.bind(on_release=lambda inst: choose(None, ""))
-        results_box.add_widget(no_sub_btn)
+        no_cat_btn = SecondaryButton(
+            text=prevedi("db_no_category", jezik), size_hint_y=None, height=dp(44)
+        )
+        no_cat_btn.bind(on_release=lambda inst: choose(None, None))
+        results_box.add_widget(no_cat_btn)
 
-        podkategorije = db.get_podkategorije(kategorija_id)
+        podkategorije = db.get_kategorije(roditelj_id=roditelj_kategorija_id)
         if not podkategorije:
-            results_box.add_widget(
-                Label(text=prevedi("db_empty_subcategories", jezik), size_hint_y=None,
-                      height=dp(40), color=(0.7, 0.7, 0.7, 1))
-            )
-        for skid, naziv in podkategorije:
+            results_box.add_widget(Label(
+                text=prevedi("db_subcategories_empty", jezik), size_hint_y=None, height=dp(40)
+            ))
+        for kid, naziv in podkategorije:
             btn = SecondaryButton(text=naziv, size_hint_y=None, height=dp(44))
-            btn.bind(on_release=lambda inst, skid=skid, naziv=naziv: choose(skid, naziv))
+            btn.bind(on_release=lambda inst, kid=kid, naziv=naziv: choose(kid, naziv))
             results_box.add_widget(btn)
 
         close_btn = SecondaryButton(text=prevedi("sl_cancel", jezik), size_hint_y=None, height=dp(48))
@@ -410,18 +490,29 @@ class DatabaseScreen(Screen):
 
         pick_popup.open()
 
-    # ================= PRODAVNICE =================
+    # =========================================================
+    # TAB: Prodavnice
+    # =========================================================
 
     def show_prodavnice(self):
         jezik = _jezik()
         box = self.ids.database_box
         box.clear_widgets()
+
+        novi_btn = PrimaryButton(
+            text=prevedi("sl_add_store_btn", jezik), size_hint_y=None, height=dp(48),
+        )
+        novi_btn.bind(on_release=lambda inst: self.open_new_prodavnica_popup())
+        box.add_widget(novi_btn)
+
         prodavnice = db.get_prodavnice()
 
         if not prodavnice:
             box.add_widget(
-                Label(text=prevedi("db_empty_stores", jezik), size_hint_y=None,
-                      height=dp(40), color=(1, 1, 1, 1))
+                Label(
+                    text=prevedi("db_empty_stores", jezik),
+                    size_hint_y=None, height=dp(40), color=(1, 1, 1, 1),
+                )
             )
             return
 
@@ -431,8 +522,48 @@ class DatabaseScreen(Screen):
                 background_normal="", background_color=(0.16, 0.16, 0.18, 1),
                 color=(1, 1, 1, 1),
             )
-            btn.bind(on_release=lambda inst, pid=pid, naziv=naziv: self.open_edit_store_popup(pid, naziv))
+            btn.bind(
+                on_release=lambda inst, pid=pid, naziv=naziv: self.open_edit_store_popup(pid, naziv)
+            )
             box.add_widget(btn)
+
+    def open_new_prodavnica_popup(self):
+        jezik = _jezik()
+        content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
+
+        naziv_input = StyledTextInput(
+            hint_text=prevedi("db_label_store_name", jezik), multiline=False,
+            size_hint_y=None, height=dp(44),
+        )
+        content.add_widget(naziv_input)
+
+        error_label = Label(text="", size_hint_y=None, height=dp(24), color=(1, 0.4, 0.4, 1))
+        content.add_widget(error_label)
+
+        popup = Popup(
+            title=prevedi("sl_add_store_btn", jezik), content=content, size_hint=(0.85, 0.4),
+            overlay_color=(0, 0, 0, 0.85), auto_dismiss=False,
+        )
+
+        def dodaj(*a):
+            naziv = naziv_input.text.strip()
+            if not naziv:
+                error_label.text = prevedi("db_err_empty_name", jezik)
+                return
+            db.add_prodavnica(naziv)
+            popup.dismiss()
+            self.show_prodavnice()
+
+        btn_row = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
+        save_btn = PrimaryButton(text=prevedi("db_save", jezik))
+        save_btn.bind(on_release=dodaj)
+        cancel_btn = SecondaryButton(text=prevedi("sl_cancel", jezik))
+        cancel_btn.bind(on_release=popup.dismiss)
+        btn_row.add_widget(save_btn)
+        btn_row.add_widget(cancel_btn)
+        content.add_widget(btn_row)
+
+        popup.open()
 
     def open_edit_store_popup(self, prodavnica_id, naziv):
         jezik = _jezik()
@@ -495,72 +626,136 @@ class DatabaseScreen(Screen):
 
         popup.open()
 
-    # ================= KATEGORIJE =================
+    # =========================================================
+    # TAB: Kategorije (novo - CRUD glavnih kategorija i podkategorija)
+    # =========================================================
 
     def show_kategorije(self):
         jezik = _jezik()
         box = self.ids.database_box
         box.clear_widgets()
 
-        add_row = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
-        novi_naziv_input = StyledTextInput(hint_text=prevedi("db_add_category_hint", jezik), multiline=False)
-        add_btn = PrimaryButton(text=prevedi("db_add_category_btn", jezik), size_hint_x=None, width=dp(120))
+        novi_btn = PrimaryButton(
+            text=prevedi("db_new_category_btn", jezik), size_hint_y=None, height=dp(48),
+        )
+        novi_btn.bind(on_release=lambda inst: self.open_new_kategorija_popup())
+        box.add_widget(novi_btn)
 
-        def dodaj(*a):
-            naziv = novi_naziv_input.text.strip()
-            if not naziv:
-                return
-            db.add_kategorija(naziv)
-            novi_naziv_input.text = ""
-            self.show_kategorije()
-
-        add_btn.bind(on_release=dodaj)
-        add_row.add_widget(novi_naziv_input)
-        add_row.add_widget(add_btn)
-        box.add_widget(add_row)
-
-        kategorije = db.get_kategorije()
+        kategorije = db.get_kategorije(roditelj_id=None)
         if not kategorije:
-            box.add_widget(
-                Label(text=prevedi("db_empty_categories", jezik), size_hint_y=None,
-                      height=dp(40), color=(1, 1, 1, 1))
-            )
+            box.add_widget(Label(
+                text=prevedi("db_categories_empty", jezik), size_hint_y=None,
+                height=dp(40), color=(1, 1, 1, 1),
+            ))
             return
 
         for kid, naziv in kategorije:
-            row = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(4))
             btn = Button(
-                text=naziv, background_normal="", background_color=(0.16, 0.16, 0.18, 1),
+                text=naziv, size_hint_y=None, height=dp(44),
+                background_normal="", background_color=(0.16, 0.16, 0.18, 1),
                 color=(1, 1, 1, 1),
             )
-            btn.bind(on_release=lambda inst, kid=kid, naziv=naziv: self.open_edit_category_popup(kid, naziv))
-            sub_btn = SecondaryButton(
-                text=prevedi("db_manage_subcategories_btn", jezik), size_hint_x=None, width=dp(120)
+            btn.bind(
+                on_release=lambda inst, kid=kid, naziv=naziv: self.open_kategorija_detail_popup(kid, naziv)
             )
-            sub_btn.bind(on_release=lambda inst, kid=kid, naziv=naziv: self.show_podkategorije(kid, naziv))
-            row.add_widget(btn)
-            row.add_widget(sub_btn)
-            box.add_widget(row)
+            box.add_widget(btn)
 
-    def open_edit_category_popup(self, kategorija_id, naziv):
+    def open_new_kategorija_popup(self):
         jezik = _jezik()
         content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
 
-        row0 = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
-        naziv_input = StyledTextInput(text=naziv, multiline=False)
-        row0.add_widget(Label(text=prevedi("db_label_category_name", jezik), size_hint_x=0.5))
-        row0.add_widget(naziv_input)
-        content.add_widget(row0)
+        naziv_input = StyledTextInput(
+            hint_text=prevedi("db_edit_category_name", jezik), multiline=False,
+            size_hint_y=None, height=dp(44),
+        )
+        content.add_widget(naziv_input)
 
         error_label = Label(text="", size_hint_y=None, height=dp(24), color=(1, 0.4, 0.4, 1))
         content.add_widget(error_label)
 
         popup = Popup(
-            title=prevedi("db_edit_category_title", jezik), content=content, size_hint=(0.9, 0.55),
+            title=prevedi("db_new_category_btn", jezik), content=content, size_hint=(0.85, 0.4),
             overlay_color=(0, 0, 0, 0.85), auto_dismiss=False,
         )
 
-        def save(*a):
+        def dodaj(*a):
+            naziv = naziv_input.text.strip()
+            if not naziv:
+                error_label.text = prevedi("db_err_empty_name", jezik)
+                return
+            postojece = [n for _, n in db.get_kategorije(roditelj_id=None)]
+            if naziv.lower() in [n.lower() for n in postojece]:
+                error_label.text = prevedi("db_err_duplicate_category", jezik)
+                return
+            db.add_kategorija(naziv, roditelj_id=None)
+            popup.dismiss()
+            self.show_kategorije()
+
+        btn_row = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
+        save_btn = PrimaryButton(text=prevedi("db_save", jezik))
+        save_btn.bind(on_release=dodaj)
+        cancel_btn = SecondaryButton(text=prevedi("sl_cancel", jezik))
+        cancel_btn.bind(on_release=popup.dismiss)
+        btn_row.add_widget(save_btn)
+        btn_row.add_widget(cancel_btn)
+        content.add_widget(btn_row)
+
+        popup.open()
+
+    def open_kategorija_detail_popup(self, kategorija_id, naziv):
+        """Prikazuje podkategorije jedne glavne kategorije + opcije za
+        izmenu naziva/brisanje same kategorije."""
+        jezik = _jezik()
+        content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
+
+        content.add_widget(Label(text=naziv, bold=True, font_size="18sp",
+                                  size_hint_y=None, height=dp(32)))
+
+        sub_box = BoxLayout(orientation="vertical", size_hint_y=None, spacing=dp(4))
+        sub_box.bind(minimum_height=sub_box.setter("height"))
+        scroll = ScrollView(size_hint_y=1)
+        scroll.add_widget(sub_box)
+        content.add_widget(scroll)
+
+        detail_popup = Popup(
+            title=prevedi("db_category_title", jezik), content=content, size_hint=(0.92, 0.85),
+            overlay_color=(0, 0, 0, 0.85), auto_dismiss=False,
+        )
+
+        def refresh_sub():
+            sub_box.clear_widgets()
+            podkategorije = db.get_kategorije(roditelj_id=kategorija_id)
+            if not podkategorije:
+                sub_box.add_widget(Label(
+                    text=prevedi("db_subcategories_empty", jezik),
+                    size_hint_y=None, height=dp(36), color=(0.75, 0.75, 0.75, 1),
+                ))
+            for skid, sknaziv in podkategorije:
+                btn = SecondaryButton(text=sknaziv, size_hint_y=None, height=dp(40))
+                btn.bind(
+                    on_release=lambda inst, skid=skid, sknaziv=sknaziv:
+                        self.open_edit_subkategorija_popup(skid, sknaziv, kategorija_id, refresh_sub)
+                )
+                sub_box.add_widget(btn)
+
+        refresh_sub()
+
+        novi_sub_btn = PrimaryButton(
+            text=prevedi("db_new_subcategory_btn", jezik), size_hint_y=None, height=dp(44),
+        )
+        novi_sub_btn.bind(
+            on_release=lambda inst: self.open_new_subkategorija_popup(kategorija_id, refresh_sub)
+        )
+        content.add_widget(novi_sub_btn)
+
+        naziv_input = StyledTextInput(text=naziv, multiline=False, size_hint_y=None, height=dp(44))
+        content.add_widget(Label(text=prevedi("db_edit_category_name", jezik), size_hint_y=None, height=dp(24)))
+        content.add_widget(naziv_input)
+
+        error_label = Label(text="", size_hint_y=None, height=dp(24), color=(1, 0.4, 0.4, 1))
+        content.add_widget(error_label)
+
+        def save_name(*a):
             novi_naziv = naziv_input.text.strip()
             if not novi_naziv:
                 error_label.text = prevedi("db_err_empty_name", jezik)
@@ -569,7 +764,7 @@ class DatabaseScreen(Screen):
             if not uspeh:
                 error_label.text = prevedi("db_err_duplicate_category", jezik)
                 return
-            popup.dismiss()
+            detail_popup.dismiss()
             self.show_kategorije()
 
         delete_state = {"confirm": False}
@@ -579,94 +774,85 @@ class DatabaseScreen(Screen):
                 delete_state["confirm"] = True
                 instance.text = prevedi("db_confirm_delete_category", jezik)
                 return
-            db.delete_kategorija(kategorija_id)
-            popup.dismiss()
+            uspeh = db.delete_kategorija(kategorija_id)
+            if not uspeh:
+                error_label.text = prevedi("db_err_category_in_use", jezik)
+                delete_state["confirm"] = False
+                instance.text = prevedi("db_delete_category", jezik)
+                return
+            detail_popup.dismiss()
             self.show_kategorije()
 
         btn_row = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
         save_btn = PrimaryButton(text=prevedi("db_save", jezik))
-        save_btn.bind(on_release=save)
-        cancel_btn = SecondaryButton(text=prevedi("sl_cancel", jezik))
-        cancel_btn.bind(on_release=popup.dismiss)
+        save_btn.bind(on_release=save_name)
+        close_btn = SecondaryButton(text=prevedi("hist_close", jezik))
+        close_btn.bind(on_release=detail_popup.dismiss)
         btn_row.add_widget(save_btn)
-        btn_row.add_widget(cancel_btn)
+        btn_row.add_widget(close_btn)
         content.add_widget(btn_row)
 
         delete_btn = DangerButton(text=prevedi("db_delete_category", jezik), size_hint_y=None, height=dp(44))
         delete_btn.bind(on_release=delete)
         content.add_widget(delete_btn)
 
-        popup.open()
+        detail_popup.open()
 
-    def show_podkategorije(self, kategorija_id, kategorija_naziv):
-        jezik = _jezik()
-        box = self.ids.database_box
-        box.clear_widgets()
-
-        back_btn = SecondaryButton(
-            text=prevedi("db_back_to_categories", jezik), size_hint_y=None, height=dp(40)
-        )
-        back_btn.bind(on_release=lambda inst: self.show_kategorije())
-        box.add_widget(back_btn)
-
-        naslov = Label(
-            text=prevedi("db_subcategories_of", jezik).format(naziv=kategorija_naziv),
-            bold=True, size_hint_y=None, height=dp(32), color=(1, 1, 1, 1),
-        )
-        box.add_widget(naslov)
-
-        add_row = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
-        novi_naziv_input = StyledTextInput(hint_text=prevedi("db_add_subcategory_hint", jezik), multiline=False)
-        add_btn = PrimaryButton(text=prevedi("db_add_subcategory_btn", jezik), size_hint_x=None, width=dp(130))
-
-        def dodaj(*a):
-            naziv = novi_naziv_input.text.strip()
-            if not naziv:
-                return
-            db.add_podkategorija(naziv, kategorija_id)
-            novi_naziv_input.text = ""
-            self.show_podkategorije(kategorija_id, kategorija_naziv)
-
-        add_btn.bind(on_release=dodaj)
-        add_row.add_widget(novi_naziv_input)
-        add_row.add_widget(add_btn)
-        box.add_widget(add_row)
-
-        podkategorije = db.get_podkategorije(kategorija_id)
-        if not podkategorije:
-            box.add_widget(
-                Label(text=prevedi("db_empty_subcategories", jezik), size_hint_y=None,
-                      height=dp(40), color=(1, 1, 1, 1))
-            )
-            return
-
-        for skid, naziv in podkategorije:
-            btn = Button(
-                text=naziv, size_hint_y=None, height=dp(44),
-                background_normal="", background_color=(0.16, 0.16, 0.18, 1),
-                color=(1, 1, 1, 1),
-            )
-            btn.bind(
-                on_release=lambda inst, skid=skid, naziv=naziv:
-                    self.open_edit_subcategory_popup(skid, naziv, kategorija_id, kategorija_naziv)
-            )
-            box.add_widget(btn)
-
-    def open_edit_subcategory_popup(self, podkategorija_id, naziv, kategorija_id, kategorija_naziv):
+    def open_new_subkategorija_popup(self, roditelj_id, on_dodato):
         jezik = _jezik()
         content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
 
-        row0 = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
-        naziv_input = StyledTextInput(text=naziv, multiline=False)
-        row0.add_widget(Label(text=prevedi("db_label_subcategory_name", jezik), size_hint_x=0.5))
-        row0.add_widget(naziv_input)
-        content.add_widget(row0)
+        naziv_input = StyledTextInput(
+            hint_text=prevedi("db_edit_subcategory_name", jezik), multiline=False,
+            size_hint_y=None, height=dp(44),
+        )
+        content.add_widget(naziv_input)
 
         error_label = Label(text="", size_hint_y=None, height=dp(24), color=(1, 0.4, 0.4, 1))
         content.add_widget(error_label)
 
         popup = Popup(
-            title=prevedi("db_edit_subcategory_title", jezik), content=content, size_hint=(0.9, 0.55),
+            title=prevedi("db_new_subcategory_btn", jezik), content=content, size_hint=(0.85, 0.4),
+            overlay_color=(0, 0, 0, 0.85), auto_dismiss=False,
+        )
+
+        def dodaj(*a):
+            naziv = naziv_input.text.strip()
+            if not naziv:
+                error_label.text = prevedi("db_err_empty_name", jezik)
+                return
+            postojece = [n for _, n in db.get_kategorije(roditelj_id=roditelj_id)]
+            if naziv.lower() in [n.lower() for n in postojece]:
+                error_label.text = prevedi("db_err_duplicate_category", jezik)
+                return
+            db.add_kategorija(naziv, roditelj_id=roditelj_id)
+            popup.dismiss()
+            on_dodato()
+
+        btn_row = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
+        save_btn = PrimaryButton(text=prevedi("db_save", jezik))
+        save_btn.bind(on_release=dodaj)
+        cancel_btn = SecondaryButton(text=prevedi("sl_cancel", jezik))
+        cancel_btn.bind(on_release=popup.dismiss)
+        btn_row.add_widget(save_btn)
+        btn_row.add_widget(cancel_btn)
+        content.add_widget(btn_row)
+
+        popup.open()
+
+    def open_edit_subkategorija_popup(self, subkategorija_id, naziv, roditelj_id, on_izmenjeno):
+        jezik = _jezik()
+        content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
+
+        naziv_input = StyledTextInput(text=naziv, multiline=False, size_hint_y=None, height=dp(44))
+        content.add_widget(Label(text=prevedi("db_edit_subcategory_name", jezik), size_hint_y=None, height=dp(24)))
+        content.add_widget(naziv_input)
+
+        error_label = Label(text="", size_hint_y=None, height=dp(24), color=(1, 0.4, 0.4, 1))
+        content.add_widget(error_label)
+
+        popup = Popup(
+            title=prevedi("db_edit_subcategory_title", jezik), content=content, size_hint=(0.85, 0.5),
             overlay_color=(0, 0, 0, 0.85), auto_dismiss=False,
         )
 
@@ -675,23 +861,28 @@ class DatabaseScreen(Screen):
             if not novi_naziv:
                 error_label.text = prevedi("db_err_empty_name", jezik)
                 return
-            uspeh = db.update_podkategorija(podkategorija_id, novi_naziv)
+            uspeh = db.update_kategorija(subkategorija_id, novi_naziv)
             if not uspeh:
-                error_label.text = prevedi("db_err_duplicate_subcategory", jezik)
+                error_label.text = prevedi("db_err_duplicate_category", jezik)
                 return
             popup.dismiss()
-            self.show_podkategorije(kategorija_id, kategorija_naziv)
+            on_izmenjeno()
 
         delete_state = {"confirm": False}
 
         def delete(instance):
             if not delete_state["confirm"]:
                 delete_state["confirm"] = True
-                instance.text = prevedi("db_confirm_delete_subcategory", jezik)
+                instance.text = prevedi("db_confirm_delete_category", jezik)
                 return
-            db.delete_podkategorija(podkategorija_id)
+            uspeh = db.delete_kategorija(subkategorija_id)
+            if not uspeh:
+                error_label.text = prevedi("db_err_category_in_use", jezik)
+                delete_state["confirm"] = False
+                instance.text = prevedi("db_delete_subcategory", jezik)
+                return
             popup.dismiss()
-            self.show_podkategorije(kategorija_id, kategorija_naziv)
+            on_izmenjeno()
 
         btn_row = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
         save_btn = PrimaryButton(text=prevedi("db_save", jezik))
@@ -702,7 +893,9 @@ class DatabaseScreen(Screen):
         btn_row.add_widget(cancel_btn)
         content.add_widget(btn_row)
 
-        delete_btn = DangerButton(text=prevedi("db_delete_subcategory", jezik), size_hint_y=None, height=dp(44))
+        delete_btn = DangerButton(
+            text=prevedi("db_delete_subcategory", jezik), size_hint_y=None, height=dp(44),
+        )
         delete_btn.bind(on_release=delete)
         content.add_widget(delete_btn)
 
