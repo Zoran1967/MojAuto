@@ -129,6 +129,7 @@ PREVODI = {
         "db_subcategories_empty": "Nema potkategorija jos.",
         "db_subcategories_of": "Potkategorije: {naziv}",
         "db_back_to_categories": "< Kategorije",
+        "db_added_to_list_msg": "Dodato u listu.",
 
         "set_title": "Podesavanja",
         "set_theme_label": "Boja teme aplikacije (dugmad)",
@@ -264,6 +265,7 @@ PREVODI = {
         "db_subcategories_empty": "No subcategories yet.",
         "db_subcategories_of": "Subcategories: {naziv}",
         "db_back_to_categories": "< Categories",
+        "db_added_to_list_msg": "Added to list.",
 
         "set_title": "Settings",
         "set_theme_label": "App theme color (buttons)",
@@ -399,6 +401,7 @@ PREVODI = {
         "db_subcategories_empty": "Zatial ziadne podkategorie.",
         "db_subcategories_of": "Podkategorie: {naziv}",
         "db_back_to_categories": "< Kategorie",
+        "db_added_to_list_msg": "Pridane do zoznamu.",
 
         "set_title": "Nastavenia",
         "set_theme_label": "Farba temy aplikacie (tlacidla)",
@@ -534,6 +537,7 @@ PREVODI = {
         "db_subcategories_empty": "Ще немає підкатегорій.",
         "db_subcategories_of": "Підкатегорії: {naziv}",
         "db_back_to_categories": "< Категорії",
+        "db_added_to_list_msg": "Додано у список.",
 
         "set_title": "Налаштування",
         "set_theme_label": "Колір теми додатку (кнопки)",
