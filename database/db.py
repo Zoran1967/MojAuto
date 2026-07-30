@@ -10,6 +10,8 @@ Tabele:
 - liste (id, datum, prodavnica_id, ukupno, zatvorena)
 - lista_stavke (id, lista_id, proizvod_id, naziv, kolicina, cena_po_jedinici, total)
 - podesavanja (kljuc, vrednost)
+- cene_po_prodavnici (proizvod_id, prodavnica_id, cena, datum) - poslednja
+             poznata cena SVAKOG proizvoda ZA SVAKU prodavnicu posebno.
 
 Napomena o valutama: sve cene se u bazi CUVAJU UVEK U RSD (bazna valuta).
 Prikaz i unos se preracunavaju u letu prema trenutno izabranoj valuti
@@ -18,8 +20,18 @@ Prikaz i unos se preracunavaju u letu prema trenutno izabranoj valuti
 Napomena o vise lista: aplikacija moze imati vise ISTOVREMENO OTVORENIH
 (zatvorena=0) lista, po jednu po prodavnici. Lista postaje deo istorije
 tek kad korisnik eksplicitno pritisne "Snimi racun" (close_lista).
-Dok je otvorena, lista se NE racuna u istoriju (get_istorija /
-get_prodavnice_sa_istorijom vraД‡aju samo zatvorena=1).
+Dok je otvorena, lista se NE racuna u istoriju.
+
+Napomena o grupama proizvoda: SEED_PO_KATEGORIJI je pocetni ("seed")
+spisak koji se koristi na dva nacina:
+1) Pri prvom pokretanju (prazna baza) - puni glavne kategorije i
+   proizvode od nule.
+2) Pri SVAKOM pokretanju (dopuni_seed_kategorije_i_proizvode) - dodaje
+   SAMO ono sto jos ne postoji (nove kategorije/proizvode iz ove liste
+   koji fale), NIKAD ne dira niti brise postojece podatke korisnika.
+Spisak se moze slobodno prosirivati u buducnosti (novi proizvodi ili
+cak nove kategorije) bez ikakve izmene logike aplikacije - samo se
+doda red u odgovarajucu listu.
 """
 import sqlite3
 import os
@@ -39,145 +51,140 @@ def _get_db_path():
 DB_PATH = _get_db_path()
 
 SEED_PO_KATEGORIJI = {
-    "Voce": [
-        ("Jabuka", "kg"), ("Kruska", "kg"), ("Banana", "kg"), ("Pomorandza", "kg"),
-        ("Limun", "kg"), ("Mandarina", "kg"), ("Grozdje", "kg"), ("Jagoda", "kg"),
-        ("Malina", "kg"), ("Kupina", "kg"), ("Borovnica", "kg"), ("Lubenica", "kg"),
-        ("Dinja", "kg"), ("Kajsija", "kg"), ("Breskva", "kg"), ("Nektarina", "kg"),
-        ("Sljiva", "kg"), ("Visnja", "kg"), ("Tresnja", "kg"), ("Kivi", "kg"),
-        ("Ananas", "kom"), ("Nar", "kg"), ("Grejpfrut", "kg"), ("Avokado", "kom"),
-        ("Mango", "kom"), ("Suve smokve", "kg"), ("Suve kajsije", "kg"), ("Datule", "kg"),
+    "Pekara - peciva": [
+        ("Kifla", "kom"), ("Slana kifla", "kom"), ("Puter kifla", "kom"),
+        ("Integralna kifla", "kom"), ("Kroasan", "kom"), ("Kroasan sa cokoladom", "kom"),
+        ("Kroasan sa sirom", "kom"), ("Pereca", "kom"), ("Zu-zu", "kom"),
+        ("Pogacica sa sirom", "kom"), ("Pogacica sa cvarcima", "kom"), ("Stapici", "kom"),
+        ("Burek sa sirom", "kom"), ("Burek sa mesom", "kom"), ("Burek sa krompirom", "kom"),
+        ("Pizza parce", "kom"),
     ],
-    "Povrce": [
-        ("Krompir", "kg"), ("Luk crni", "kg"), ("Beli luk", "kg"), ("Paradajz", "kg"),
-        ("Krastavac", "kg"), ("Paprika babura", "kg"), ("Paprika ljuta", "kg"),
-        ("Sargarepa", "kg"), ("Kupus", "kg"), ("Kiseli kupus", "kg"), ("Karfiol", "kg"),
-        ("Brokoli", "kg"), ("Tikvice", "kg"), ("Patlidzan", "kg"), ("Spanac", "kg"),
-        ("Zelena salata", "kom"), ("Praziluk", "kg"), ("Celer", "kg"), ("Persun", "vez"),
-        ("Cvekla", "kg"), ("Pasulj svez", "kg"), ("Grasak svez", "kg"), ("Kukuruz secerac", "kom"),
-        ("Rotkvice", "vez"), ("Tikva", "kg"), ("Bundeva", "kg"), ("Sampinjoni", "kg"),
-        ("Vrganji", "kg"),
+    "Hleb": [
+        ("Beli hleb", "kom"), ("Polubeli hleb", "kom"), ("Razani hleb", "kom"),
+        ("Integralni hleb", "kom"), ("Kukuruzni hleb", "kom"), ("Heljdin hleb", "kom"),
+        ("Tost hleb", "kom"), ("Bezglutenski hleb", "kom"), ("Lepinja", "kom"),
     ],
     "Meso": [
-        ("Piletina belo meso", "kg"), ("Piletina batak i krilca", "kg"), ("Piletina cela", "kg"),
-        ("Juneci biftek", "kg"), ("Juneci mleveni", "kg"), ("Juneci but", "kg"),
-        ("Svinjski kare", "kg"), ("Svinjska plecka", "kg"), ("Svinjski but", "kg"),
-        ("Cevapi", "kg"), ("Pljeskavice", "kg"), ("Kobasice domace", "kg"),
-        ("Slanina", "kg"), ("Prsuta", "kg"), ("Cureci file", "kg"), ("Jagnjetina", "kg"),
-        ("Mleveno meso mesano", "kg"), ("Rebarca", "kg"), ("Dimljena slanina", "kg"),
+        ("Piletina file", "kg"), ("Pileci batak", "kg"), ("Pileca krilca", "kg"),
+        ("Curetina", "kg"), ("Svinjski but", "kg"), ("Svinjski vrat", "kg"),
+        ("Svinjska plecka", "kg"), ("Juneci but", "kg"), ("Mleveno meso", "kg"),
+        ("Teletina", "kg"), ("Jagnjetina", "kg"),
+    ],
+    "Suhomesnato": [
+        ("Sunka", "kg"), ("Prsuta", "kg"), ("Pecenica", "kg"), ("Kulen", "kg"),
+        ("Cajna kobasica", "kg"), ("Zimska salama", "kg"), ("Mortadela", "kg"),
+        ("Slanina", "kg"), ("Virsle", "kom"),
     ],
     "Riba": [
-        ("Losos file", "kg"), ("Skusa", "kg"), ("Sardina sveza", "kg"),
-        ("Oslic file", "kg"), ("Pastrmka", "kg"),
-        ("Skampi", "kg"), ("Lignje", "kg"), ("Dagnje", "kg"), ("Bakalar", "kg"),
+        ("Losos", "kg"), ("Pastrmka", "kg"), ("Oslic", "kg"), ("Saran", "kg"),
+        ("Sardina", "kg"), ("Tuna", "kg"), ("Skusa", "kg"), ("Fileti ribe", "kg"),
+        ("Smrznuta riba", "kg"),
+    ],
+    "Konzervirana riba": [
+        ("Tuna u komadima", "kom"), ("Tuna komadici", "kom"), ("Sardina konzerva", "kom"),
+        ("Skusa konzerva", "kom"), ("Pasteta od tune", "kom"),
     ],
     "Mlecni proizvodi": [
-        ("Mleko", "l"), ("Jogurt", "kom"), ("Kisela pavlaka", "kom"), ("Slatka pavlaka", "kom"),
-        ("Sir", "kg"), ("Kajmak", "kg"), ("Puter", "kom"), ("Svezi sir", "kg"),
-        ("Feta sir", "kg"), ("Kefir", "kom"), ("Cheddar sir", "kom"), ("Mocarela", "kom"),
-        ("Parmezan", "kom"), ("Skuta", "kom"), ("Trapist sir", "kg"), ("Gauda sir", "kg"),
-        ("Kondenzovano mleko", "kom"),
+        ("Mleko", "l"), ("Jogurt", "kom"), ("Kefir", "kom"), ("Kiselo mleko", "kom"),
+        ("Pavlaka", "kom"), ("Kisela pavlaka", "kom"), ("Maslac", "kom"),
+        ("Margarin", "kom"), ("Mladi sir", "kg"), ("Trapist", "kg"),
+        ("Kackavalj", "kg"), ("Mocarela", "kom"), ("Feta sir", "kg"),
     ],
-    "Hleb i peciva": [
-        ("Hleb beli", "kom"), ("Hleb crni", "kom"), ("Hleb integralni", "kom"),
-        ("Lepinja", "kom"), ("Somun", "kom"), ("Kifla", "kom"), ("Perece", "kom"),
-        ("Burek sa mesom", "kom"), ("Burek sa sirom", "kom"), ("Pita zeljanica", "kom"),
-        ("Tost hleb", "kom"), ("Zemicke", "kom"), ("Djevrek", "kom"), ("Vekna", "kom"),
-        ("Kroasan", "kom"),
+    "Jaja": [
+        ("Jaja", "kom"),
     ],
-    "Testenine": [
-        ("Spagete", "kg"), ("Makarone", "kg"), ("Rezanci", "kg"), ("Fusili", "kg"),
-        ("Njoki", "kg"), ("Lazanje", "kom"), ("Testenina za supu", "kg"), ("Penne", "kg"),
+    "Sveze povrce": [
+        ("Krompir", "kg"), ("Crni luk", "kg"), ("Beli luk", "kg"), ("Sargarepa", "kg"),
+        ("Paprika", "kg"), ("Paradajz", "kg"), ("Krastavac", "kg"), ("Tikvice", "kg"),
+        ("Patlidzan", "kg"), ("Kupus", "kg"), ("Karfiol", "kg"), ("Brokoli", "kg"),
+        ("Zelena salata", "kom"), ("Spanac", "kg"), ("Cvekla", "kg"), ("Rotkvica", "vez"),
+        ("Celer", "kg"), ("Persun", "vez"),
     ],
-    "Pirinac": [
-        ("Pirinac beli", "kg"), ("Pirinac integralni", "kg"), ("Basmati pirinac", "kg"),
-        ("Pirinac za rizoto", "kg"),
+    "Sveze voce": [
+        ("Jabuka", "kg"), ("Kruska", "kg"), ("Banana", "kg"), ("Pomorandza", "kg"),
+        ("Mandarina", "kg"), ("Limun", "kg"), ("Grejp", "kg"), ("Kivi", "kg"),
+        ("Breskva", "kg"), ("Kajsija", "kg"), ("Sljiva", "kg"), ("Tresnja", "kg"),
+        ("Visnja", "kg"), ("Jagoda", "kg"), ("Malina", "kg"), ("Borovnica", "kg"),
+        ("Grozdje", "kg"), ("Lubenica", "kg"), ("Dinja", "kg"),
     ],
-    "Konzervirana hrana": [
+    "Salate": [
+        ("Zelena salata gotova", "kom"), ("Kupus salata", "kom"), ("Paradajz salata", "kom"),
+        ("Sopska salata", "kom"), ("Ruska salata", "kom"), ("Mimoza salata", "kom"),
+        ("Cvekla salata", "kom"),
+    ],
+    "Konzervirano povrce": [
         ("Grasak konzerva", "kom"), ("Kukuruz konzerva", "kom"), ("Pasulj konzerva", "kom"),
-        ("Tunjevina konzerva", "kom"), ("Paradajz pasirani", "kom"), ("Ajvar", "kom"),
-        ("Kisele krastavice", "kom"), ("Kisela paprika", "kom"), ("Turcija mesana", "kom"),
-        ("Pecurke konzerva", "kom"), ("Pasta od paradajza", "kom"), ("Kiseli kupus konzerva", "kom"),
+        ("Boranija konzerva", "kom"), ("Paradajz pelat", "kom"), ("Paradajz pire", "kom"),
+        ("Ajvar", "kom"), ("Pindjur", "kom"), ("Kiseli krastavci", "kom"),
+        ("Feferoni", "kom"), ("Masline", "kom"), ("Cvekla konzerva", "kom"),
     ],
-    "Grickalice": [
-        ("Cips", "kom"), ("Kikiriki", "kg"), ("Kokice", "kom"), ("Slani stapici", "kom"),
-        ("Krekeri", "kom"), ("Bademi", "kg"), ("Lesnici", "kg"), ("Suvo grozdje", "kg"),
-        ("Pistaci", "kg"), ("Indijski orascici", "kg"), ("Susene banane", "kg"),
+    "Konzervirano voce": [
+        ("Ananas konzerva", "kom"), ("Breskva konzerva", "kom"), ("Kruska konzerva", "kom"),
+        ("Vocni koktel", "kom"), ("Kompot od visanja", "kom"), ("Kompot od sljiva", "kom"),
+    ],
+    "Smrznuti proizvodi": [
+        ("Pomfrit", "kg"), ("Grasak smrznuti", "kg"), ("Boranija smrznuta", "kg"),
+        ("Mesano povrce smrznuto", "kg"), ("Brokoli smrznuti", "kg"), ("Karfiol smrznuti", "kg"),
+        ("Pica smrznuta", "kom"), ("Sladoled", "kom"),
+    ],
+    "Testenina": [
+        ("Spagete", "kg"), ("Makarone", "kg"), ("Penne", "kg"), ("Fusili", "kg"),
+        ("Rezanci", "kg"), ("Kore za pitu", "kom"),
+    ],
+    "Pirinac i zitarice": [
+        ("Beli pirinac", "kg"), ("Integralni pirinac", "kg"), ("Basmati", "kg"),
+        ("Palenta", "kg"), ("Ovsene pahuljice", "kg"), ("Musli", "kg"),
+    ],
+    "Brasno i secer": [
+        ("Belo brasno", "kg"), ("Integralno brasno", "kg"), ("Kukuruzno brasno", "kg"),
+        ("Secer", "kg"), ("Smedji secer", "kg"), ("Secer u prahu", "kg"),
+    ],
+    "Ulje i sirce": [
+        ("Suncokretovo ulje", "l"), ("Maslinovo ulje", "l"), ("Sirce alkoholno", "l"),
+        ("Jabukovo sirce", "l"), ("Balzamiko", "l"),
+    ],
+    "Zacini": [
+        ("So", "kom"), ("Biber", "kom"), ("Vegeta", "kom"), ("Aleva paprika", "kom"),
+        ("Origano", "kom"), ("Bosiljak", "kom"), ("Persun suvi", "kom"),
+        ("Beli luk u prahu", "kom"), ("Kari", "kom"), ("Cimet", "kom"),
     ],
     "Slatkisi": [
-        ("Cokolada mlecna", "kom"), ("Cokolada crna", "kom"), ("Keks", "kom"),
-        ("Vafli", "kom"), ("Bombone", "kom"), ("Zvake", "kom"), ("Sladoled", "kom"),
-        ("Kolac", "kom"), ("Torta", "kom"), ("Med", "kom"), ("Napolitanke", "kom"),
-        ("Cokoladni namaz", "kom"), ("Marshmallow", "kom"),
+        ("Cokolada", "kom"), ("Keks", "kom"), ("Napolitanke", "kom"), ("Bombone", "kom"),
+        ("Zvake", "kom"), ("Med", "kom"), ("Dzem", "kom"), ("Krem", "kom"),
     ],
-    "Bezalkoholna pica": [
-        ("Kola", "kom"), ("Fanta", "kom"), ("Sprite", "kom"), ("Limunada", "kom"),
-        ("Ledeni caj", "kom"), ("Tonik", "kom"), ("Energetsko pice", "kom"),
+    "Grickalice": [
+        ("Cips", "kom"), ("Smoki", "kom"), ("Kokice", "kom"), ("Stapici slani", "kom"),
+        ("Tortilja cips", "kom"), ("Kikiriki", "kg"), ("Badem", "kg"), ("Lesnik", "kg"),
     ],
-    "Sokovi": [
-        ("Sok od pomorandze", "kom"), ("Sok od jabuke", "kom"), ("Sok od breskve", "kom"),
-        ("Multivitaminski sok", "kom"), ("Nektar od kajsije", "kom"), ("Cedjeni sok", "kom"),
-    ],
-    "Voda": [
-        ("Negazirana voda", "kom"), ("Gazirana voda", "kom"), ("Mineralna voda", "kom"),
-        ("Izvorska voda 5l", "kom"),
-    ],
-    "Kafa": [
-        ("Kafa mlevena", "kom"), ("Kafa u zrnu", "kom"), ("Instant kafa", "kom"),
-        ("Kapsule za kafu", "kom"), ("Turska kafa", "kom"), ("Espreso kafa", "kom"),
-    ],
-    "Caj": [
-        ("Crni caj", "kom"), ("Zeleni caj", "kom"), ("Vocni caj", "kom"),
-        ("Kamilica", "kom"), ("Nana caj", "kom"), ("Djumbir caj", "kom"),
-    ],
-    "Alkoholna pica": [
-        ("Pivo", "kom"), ("Vino crveno", "kom"), ("Vino belo", "kom"),
-        ("Rakija sljivovica", "kom"), ("Viski", "kom"), ("Votka", "kom"), ("Gin", "kom"),
-    ],
-    "Zamrznuti proizvodi": [
-        ("Zamrznuto povrce mesano", "kg"), ("Zamrznuto voce mesano", "kg"),
-        ("Pomfrit smrznuti", "kg"), ("Sladoled porodicno pakovanje", "kom"),
-        ("Riblji stapici", "kom"), ("Pica smrznuta", "kom"), ("Zamrznuti spanac", "kg"),
-        ("Zamrznuta piletina", "kg"), ("Burek smrznuti", "kom"),
-    ],
-    "Sredstva za ciscenje": [
-        ("Deterdzent za ves", "kom"), ("Deterdzent za sudove", "kom"),
-        ("Sredstvo za pod", "kom"), ("Sredstvo za staklo", "kom"), ("Omeksivac", "kom"),
-        ("Belilo", "kom"), ("Sundjeri za sudove", "kom"), ("Kese za smece", "kom"),
-        ("Toalet papir", "kom"), ("Kuhinjski ubrusi", "kom"), ("Sredstvo za wc", "kom"),
-        ("Sredstvo protiv kamenca", "kom"), ("Krpe za ciscenje", "kom"),
-    ],
-    "Kozmetika": [
-        ("Sampon", "kom"), ("Balzam za kosu", "kom"), ("Krema za lice", "kom"),
-        ("Krema za ruke", "kom"), ("Dezodorans", "kom"), ("Parfem", "kom"),
-        ("Losion za telo", "kom"), ("Regenerator za kosu", "kom"), ("Maska za lice", "kom"),
-        ("Krema za suncanje", "kom"),
-    ],
-    "Higijena": [
-        ("Pasta za zube", "kom"), ("Cetkica za zube", "kom"), ("Sapun", "kom"),
-        ("Higijenski ulosci", "kom"), ("Vlazne maramice", "kom"), ("Brijac", "kom"),
-        ("Pena za brijanje", "kom"), ("Konac za zube", "kom"), ("Tecni sapun", "kom"),
-        ("Papirne maramice", "kom"),
-    ],
-    "Hrana za kucne ljubimce": [
-        ("Hrana za pse suva", "kg"), ("Hrana za pse konzerva", "kom"),
-        ("Hrana za macke suva", "kg"), ("Hrana za macke konzerva", "kom"),
-        ("Pesak za macke", "kom"), ("Poslastice za pse", "kom"), ("Poslastice za macke", "kom"),
+    "Pica": [
+        ("Voda", "kom"), ("Mineralna voda", "kom"), ("Sok", "kom"), ("Gazirani sok", "kom"),
+        ("Ledeni caj", "kom"), ("Energetsko pice", "kom"), ("Kafa", "kom"),
+        ("Instant kafa", "kom"), ("Crni caj", "kom"), ("Zeleni caj", "kom"), ("Kakao", "kom"),
     ],
     "Decija hrana": [
-        ("Kasica vocna", "kom"), ("Kasica povrtna", "kom"), ("Mleko za bebe", "kom"),
-        ("Pelene", "kom"), ("Vlazne maramice za bebe", "kom"), ("Decija hrana konzerva", "kom"),
-        ("Keksici za bebe", "kom"), ("Cajevi za bebe", "kom"),
+        ("Kasice", "kom"), ("Adaptirano mleko", "kom"), ("Kase", "kom"),
+        ("Keksi za bebe", "kom"),
+    ],
+    "Hrana za kucne ljubimce": [
+        ("Hrana za pse", "kg"), ("Hrana za macke", "kg"), ("Poslastice za ljubimce", "kom"),
+        ("Pesak za macke", "kom"),
+    ],
+    "Higijena": [
+        ("Toalet papir", "kom"), ("Papirni ubrusi", "kom"), ("Salvete", "kom"),
+        ("Vlazne maramice", "kom"), ("Sapun", "kom"), ("Sampon", "kom"),
+        ("Gel za tusiranje", "kom"), ("Pasta za zube", "kom"), ("Cetkica za zube", "kom"),
+        ("Dezodorans", "kom"), ("Brijaci", "kom"),
+    ],
+    "Kucna hemija": [
+        ("Prasak za ves", "kom"), ("Tecni deterdzent", "l"), ("Omeksivac", "l"),
+        ("Deterdzent za sudove", "kom"), ("Tablete za sudomasinu", "kom"),
+        ("Sredstvo za staklo", "kom"), ("Sredstvo za kupatilo", "kom"),
+        ("Izbeljivac", "kom"), ("Sredstvo za pod", "kom"), ("Sundjeri", "kom"),
+        ("Kese za smece", "kom"),
     ],
 }
 
-SEED_KATEGORIJE = [
-    "Voce", "Povrce", "Meso", "Riba", "Mlecni proizvodi", "Hleb i peciva",
-    "Testenine", "Pirinac", "Konzervirana hrana", "Grickalice", "Slatkisi",
-    "Bezalkoholna pica", "Sokovi", "Voda", "Kafa", "Caj", "Alkoholna pica",
-    "Zamrznuti proizvodi", "Sredstva za ciscenje", "Kozmetika", "Higijena",
-    "Hrana za kucne ljubimce", "Decija hrana",
-]
+SEED_KATEGORIJE = list(SEED_PO_KATEGORIJI.keys())
 
 
 def get_connection():
@@ -288,6 +295,56 @@ def init_db():
         )
         conn.commit()
 
+    conn.close()
+
+    # --- Dopuna (radi se pri SVAKOM pokretanju, ne samo kad je baza
+    # prazna): dodaje kategorije/proizvode iz SEED_PO_KATEGORIJI koji JOS
+    # NE POSTOJE u bazi korisnika. NIKAD ne dira niti brise postojece
+    # podatke - samo dodaje ono sto fali. Ovo omogucava da se noviji
+    # (prosireniji) spisak proizvoda pojavi i korisnicima koji vec
+    # imaju stariju bazu, bez gubitka njihovih unetih podataka. ---
+    dopuni_seed_kategorije_i_proizvode()
+
+
+def dopuni_seed_kategorije_i_proizvode():
+    """Idempotentno dodaje u bazu sve kategorije/proizvode iz
+    SEED_PO_KATEGORIJI koji jos ne postoje (poredjenje po nazivu, bez
+    obzira na velika/mala slova). Postojeci proizvodi/kategorije se NE
+    diraju (ne menja im se cena, prodavnica, ni bilo sta drugo)."""
+    conn = get_connection()
+    c = conn.cursor()
+
+    postojece_kategorije = dict(
+        c.execute(
+            "SELECT LOWER(naziv), id FROM kategorije WHERE roditelj_id IS NULL"
+        ).fetchall()
+    )
+    postojeci_proizvodi = {
+        red[0] for red in c.execute("SELECT LOWER(naziv) FROM proizvodi").fetchall()
+    }
+
+    for kategorija_naziv, proizvodi_liste in SEED_PO_KATEGORIJI.items():
+        kat_id = postojece_kategorije.get(kategorija_naziv.lower())
+        if kat_id is None:
+            c.execute(
+                "INSERT INTO kategorije (naziv, roditelj_id) VALUES (?, NULL)",
+                (kategorija_naziv,),
+            )
+            kat_id = c.lastrowid
+            postojece_kategorije[kategorija_naziv.lower()] = kat_id
+
+        for naziv, jedinica in proizvodi_liste:
+            if naziv.lower() in postojeci_proizvodi:
+                continue
+            c.execute(
+                "INSERT INTO proizvodi (naziv, jedinica_mere, zadnja_cena, prodavnica_id, "
+                "kategorija_id, podkategorija_id, podrazumevana_kolicina) "
+                "VALUES (?, ?, 0, NULL, ?, NULL, NULL)",
+                (naziv, jedinica, kat_id),
+            )
+            postojeci_proizvodi.add(naziv.lower())
+
+    conn.commit()
     conn.close()
 
 
@@ -516,6 +573,42 @@ def get_proizvodi_puno():
            LEFT JOIN kategorije k ON p.kategorija_id = k.id
            LEFT JOIN kategorije pk ON p.podkategorija_id = pk.id
            ORDER BY p.naziv"""
+    ).fetchall()
+    conn.close()
+    return rows
+
+
+def get_proizvod_puno(proizvod_id):
+    """Isto kao jedan red iz get_proizvodi_puno(), ali za TACNO JEDAN
+    proizvod (efikasnije nego vuci celu listu za jedan klik na 'izmeni').
+    Vraca None ako ne postoji."""
+    conn = get_connection()
+    row = conn.execute(
+        """SELECT p.id, p.naziv, p.jedinica_mere, p.zadnja_cena,
+                  COALESCE(pr.naziv, '-'), p.prodavnica_id,
+                  p.kategorija_id, k.naziv,
+                  p.podkategorija_id, pk.naziv,
+                  p.podrazumevana_kolicina
+           FROM proizvodi p
+           LEFT JOIN prodavnice pr ON p.prodavnica_id = pr.id
+           LEFT JOIN kategorije k ON p.kategorija_id = k.id
+           LEFT JOIN kategorije pk ON p.podkategorija_id = pk.id
+           WHERE p.id = ?""",
+        (proizvod_id,),
+    ).fetchone()
+    conn.close()
+    return row
+
+
+def get_proizvodi_po_kategoriji(kategorija_id):
+    """Proizvodi koji pripadaju datoj GLAVNOJ kategoriji (za grupisani
+    prikaz na ekranu 'Baza proizvoda'). Vraca (id, naziv, jedinica_mere,
+    zadnja_cena) sortirano po nazivu."""
+    conn = get_connection()
+    rows = conn.execute(
+        """SELECT id, naziv, jedinica_mere, zadnja_cena
+           FROM proizvodi WHERE kategorija_id = ? ORDER BY naziv""",
+        (kategorija_id,),
     ).fetchall()
     conn.close()
     return rows
