@@ -5,8 +5,8 @@
     icon_source: ""
     label_text: ""
     orientation: "vertical"
-    padding: dp(10)
-    spacing: dp(4)
+    padding: dp(8)
+    spacing: dp(2)
     canvas.before:
         Color:
             rgba: self.bg_color
@@ -18,15 +18,15 @@
         source: root.icon_source
         allow_stretch: True
         keep_ratio: True
-        size_hint_y: 0.65
+        size_hint_y: 0.55
     Label:
         text: root.label_text
-        font_size: "16sp"
+        font_size: "14sp"
         bold: True
         halign: "center"
         valign: "middle"
-        text_size: self.size
-        size_hint_y: 0.35
+        text_size: self.width, None
+        size_hint_y: 0.45
 
 
 <HomeScreen>:
@@ -57,25 +57,25 @@
 
             IconHomeButton:
                 bg_color: 0.55, 0.25, 0.75, 1
-                icon_source: app.assets_dir + "icon_baza.png"
+                icon_source: app.assets_dir + "baza.png"
                 label_text: root.txt_database
                 on_release: root.go_to_database()
 
             IconHomeButton:
                 bg_color: 0.15, 0.55, 0.25, 1
-                icon_source: app.assets_dir + "icon_istorija.png"
+                icon_source: app.assets_dir + "istorija.png"
                 label_text: root.txt_history
                 on_release: root.go_to_history()
 
             IconHomeButton:
                 bg_color: 0.15, 0.45, 0.85, 1
-                icon_source: app.assets_dir + "icon_nova_lista.png"
+                icon_source: app.assets_dir + "nova_lista.png"
                 label_text: root.txt_new_list
                 on_release: root.go_to_new_list()
 
             IconHomeButton:
                 bg_color: 0.85, 0.55, 0.1, 1
-                icon_source: app.assets_dir + "icon_podesavanja.png"
+                icon_source: app.assets_dir + "podesavanja.png"
                 label_text: root.txt_settings
                 on_release: root.go_to_settings()
 
@@ -83,17 +83,18 @@
             size_hint_y: 0.45
 
             Image:
-                source: app.assets_dir + "cart_big.png"
+                source: app.assets_dir + "icon.png"
                 allow_stretch: True
                 keep_ratio: True
                 pos_hint: {"center_x": 0.5, "center_y": 0.5}
                 size_hint: 1, 1
 
             Button:
-                text: "\U0001F310"
-                font_size: "22sp"
+                text: "Jezik"
+                font_size: "13sp"
+                bold: True
                 size_hint: None, None
-                size: dp(48), dp(48)
+                size: dp(64), dp(40)
                 pos_hint: {"right": 0.98, "y": 0.02}
                 background_normal: ""
                 background_color: 0.15, 0.15, 0.18, 0.9
