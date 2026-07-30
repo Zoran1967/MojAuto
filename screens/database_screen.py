@@ -24,15 +24,28 @@ class DatabaseScreen(Screen):
     i unose preko db.rsd_u_prikaz() / db.prikaz_u_rsd().
     Tekstovi se prevode preko prevedi() prema trenutno izabranom jeziku.
 
-    Napomena o kategorijama (novo): svaki proizvod moze imati kategoriju
-    i podkategoriju (birane iz baze kategorije). Korisnik moze dodavati,
+    Napomena o kategorijama: svaki proizvod moze imati kategoriju i
+    podkategoriju (birane iz baze kategorije). Korisnik moze dodavati,
     menjati i brisati svoje kategorije i podkategorije u tabu
     "Kategorije" - brisanje je zasticeno (ne moze se obrisati kategorija
     koja ima podkategorije ili je u upotrebi kod nekog proizvoda).
 
     Napomena o "Dodaj u listu": ne postoji vise pojam jedne "trenutne"
-    liste - dodaj_u_listu koristi prvu prodavnicu iz baze kao default
-    (isto pravilo kao i na ekranu Liste za kupovinu).
+    liste - dodaj_u_listu koristi izabranu prodavnicu (podrazumevano
+    prva prodavnica u bazi) - isto pravilo kao i na ekranu Liste za
+    kupovinu.
+
+    NOVO - grupisani prikaz proizvoda (tab "Proizvodi"): umesto jedne
+    velike liste svih proizvoda, prvo se prikazuju samo GLAVNE
+    kategorije (grupe). Klikom na grupu otvara se lista proizvoda iz
+    te grupe, sa poljem za kolicinu i cenu odmah pored svakog
+    proizvoda i dugmetom za brzo dodavanje na listu za IZABRANU
+    prodavnicu (cena se automatski predlaze prema poslednjoj
+    zabelezenoj ceni ZA TU prodavnicu - db.get_cena_za_prodavnicu).
+    Postojeca funkcija za izmenu/brisanje pojedinacnog proizvoda
+    (open_edit_popup) ostaje potpuno ista, samo se sada otvara iz
+    liste proizvoda unutar grupe (dugme "izmeni") umesto iz stare
+    ravne liste.
     """
 
     def on_pre_enter(self, *args):
@@ -41,78 +54,198 @@ class DatabaseScreen(Screen):
         self.ids.tab_products.text = prevedi("db_tab_products", jezik)
         self.ids.tab_stores.text = prevedi("db_tab_stores", jezik)
         self.ids.tab_categories.text = prevedi("db_tab_categories", jezik)
+        # Uvek pocinjemo od pregleda grupa (ne ostajemo "duboko" u
+        # nekoj grupi kad se korisnik vrati na ovaj ekran).
+        self._trenutna_kategorija = None
         self.show_proizvodi()
 
     # =========================================================
-    # TAB: Proizvodi
+    # TAB: Proizvodi (grupe -> proizvodi unutar grupe)
     # =========================================================
 
     def show_proizvodi(self):
+        """Prikazuje SAMO glavne grupe (kategorije). Ovo je pocetni
+        prikaz taba 'Proizvodi' - vise nema velike ravne liste svih
+        proizvoda."""
         jezik = _jezik()
+        self._trenutna_kategorija = None
         box = self.ids.database_box
         box.clear_widgets()
-        proizvodi = db.get_proizvodi_puno()
 
-        header = BoxLayout(size_hint_y=None, height=dp(36))
-        header.add_widget(Label(text=prevedi("db_col_product", jezik), bold=True, color=(1, 1, 1, 1)))
-        header.add_widget(Label(text=prevedi("db_col_unit", jezik), bold=True, size_hint_x=0.3, color=(1, 1, 1, 1)))
-        header.add_widget(Label(
-            text=prevedi("db_col_price", jezik).format(valuta=db.valuta_oznaka()),
-            bold=True, size_hint_x=0.4, color=(1, 1, 1, 1)
-        ))
-        box.add_widget(header)
-
-        if not proizvodi:
-            box.add_widget(
-                Label(text=prevedi("db_empty_products", jezik), size_hint_y=None,
-                      height=dp(40), color=(1, 1, 1, 1))
-            )
+        kategorije = db.get_kategorije(roditelj_id=None)
+        if not kategorije:
+            box.add_widget(Label(
+                text=prevedi("db_categories_empty", jezik), size_hint_y=None,
+                height=dp(40), color=(1, 1, 1, 1),
+            ))
             return
 
-        for (pid, naziv, jedinica, cena_rsd, prodavnica_naziv, prodavnica_id,
-             kategorija_id, kategorija_naziv, podkategorija_id, podkategorija_naziv,
-             podrazumevana_kolicina) in proizvodi:
-
-            row = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(2))
-
-            def make_handler(pid=pid, naziv=naziv, jedinica=jedinica, cena_rsd=cena_rsd,
-                              prodavnica_id=prodavnica_id, prodavnica_naziv=prodavnica_naziv,
-                              kategorija_id=kategorija_id, kategorija_naziv=kategorija_naziv,
-                              podkategorija_id=podkategorija_id, podkategorija_naziv=podkategorija_naziv,
-                              podrazumevana_kolicina=podrazumevana_kolicina):
-                def handler(instance):
-                    self.open_edit_popup(
-                        pid, naziv, jedinica, cena_rsd, prodavnica_id, prodavnica_naziv,
-                        kategorija_id, kategorija_naziv, podkategorija_id, podkategorija_naziv,
-                        podrazumevana_kolicina,
-                    )
-                return handler
-
-            handler = make_handler()
-
-            btn_naziv = Button(
-                text=naziv, halign="left", valign="middle",
-                background_normal="", background_color=(0.16, 0.16, 0.18, 1),
+        for kid, naziv in kategorije:
+            btn = Button(
+                text=naziv, size_hint_y=None, height=dp(46),
+                background_normal="", background_color=(0.18, 0.18, 0.22, 1),
+                color=(1, 1, 1, 1),
             )
-            btn_naziv.bind(size=lambda inst, val: setattr(inst, "text_size", val))
-
-            btn_jed = Button(
-                text=jedinica, size_hint_x=0.3,
-                background_normal="", background_color=(0.16, 0.16, 0.18, 1),
+            btn.bind(
+                on_release=lambda inst, kid=kid, naziv=naziv:
+                    self.show_proizvodi_iz_kategorije(kid, naziv)
             )
-            btn_cena = Button(
-                text=(f"{db.rsd_u_prikaz(cena_rsd):.2f}" if cena_rsd else "-"), size_hint_x=0.4,
-                background_normal="", background_color=(0.16, 0.16, 0.18, 1),
+            box.add_widget(btn)
+
+    def show_proizvodi_iz_kategorije(self, kategorija_id, kategorija_naziv):
+        """Prikazuje sve proizvode iz JEDNE glavne kategorije, svaki sa
+        poljem za kolicinu i cenu i dugmetom za dodavanje na listu."""
+        jezik = _jezik()
+        self._trenutna_kategorija = {"id": kategorija_id, "naziv": kategorija_naziv}
+        if not hasattr(self, "_izabrana_prodavnica"):
+            self._izabrana_prodavnica = None
+        if self._izabrana_prodavnica is None:
+            prva = db.get_prva_prodavnica()
+            if prva:
+                self._izabrana_prodavnica = {"id": prva[0], "naziv": prva[1]}
+
+        box = self.ids.database_box
+        box.clear_widgets()
+
+        header = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
+        nazad_btn = SecondaryButton(text=prevedi("db_back_to_categories", jezik), size_hint_x=0.4)
+        nazad_btn.bind(on_release=lambda inst: self.show_proizvodi())
+        header.add_widget(nazad_btn)
+
+        prodavnica_stanje = self._izabrana_prodavnica
+        prodavnica_tekst = prodavnica_stanje["naziv"] if prodavnica_stanje else prevedi("db_no_store", jezik)
+        prodavnica_btn = SecondaryButton(text=prodavnica_tekst)
+
+        def on_prodavnica_izabrana(pid, pnaziv):
+            if pid is None:
+                return
+            self._izabrana_prodavnica = {"id": pid, "naziv": pnaziv}
+            self.show_proizvodi_iz_kategorije(kategorija_id, kategorija_naziv)
+
+        prodavnica_btn.bind(
+            on_release=lambda inst: self.open_store_pick_popup(on_prodavnica_izabrana)
+        )
+        header.add_widget(prodavnica_btn)
+        box.add_widget(header)
+
+        naslov = Label(
+            text=kategorija_naziv, bold=True, font_size="18sp",
+            size_hint_y=None, height=dp(34), color=(1, 1, 1, 1),
+        )
+        box.add_widget(naslov)
+
+        proizvodi = db.get_proizvodi_po_kategoriji(kategorija_id)
+        if not proizvodi:
+            box.add_widget(Label(
+                text=prevedi("db_empty_products", jezik), size_hint_y=None,
+                height=dp(40), color=(1, 1, 1, 1),
+            ))
+            return
+
+        prodavnica_id = prodavnica_stanje["id"] if prodavnica_stanje else None
+
+        for proizvod_id, naziv, jedinica, zadnja_cena_rsd in proizvodi:
+            box.add_widget(
+                self._napravi_red_proizvoda(
+                    proizvod_id, naziv, jedinica, zadnja_cena_rsd,
+                    kategorija_id, prodavnica_id,
+                )
             )
 
-            btn_naziv.bind(on_release=handler)
-            btn_jed.bind(on_release=handler)
-            btn_cena.bind(on_release=handler)
+    def _napravi_red_proizvoda(self, proizvod_id, naziv, jedinica, zadnja_cena_rsd,
+                                kategorija_id, prodavnica_id):
+        """Jedan red u prikazu proizvoda unutar grupe: naziv, polje za
+        kolicinu, polje za cenu (predlozena poslednja cena ZA IZABRANU
+        prodavnicu ako postoji), dugme za dodavanje na listu i dugme za
+        izmenu/brisanje (otvara postojeci open_edit_popup)."""
+        jezik = _jezik()
 
-            row.add_widget(btn_naziv)
-            row.add_widget(btn_jed)
-            row.add_widget(btn_cena)
-            box.add_widget(row)
+        red = BoxLayout(orientation="vertical", size_hint_y=None, height=dp(74),
+                         spacing=dp(2), padding=(0, dp(4)))
+
+        gornji = BoxLayout(size_hint_y=None, height=dp(30))
+        naziv_label = Label(
+            text=f"{naziv} ({jedinica})", halign="left", valign="middle",
+            color=(1, 1, 1, 1),
+        )
+        naziv_label.bind(size=lambda inst, val: setattr(inst, "text_size", val))
+        gornji.add_widget(naziv_label)
+        red.add_widget(gornji)
+
+        donji = BoxLayout(size_hint_y=None, height=dp(40), spacing=dp(4))
+
+        cena_za_prodavnicu = None
+        if prodavnica_id is not None:
+            cena_za_prodavnicu = db.get_cena_za_prodavnicu(proizvod_id, prodavnica_id)
+        predlozena_cena_rsd = cena_za_prodavnicu if cena_za_prodavnicu is not None else zadnja_cena_rsd
+
+        kolicina_input = StyledTextInput(
+            hint_text=prevedi("db_qty_hint", jezik), input_filter="float",
+            multiline=False, size_hint_x=0.28,
+        )
+        cena_input = StyledTextInput(
+            text=(f"{db.rsd_u_prikaz(predlozena_cena_rsd):.2f}" if predlozena_cena_rsd else ""),
+            hint_text=prevedi("db_label_price", jezik).format(valuta=db.valuta_oznaka()),
+            input_filter="float", multiline=False, size_hint_x=0.32,
+        )
+
+        dodaj_btn = PrimaryButton(text="+", size_hint_x=0.18)
+        izmeni_btn = SecondaryButton(text="\u270e", size_hint_x=0.18)
+
+        def dodaj(*a):
+            if prodavnica_id is None:
+                self._prikazi_kratku_poruku(prevedi("sl_no_stores_yet", jezik))
+                return
+            try:
+                kolicina = float(kolicina_input.text.replace(",", "."))
+            except ValueError:
+                self._prikazi_kratku_poruku(prevedi("db_err_bad_price", jezik))
+                return
+            if kolicina <= 0:
+                self._prikazi_kratku_poruku(prevedi("db_err_bad_price", jezik))
+                return
+            try:
+                cena_prikaz = float(cena_input.text.replace(",", ".")) if cena_input.text.strip() else 0
+            except ValueError:
+                self._prikazi_kratku_poruku(prevedi("db_err_bad_price", jezik))
+                return
+            if cena_prikaz < 0:
+                self._prikazi_kratku_poruku(prevedi("db_err_negative_price", jezik))
+                return
+
+            cena_rsd = db.prikaz_u_rsd(cena_prikaz)
+            sl_screen = self.manager.get_screen("shopping_list")
+            sl_screen.add_product_to_current_list(
+                naziv, jedinica, kolicina, cena_rsd, prodavnica_id,
+                kategorija_id=kategorija_id,
+            )
+            kolicina_input.text = ""
+            self._prikazi_kratku_poruku(prevedi("db_added_to_list_msg", jezik))
+
+        dodaj_btn.bind(on_release=dodaj)
+
+        def izmeni(*a):
+            puno = db.get_proizvod_puno(proizvod_id)
+            if not puno:
+                return
+            (pid, pnaziv, pjedinica, pcena, pprodavnica_naziv, pprodavnica_id,
+             pkategorija_id, pkategorija_naziv, ppodkategorija_id, ppodkategorija_naziv,
+             ppodrazumevana_kolicina) = puno
+            self.open_edit_popup(
+                pid, pnaziv, pjedinica, pcena, pprodavnica_id, pprodavnica_naziv,
+                pkategorija_id, pkategorija_naziv, ppodkategorija_id, ppodkategorija_naziv,
+                ppodrazumevana_kolicina,
+            )
+
+        izmeni_btn.bind(on_release=izmeni)
+
+        donji.add_widget(kolicina_input)
+        donji.add_widget(cena_input)
+        donji.add_widget(dodaj_btn)
+        donji.add_widget(izmeni_btn)
+        red.add_widget(donji)
+
+        return red
 
     def open_edit_popup(self, proizvod_id, naziv, jedinica, cena_rsd, prodavnica_id, prodavnica_naziv,
                          kategorija_id, kategorija_naziv, podkategorija_id, podkategorija_naziv,
@@ -273,7 +406,12 @@ class DatabaseScreen(Screen):
                 return
 
             popup.dismiss()
-            self.show_proizvodi()
+            if self._trenutna_kategorija:
+                self.show_proizvodi_iz_kategorije(
+                    self._trenutna_kategorija["id"], self._trenutna_kategorija["naziv"]
+                )
+            else:
+                self.show_proizvodi()
 
         delete_state = {"confirm": False}
 
@@ -289,7 +427,12 @@ class DatabaseScreen(Screen):
                 instance.text = prevedi("db_delete_product", jezik)
                 return
             popup.dismiss()
-            self.show_proizvodi()
+            if self._trenutna_kategorija:
+                self.show_proizvodi_iz_kategorije(
+                    self._trenutna_kategorija["id"], self._trenutna_kategorija["naziv"]
+                )
+            else:
+                self.show_proizvodi()
 
         def dodaj_u_listu(*a):
             sl_screen = self.manager.get_screen("shopping_list")
@@ -627,7 +770,7 @@ class DatabaseScreen(Screen):
         popup.open()
 
     # =========================================================
-    # TAB: Kategorije (novo - CRUD glavnih kategorija i podkategorija)
+    # TAB: Kategorije (CRUD glavnih kategorija i podkategorija)
     # =========================================================
 
     def show_kategorije(self):
