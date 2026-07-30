@@ -2,9 +2,12 @@ from kivy.uix.screenmanager import Screen
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.button import Button
+from kivy.uix.image import Image as KivyImage
+from kivy.uix.behaviors import ButtonBehavior
 from kivy.uix.popup import Popup
 from kivy.uix.scrollview import ScrollView
 from kivy.metrics import dp
+from kivy.app import App
 
 from database import db
 from widgets import PrimaryButton, SecondaryButton, DangerButton, StyledTextInput
@@ -13,6 +16,12 @@ from translations import prevedi
 
 def _jezik():
     return db.get_setting("jezik", "sr")
+
+
+class _IconButton(ButtonBehavior, KivyImage):
+    """Mala slika koja se ponasa kao dugme (npr. olovka za izmenu
+    proizvoda unutar grupe)."""
+    pass
 
 
 class DatabaseScreen(Screen):
@@ -190,7 +199,10 @@ class DatabaseScreen(Screen):
         )
 
         dodaj_btn = PrimaryButton(text="+", size_hint_x=0.18)
-        izmeni_btn = SecondaryButton(text="\u270e", size_hint_x=0.18)
+        izmeni_btn = _IconButton(
+            source=App.get_running_app().assets_dir + "olovka.png",
+            allow_stretch=True, keep_ratio=True, size_hint_x=0.18,
+        )
 
         def dodaj(*a):
             if prodavnica_id is None:
