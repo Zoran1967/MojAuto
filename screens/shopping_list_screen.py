@@ -43,8 +43,9 @@ class ShoppingListScreen(Screen):
     i vidljiva ovde, cak i ako korisnik ode na drugi ekran i vrati se.
 
     add_product_to_current_list() je javna metoda koju koristi i ovaj
-    ekran i DatabaseScreen (dugme "Dodaj u listu"). Ako se ne prosledi
-    prodavnica_id, koristi se prva prodavnica u bazi.
+    ekran i DatabaseScreen (dugme "Dodaj u listu", i novi grupisani
+    prikaz proizvoda po kategorijama). Ako se ne prosledi prodavnica_id,
+    koristi se prva prodavnica u bazi.
 
     Napomena o valutama: cene se uvek cuvaju u RSD, prikaz preko
     db.rsd_u_prikaz(). Tekstovi se prevode preko prevedi().
@@ -154,13 +155,22 @@ class ShoppingListScreen(Screen):
 
     # ---------- Zajednicka logika dodavanja stavke (koristi i ovaj ekran i DatabaseScreen) ----------
 
-    def add_product_to_current_list(self, naziv, jedinica, kolicina, cena_rsd, prodavnica_id=None):
+    def add_product_to_current_list(self, naziv, jedinica, kolicina, cena_rsd, prodavnica_id=None,
+                                     kategorija_id=None, podkategorija_id=None,
+                                     podrazumevana_kolicina=None):
         """
         Dodaje proizvod u otvorenu listu date prodavnice. Ako
         prodavnica_id nije prosledjen, koristi se prva prodavnica u
         bazi (default) - ovo koristi DatabaseScreen kad dodaje direktno
         iz baze proizvoda. Vraca True ako je uspelo, False ako ne
         postoji nijedna prodavnica u bazi.
+
+        kategorija_id/podkategorija_id/podrazumevana_kolicina su
+        OPCIONI (podrazumevano None = ne menjaju postojecu vrednost u
+        bazi za taj proizvod, vidi db.add_or_update_proizvod) - dodati
+        da bi novi grupisani prikaz proizvoda po kategorijama (u
+        DatabaseScreen-u) mogao da sacuva kategoriju kad se PRVI PUT
+        doda potpuno nov proizvod direktno iz te grupe.
         """
         if prodavnica_id is None:
             prva = db.get_prva_prodavnica()
@@ -169,7 +179,10 @@ class ShoppingListScreen(Screen):
             prodavnica_id = prva[0]
 
         lista_id = db.get_or_create_otvorena_lista(prodavnica_id)
-        proizvod_id = db.add_or_update_proizvod(naziv, jedinica, cena_rsd, prodavnica_id)
+        proizvod_id = db.add_or_update_proizvod(
+            naziv, jedinica, cena_rsd, prodavnica_id,
+            kategorija_id, podkategorija_id, podrazumevana_kolicina,
+        )
         db.add_stavka(lista_id, proizvod_id, naziv, kolicina, cena_rsd)
         # Pamti ovu cenu za ovu konkretnu prodavnicu (za buduce poredjenje)
         db.zabelezi_cenu_za_prodavnicu(proizvod_id, prodavnica_id, cena_rsd)
