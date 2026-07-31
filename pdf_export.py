@@ -1,8 +1,11 @@
 """
 Generisanje PDF racuna (jedan zatvoreni racun iz istorije kupovina).
 
-Koristi reportlab (cist Python, radi i na Androidu preko Buildozer-a
-ako se doda u requirements u buildozer.spec).
+Koristi fpdf2 - cist Python paket bez C ekstenzija. Namerno se NE koristi
+reportlab, jer njegov "recept" u python-for-android/Buildozer alatu ima
+poznat, dugogodisnji i nezavrsen problem koji na Androidu izbacuje
+"No module named 'reportlab'" iako je paket naveden u requirements.
+fpdf2 nema taj problem jer se instalira kao obican pure-python paket.
 
 PDF se cuva u javni Downloads folder na telefonu (ne zahteva posebne
 Android dozvole za deljenje/FileProvider) - korisnik ga otvara iz bilo
@@ -17,11 +20,7 @@ korisnik unosi su vec u tom formatu (konvencija cele aplikacije).
 import os
 from datetime import datetime
 
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.units import mm
-from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from fpdf import FPDF
 from kivy.utils import platform
 
 
@@ -45,7 +44,67 @@ def _downloads_folder():
 def _bezbedno_ime(tekst):
     """Uklanja znakove koji ne smeju biti u imenu fajla."""
     dozvoljeno = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_- "
-    return "".join(c if c in dozvoljeno else "_" for c in tekst).strip() or "racun"
+    return "".join(c if c in dozvoljeno else "_" for c in str(tekst)).strip() or "racun"
+
+
+def _kao_broj(vrednost):
+    """
+    Pokusava da pretvori vrednost u float (podrzava i zarez kao decimalni
+    separator, npr. '125,50'). Ako ne uspe, vraca None.
+    """
+    if isinstance(vrednost, (int, float)):
+        return float(vrednost)
+    if isinstance(vrednost, str):
+        ocisceno = vrednost.strip().replace(" ", "")
+        if "," in ocisceno and "." not in ocisceno:
+            ocisceno = ocisceno.replace(",", ".")
+        try:
+            return float(ocisceno)
+        except ValueError:
+            return None
+    return None
+
+
+def _format_broj(vrednost, decimale=2):
+    """
+    Bezbedno formatira vrednost sa fiksnim brojem decimala.
+    Radi bez obzira da li je vrednost broj ili vec formatiran string -
+    ako ne moze da se konvertuje u broj, vraca tekst vrednosti onakav
+    kakav je prosledjen.
+    """
+    broj = _kao_broj(vrednost)
+    if broj is None:
+        return str(vrednost)
+    return f"{broj:.{decimale}f}"
+
+
+def _format_kolicina(vrednost):
+    """
+    Isto kao _format_broj, ali za kolicinu koristi format bez nepotrebnih
+    nula (npr. 2 umesto 2.00), uz istu zastitu od stringova koji ne mogu
+    da se konvertuju u broj.
+    """
+    broj = _kao_broj(vrednost)
+    if broj is None:
+        return str(vrednost)
+    if broj == int(broj):
+        return str(int(broj))
+    return f"{broj:g}"
+
+
+# Sirine kolona u mm - moraju se poklapati sa brojem kolona u zaglavlju
+_KOLONE_SIRINE = [70, 22, 38, 38]
+_KOLONE_PORAVNANJE = ["L", "R", "R", "R"]
+
+
+def _red_tabele(pdf, vrednosti, popuna=False, podebljano=False, visina=8):
+    if podebljano:
+        pdf.set_font("Helvetica", "B", 10)
+    else:
+        pdf.set_font("Helvetica", "", 10)
+    for tekst, sirina, poravnanje in zip(vrednosti, _KOLONE_SIRINE, _KOLONE_PORAVNANJE):
+        pdf.cell(sirina, visina, tekst, border=1, align=poravnanje, fill=popuna)
+    pdf.ln(visina)
 
 
 def generisi_racun_pdf(prodavnica_naziv, datum, stavke, ukupno_prikaz, valuta_oznaka):
@@ -53,60 +112,62 @@ def generisi_racun_pdf(prodavnica_naziv, datum, stavke, ukupno_prikaz, valuta_oz
     Pravi PDF fajl za jedan racun i vraca putanju do njega.
 
     stavke: lista (naziv, kolicina, cena_po_jedinici_prikaz, total_prikaz)
+
+    Napomena: kolicina/cena/total i ukupno_prikaz mogu biti brojevi
+    (int/float) ili vec formatirani stringovi (npr. '125,50') - funkcija
+    bezbedno radi sa oba slucaja.
     """
     folder = _downloads_folder()
     vremenska_oznaka = datetime.now().strftime("%Y%m%d_%H%M%S")
     ime_fajla = f"Racun_{_bezbedno_ime(prodavnica_naziv)}_{vremenska_oznaka}.pdf"
     putanja = os.path.join(folder, ime_fajla)
 
-    stilovi = getSampleStyleSheet()
-    naslov_stil = ParagraphStyle(
-        "Naslov", parent=stilovi["Heading1"], fontSize=18, spaceAfter=4,
-    )
-    podnaslov_stil = ParagraphStyle(
-        "Podnaslov", parent=stilovi["Normal"], fontSize=11, textColor=colors.grey,
-        spaceAfter=14,
-    )
+    pdf = FPDF(format="A4")
+    pdf.set_margins(16, 18, 16)
+    pdf.add_page()
 
-    doc = SimpleDocTemplate(
-        putanja, pagesize=A4,
-        topMargin=18 * mm, bottomMargin=18 * mm,
-        leftMargin=16 * mm, rightMargin=16 * mm,
+    # Naslov (naziv prodavnice)
+    pdf.set_font("Helvetica", "B", 18)
+    pdf.cell(0, 10, str(prodavnica_naziv), ln=1)
+
+    # Podnaslov (datum)
+    pdf.set_font("Helvetica", "", 11)
+    pdf.set_text_color(120, 120, 120)
+    pdf.cell(0, 8, f"Datum kupovine: {datum}", ln=1)
+    pdf.set_text_color(0, 0, 0)
+    pdf.ln(4)
+
+    # Zaglavlje tabele
+    pdf.set_fill_color(27, 31, 42)
+    pdf.set_text_color(255, 255, 255)
+    _red_tabele(
+        pdf,
+        ["Proizvod", "Kol.", f"Cena/j. ({valuta_oznaka})", f"Ukupno ({valuta_oznaka})"],
+        popuna=True, podebljano=True,
     )
+    pdf.set_text_color(0, 0, 0)
 
-    elementi = []
-    elementi.append(Paragraph(prodavnica_naziv, naslov_stil))
-    elementi.append(Paragraph(f"Datum kupovine: {datum}", podnaslov_stil))
-
-    podaci = [["Proizvod", "Kol.", f"Cena/j. ({valuta_oznaka})", f"Ukupno ({valuta_oznaka})"]]
+    # Stavke racuna
     for naziv, kolicina, cena, total in stavke:
-        podaci.append([
-            naziv,
-            f"{kolicina:g}",
-            f"{cena:.2f}",
-            f"{total:.2f}",
+        _red_tabele(pdf, [
+            str(naziv),
+            _format_kolicina(kolicina),
+            _format_broj(cena),
+            _format_broj(total),
         ])
-    podaci.append(["", "", "UKUPNO:", f"{ukupno_prikaz:.2f} {valuta_oznaka}"])
 
-    tabela = Table(podaci, colWidths=[70 * mm, 22 * mm, 38 * mm, 38 * mm])
-    tabela.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1b1f2a")),
-        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-        ("FONTSIZE", (0, 0), (-1, -1), 10),
-        ("ALIGN", (1, 0), (-1, -1), "RIGHT"),
-        ("GRID", (0, 0), (-1, -2), 0.4, colors.grey),
-        ("LINEABOVE", (0, -1), (-1, -1), 1, colors.black),
-        ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
-        ("TOPPADDING", (0, 0), (-1, -1), 6),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-    ]))
-    elementi.append(tabela)
-    elementi.append(Spacer(1, 10 * mm))
-    elementi.append(Paragraph(
-        "Napravljeno u aplikaciji Soping Lista.",
-        ParagraphStyle("Footer", parent=stilovi["Normal"], fontSize=8, textColor=colors.grey),
-    ))
+    # Red sa ukupnim iznosom
+    _red_tabele(
+        pdf,
+        ["", "", "UKUPNO:", f"{_format_broj(ukupno_prikaz)} {valuta_oznaka}"],
+        podebljano=True,
+    )
 
-    doc.build(elementi)
+    # Footer
+    pdf.ln(10)
+    pdf.set_font("Helvetica", "", 8)
+    pdf.set_text_color(120, 120, 120)
+    pdf.cell(0, 6, "Napravljeno u aplikaciji Soping Lista.", ln=1)
+
+    pdf.output(putanja)
     return putanja
