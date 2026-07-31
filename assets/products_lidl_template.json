@@ -1,0 +1,1699 @@
+{
+  "store": "Lidl",
+  "categories": [
+    {
+      "name": "Pekara",
+      "products": [
+        {
+          "id": 1,
+          "name": "Kifla",
+          "unit": "kom",
+          "price": 40
+        },
+        {
+          "id": 2,
+          "name": "Slana kifla",
+          "unit": "kom",
+          "price": 45
+        },
+        {
+          "id": 3,
+          "name": "Kroasan",
+          "unit": "kom",
+          "price": 90
+        },
+        {
+          "id": 4,
+          "name": "Pereca",
+          "unit": "kom",
+          "price": 40
+        },
+        {
+          "id": 5,
+          "name": "Burek sa sirom",
+          "unit": "kom",
+          "price": 180
+        },
+        {
+          "id": 6,
+          "name": "Burek sa mesom",
+          "unit": "kom",
+          "price": 200
+        },
+        {
+          "id": 7,
+          "name": "Pogačica",
+          "unit": "kom",
+          "price": 60
+        },
+        {
+          "id": 8,
+          "name": "Pekara proizvod 8",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 9,
+          "name": "Pekara proizvod 9",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 10,
+          "name": "Pekara proizvod 10",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 11,
+          "name": "Pekara proizvod 11",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 12,
+          "name": "Pekara proizvod 12",
+          "unit": "kom",
+          "price": null
+        }
+      ]
+    },
+    {
+      "name": "Hleb",
+      "products": [
+        {
+          "id": 13,
+          "name": "Beli hleb",
+          "unit": "kom",
+          "price": 65
+        },
+        {
+          "id": 14,
+          "name": "Integralni hleb",
+          "unit": "kom",
+          "price": 90
+        },
+        {
+          "id": 15,
+          "name": "Ražani hleb",
+          "unit": "kom",
+          "price": 95
+        },
+        {
+          "id": 16,
+          "name": "Tost hleb",
+          "unit": "kom",
+          "price": 150
+        },
+        {
+          "id": 17,
+          "name": "Hleb proizvod 5",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 18,
+          "name": "Hleb proizvod 6",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 19,
+          "name": "Hleb proizvod 7",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 20,
+          "name": "Hleb proizvod 8",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 21,
+          "name": "Hleb proizvod 9",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 22,
+          "name": "Hleb proizvod 10",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 23,
+          "name": "Hleb proizvod 11",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 24,
+          "name": "Hleb proizvod 12",
+          "unit": "kom",
+          "price": null
+        }
+      ]
+    },
+    {
+      "name": "Meso",
+      "products": [
+        {
+          "id": 25,
+          "name": "Pileći file",
+          "unit": "kg",
+          "price": 900
+        },
+        {
+          "id": 26,
+          "name": "Batak",
+          "unit": "kg",
+          "price": 500
+        },
+        {
+          "id": 27,
+          "name": "Svinjski but",
+          "unit": "kg",
+          "price": 700
+        },
+        {
+          "id": 28,
+          "name": "Juneći but",
+          "unit": "kg",
+          "price": 1200
+        },
+        {
+          "id": 29,
+          "name": "Mleveno meso",
+          "unit": "kg",
+          "price": 750
+        },
+        {
+          "id": 30,
+          "name": "Meso proizvod 6",
+          "unit": "kg",
+          "price": null
+        },
+        {
+          "id": 31,
+          "name": "Meso proizvod 7",
+          "unit": "kg",
+          "price": null
+        },
+        {
+          "id": 32,
+          "name": "Meso proizvod 8",
+          "unit": "kg",
+          "price": null
+        },
+        {
+          "id": 33,
+          "name": "Meso proizvod 9",
+          "unit": "kg",
+          "price": null
+        },
+        {
+          "id": 34,
+          "name": "Meso proizvod 10",
+          "unit": "kg",
+          "price": null
+        },
+        {
+          "id": 35,
+          "name": "Meso proizvod 11",
+          "unit": "kg",
+          "price": null
+        },
+        {
+          "id": 36,
+          "name": "Meso proizvod 12",
+          "unit": "kg",
+          "price": null
+        }
+      ]
+    },
+    {
+      "name": "Riba",
+      "products": [
+        {
+          "id": 37,
+          "name": "Losos",
+          "unit": "kg",
+          "price": 1800
+        },
+        {
+          "id": 38,
+          "name": "Oslić",
+          "unit": "kg",
+          "price": 700
+        },
+        {
+          "id": 39,
+          "name": "Pastrmka",
+          "unit": "kg",
+          "price": 900
+        },
+        {
+          "id": 40,
+          "name": "Tuna sveža",
+          "unit": "kg",
+          "price": 1600
+        },
+        {
+          "id": 41,
+          "name": "Riba proizvod 5",
+          "unit": "kg",
+          "price": null
+        },
+        {
+          "id": 42,
+          "name": "Riba proizvod 6",
+          "unit": "kg",
+          "price": null
+        },
+        {
+          "id": 43,
+          "name": "Riba proizvod 7",
+          "unit": "kg",
+          "price": null
+        },
+        {
+          "id": 44,
+          "name": "Riba proizvod 8",
+          "unit": "kg",
+          "price": null
+        },
+        {
+          "id": 45,
+          "name": "Riba proizvod 9",
+          "unit": "kg",
+          "price": null
+        },
+        {
+          "id": 46,
+          "name": "Riba proizvod 10",
+          "unit": "kg",
+          "price": null
+        },
+        {
+          "id": 47,
+          "name": "Riba proizvod 11",
+          "unit": "kg",
+          "price": null
+        },
+        {
+          "id": 48,
+          "name": "Riba proizvod 12",
+          "unit": "kg",
+          "price": null
+        }
+      ]
+    },
+    {
+      "name": "Mlečni proizvodi",
+      "products": [
+        {
+          "id": 49,
+          "name": "Mleko",
+          "unit": "l",
+          "price": 130
+        },
+        {
+          "id": 50,
+          "name": "Jogurt",
+          "unit": "kom",
+          "price": 90
+        },
+        {
+          "id": 51,
+          "name": "Kefir",
+          "unit": "l",
+          "price": 100
+        },
+        {
+          "id": 52,
+          "name": "Pavlaka",
+          "unit": "kom",
+          "price": 110
+        },
+        {
+          "id": 53,
+          "name": "Kačkavalj",
+          "unit": "kg",
+          "price": 700
+        },
+        {
+          "id": 54,
+          "name": "Trapist",
+          "unit": "kg",
+          "price": 650
+        },
+        {
+          "id": 55,
+          "name": "Mlečni proizvodi proizvod 7",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 56,
+          "name": "Mlečni proizvodi proizvod 8",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 57,
+          "name": "Mlečni proizvodi proizvod 9",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 58,
+          "name": "Mlečni proizvodi proizvod 10",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 59,
+          "name": "Mlečni proizvodi proizvod 11",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 60,
+          "name": "Mlečni proizvodi proizvod 12",
+          "unit": "kom",
+          "price": null
+        }
+      ]
+    },
+    {
+      "name": "Jaja",
+      "products": [
+        {
+          "id": 61,
+          "name": "Jaja M",
+          "unit": "kom",
+          "price": 22
+        },
+        {
+          "id": 62,
+          "name": "Jaja L",
+          "unit": "kom",
+          "price": 25
+        },
+        {
+          "id": 63,
+          "name": "Jaja proizvod 3",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 64,
+          "name": "Jaja proizvod 4",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 65,
+          "name": "Jaja proizvod 5",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 66,
+          "name": "Jaja proizvod 6",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 67,
+          "name": "Jaja proizvod 7",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 68,
+          "name": "Jaja proizvod 8",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 69,
+          "name": "Jaja proizvod 9",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 70,
+          "name": "Jaja proizvod 10",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 71,
+          "name": "Jaja proizvod 11",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 72,
+          "name": "Jaja proizvod 12",
+          "unit": "kom",
+          "price": null
+        }
+      ]
+    },
+    {
+      "name": "Sveže povrće",
+      "products": [
+        {
+          "id": 73,
+          "name": "Krompir",
+          "unit": "kg",
+          "price": 70
+        },
+        {
+          "id": 74,
+          "name": "Crni luk",
+          "unit": "kg",
+          "price": 80
+        },
+        {
+          "id": 75,
+          "name": "Šargarepa",
+          "unit": "kg",
+          "price": 90
+        },
+        {
+          "id": 76,
+          "name": "Paprika",
+          "unit": "kg",
+          "price": 200
+        },
+        {
+          "id": 77,
+          "name": "Paradajz",
+          "unit": "kg",
+          "price": 180
+        },
+        {
+          "id": 78,
+          "name": "Krastavac",
+          "unit": "kg",
+          "price": 150
+        },
+        {
+          "id": 79,
+          "name": "Kupus",
+          "unit": "kg",
+          "price": 60
+        },
+        {
+          "id": 80,
+          "name": "Brokoli",
+          "unit": "kg",
+          "price": 250
+        },
+        {
+          "id": 81,
+          "name": "Karfiol",
+          "unit": "kg",
+          "price": 220
+        },
+        {
+          "id": 82,
+          "name": "Tikvice",
+          "unit": "kg",
+          "price": 150
+        },
+        {
+          "id": 83,
+          "name": "Sveže povrće proizvod 11",
+          "unit": "kg",
+          "price": null
+        },
+        {
+          "id": 84,
+          "name": "Sveže povrće proizvod 12",
+          "unit": "kg",
+          "price": null
+        }
+      ]
+    },
+    {
+      "name": "Sveže voće",
+      "products": [
+        {
+          "id": 85,
+          "name": "Jabuka",
+          "unit": "kg",
+          "price": 120
+        },
+        {
+          "id": 86,
+          "name": "Banana",
+          "unit": "kg",
+          "price": 150
+        },
+        {
+          "id": 87,
+          "name": "Pomorandža",
+          "unit": "kg",
+          "price": 140
+        },
+        {
+          "id": 88,
+          "name": "Limun",
+          "unit": "kg",
+          "price": 250
+        },
+        {
+          "id": 89,
+          "name": "Kruška",
+          "unit": "kg",
+          "price": 180
+        },
+        {
+          "id": 90,
+          "name": "Grožđe",
+          "unit": "kg",
+          "price": 250
+        },
+        {
+          "id": 91,
+          "name": "Kivi",
+          "unit": "kg",
+          "price": 300
+        },
+        {
+          "id": 92,
+          "name": "Breskva",
+          "unit": "kg",
+          "price": 200
+        },
+        {
+          "id": 93,
+          "name": "Lubenica",
+          "unit": "kg",
+          "price": 60
+        },
+        {
+          "id": 94,
+          "name": "Dinja",
+          "unit": "kg",
+          "price": 100
+        },
+        {
+          "id": 95,
+          "name": "Sveže voće proizvod 11",
+          "unit": "kg",
+          "price": null
+        },
+        {
+          "id": 96,
+          "name": "Sveže voće proizvod 12",
+          "unit": "kg",
+          "price": null
+        }
+      ]
+    },
+    {
+      "name": "Salate",
+      "products": [
+        {
+          "id": 97,
+          "name": "Zelena salata",
+          "unit": "kom",
+          "price": 80
+        },
+        {
+          "id": 98,
+          "name": "Kupus salata",
+          "unit": "kom",
+          "price": 150
+        },
+        {
+          "id": 99,
+          "name": "Cvekla salata",
+          "unit": "kom",
+          "price": 150
+        },
+        {
+          "id": 100,
+          "name": "Salate proizvod 4",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 101,
+          "name": "Salate proizvod 5",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 102,
+          "name": "Salate proizvod 6",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 103,
+          "name": "Salate proizvod 7",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 104,
+          "name": "Salate proizvod 8",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 105,
+          "name": "Salate proizvod 9",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 106,
+          "name": "Salate proizvod 10",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 107,
+          "name": "Salate proizvod 11",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 108,
+          "name": "Salate proizvod 12",
+          "unit": "kom",
+          "price": null
+        }
+      ]
+    },
+    {
+      "name": "Konzervirano povrće",
+      "products": [
+        {
+          "id": 109,
+          "name": "Grašak",
+          "unit": "kom",
+          "price": 120
+        },
+        {
+          "id": 110,
+          "name": "Kukuruz",
+          "unit": "kom",
+          "price": 110
+        },
+        {
+          "id": 111,
+          "name": "Pasulj",
+          "unit": "kom",
+          "price": 150
+        },
+        {
+          "id": 112,
+          "name": "Ajvar",
+          "unit": "kom",
+          "price": 250
+        },
+        {
+          "id": 113,
+          "name": "Masline",
+          "unit": "kom",
+          "price": 200
+        },
+        {
+          "id": 114,
+          "name": "Konzervirano povrće proizvod 6",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 115,
+          "name": "Konzervirano povrće proizvod 7",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 116,
+          "name": "Konzervirano povrće proizvod 8",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 117,
+          "name": "Konzervirano povrće proizvod 9",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 118,
+          "name": "Konzervirano povrće proizvod 10",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 119,
+          "name": "Konzervirano povrće proizvod 11",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 120,
+          "name": "Konzervirano povrće proizvod 12",
+          "unit": "kom",
+          "price": null
+        }
+      ]
+    },
+    {
+      "name": "Konzervirano voće",
+      "products": [
+        {
+          "id": 121,
+          "name": "Ananas",
+          "unit": "kom",
+          "price": 200
+        },
+        {
+          "id": 122,
+          "name": "Breskva kompot",
+          "unit": "kom",
+          "price": 180
+        },
+        {
+          "id": 123,
+          "name": "Voćni koktel",
+          "unit": "kom",
+          "price": 190
+        },
+        {
+          "id": 124,
+          "name": "Konzervirano voće proizvod 4",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 125,
+          "name": "Konzervirano voće proizvod 5",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 126,
+          "name": "Konzervirano voće proizvod 6",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 127,
+          "name": "Konzervirano voće proizvod 7",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 128,
+          "name": "Konzervirano voće proizvod 8",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 129,
+          "name": "Konzervirano voće proizvod 9",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 130,
+          "name": "Konzervirano voće proizvod 10",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 131,
+          "name": "Konzervirano voće proizvod 11",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 132,
+          "name": "Konzervirano voće proizvod 12",
+          "unit": "kom",
+          "price": null
+        }
+      ]
+    },
+    {
+      "name": "Smrznuto",
+      "products": [
+        {
+          "id": 133,
+          "name": "Pomfrit",
+          "unit": "kom",
+          "price": 180
+        },
+        {
+          "id": 134,
+          "name": "Mešano povrće",
+          "unit": "kom",
+          "price": 150
+        },
+        {
+          "id": 135,
+          "name": "Sladoled",
+          "unit": "kom",
+          "price": 250
+        },
+        {
+          "id": 136,
+          "name": "Smrznuto proizvod 4",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 137,
+          "name": "Smrznuto proizvod 5",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 138,
+          "name": "Smrznuto proizvod 6",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 139,
+          "name": "Smrznuto proizvod 7",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 140,
+          "name": "Smrznuto proizvod 8",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 141,
+          "name": "Smrznuto proizvod 9",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 142,
+          "name": "Smrznuto proizvod 10",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 143,
+          "name": "Smrznuto proizvod 11",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 144,
+          "name": "Smrznuto proizvod 12",
+          "unit": "kom",
+          "price": null
+        }
+      ]
+    },
+    {
+      "name": "Testenina",
+      "products": [
+        {
+          "id": 145,
+          "name": "Špagete",
+          "unit": "kom",
+          "price": 110
+        },
+        {
+          "id": 146,
+          "name": "Pene",
+          "unit": "kom",
+          "price": 110
+        },
+        {
+          "id": 147,
+          "name": "Makarone",
+          "unit": "kom",
+          "price": 100
+        },
+        {
+          "id": 148,
+          "name": "Testenina proizvod 4",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 149,
+          "name": "Testenina proizvod 5",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 150,
+          "name": "Testenina proizvod 6",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 151,
+          "name": "Testenina proizvod 7",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 152,
+          "name": "Testenina proizvod 8",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 153,
+          "name": "Testenina proizvod 9",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 154,
+          "name": "Testenina proizvod 10",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 155,
+          "name": "Testenina proizvod 11",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 156,
+          "name": "Testenina proizvod 12",
+          "unit": "kom",
+          "price": null
+        }
+      ]
+    },
+    {
+      "name": "Pirinač i žitarice",
+      "products": [
+        {
+          "id": 157,
+          "name": "Pirinač",
+          "unit": "kom",
+          "price": 150
+        },
+        {
+          "id": 158,
+          "name": "Palenta",
+          "unit": "kom",
+          "price": 100
+        },
+        {
+          "id": 159,
+          "name": "Ovsene pahuljice",
+          "unit": "kom",
+          "price": 130
+        },
+        {
+          "id": 160,
+          "name": "Pirinač i žitarice proizvod 4",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 161,
+          "name": "Pirinač i žitarice proizvod 5",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 162,
+          "name": "Pirinač i žitarice proizvod 6",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 163,
+          "name": "Pirinač i žitarice proizvod 7",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 164,
+          "name": "Pirinač i žitarice proizvod 8",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 165,
+          "name": "Pirinač i žitarice proizvod 9",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 166,
+          "name": "Pirinač i žitarice proizvod 10",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 167,
+          "name": "Pirinač i žitarice proizvod 11",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 168,
+          "name": "Pirinač i žitarice proizvod 12",
+          "unit": "kom",
+          "price": null
+        }
+      ]
+    },
+    {
+      "name": "Brašno i šećer",
+      "products": [
+        {
+          "id": 169,
+          "name": "Brašno T400",
+          "unit": "kom",
+          "price": 90
+        },
+        {
+          "id": 170,
+          "name": "Brašno T500",
+          "unit": "kom",
+          "price": 90
+        },
+        {
+          "id": 171,
+          "name": "Šećer",
+          "unit": "kom",
+          "price": 110
+        },
+        {
+          "id": 172,
+          "name": "Brašno i šećer proizvod 4",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 173,
+          "name": "Brašno i šećer proizvod 5",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 174,
+          "name": "Brašno i šećer proizvod 6",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 175,
+          "name": "Brašno i šećer proizvod 7",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 176,
+          "name": "Brašno i šećer proizvod 8",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 177,
+          "name": "Brašno i šećer proizvod 9",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 178,
+          "name": "Brašno i šećer proizvod 10",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 179,
+          "name": "Brašno i šećer proizvod 11",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 180,
+          "name": "Brašno i šećer proizvod 12",
+          "unit": "kom",
+          "price": null
+        }
+      ]
+    },
+    {
+      "name": "Ulje i sirće",
+      "products": [
+        {
+          "id": 181,
+          "name": "Suncokretovo ulje",
+          "unit": "kom",
+          "price": 200
+        },
+        {
+          "id": 182,
+          "name": "Maslinovo ulje",
+          "unit": "kom",
+          "price": 900
+        },
+        {
+          "id": 183,
+          "name": "Alkoholno sirće",
+          "unit": "kom",
+          "price": 100
+        },
+        {
+          "id": 184,
+          "name": "Ulje i sirće proizvod 4",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 185,
+          "name": "Ulje i sirće proizvod 5",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 186,
+          "name": "Ulje i sirće proizvod 6",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 187,
+          "name": "Ulje i sirće proizvod 7",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 188,
+          "name": "Ulje i sirće proizvod 8",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 189,
+          "name": "Ulje i sirće proizvod 9",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 190,
+          "name": "Ulje i sirće proizvod 10",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 191,
+          "name": "Ulje i sirće proizvod 11",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 192,
+          "name": "Ulje i sirće proizvod 12",
+          "unit": "kom",
+          "price": null
+        }
+      ]
+    },
+    {
+      "name": "Začini",
+      "products": [
+        {
+          "id": 193,
+          "name": "So",
+          "unit": "kom",
+          "price": 60
+        },
+        {
+          "id": 194,
+          "name": "Biber",
+          "unit": "kom",
+          "price": 150
+        },
+        {
+          "id": 195,
+          "name": "Vegeta",
+          "unit": "kom",
+          "price": 200
+        },
+        {
+          "id": 196,
+          "name": "Origano",
+          "unit": "kom",
+          "price": 150
+        },
+        {
+          "id": 197,
+          "name": "Začini proizvod 5",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 198,
+          "name": "Začini proizvod 6",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 199,
+          "name": "Začini proizvod 7",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 200,
+          "name": "Začini proizvod 8",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 201,
+          "name": "Začini proizvod 9",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 202,
+          "name": "Začini proizvod 10",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 203,
+          "name": "Začini proizvod 11",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 204,
+          "name": "Začini proizvod 12",
+          "unit": "kom",
+          "price": null
+        }
+      ]
+    },
+    {
+      "name": "Slatkiši",
+      "products": [
+        {
+          "id": 205,
+          "name": "Čokolada",
+          "unit": "kom",
+          "price": 150
+        },
+        {
+          "id": 206,
+          "name": "Keks",
+          "unit": "kom",
+          "price": 130
+        },
+        {
+          "id": 207,
+          "name": "Med",
+          "unit": "kom",
+          "price": 400
+        },
+        {
+          "id": 208,
+          "name": "Džem",
+          "unit": "kom",
+          "price": 250
+        },
+        {
+          "id": 209,
+          "name": "Slatkiši proizvod 5",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 210,
+          "name": "Slatkiši proizvod 6",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 211,
+          "name": "Slatkiši proizvod 7",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 212,
+          "name": "Slatkiši proizvod 8",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 213,
+          "name": "Slatkiši proizvod 9",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 214,
+          "name": "Slatkiši proizvod 10",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 215,
+          "name": "Slatkiši proizvod 11",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 216,
+          "name": "Slatkiši proizvod 12",
+          "unit": "kom",
+          "price": null
+        }
+      ]
+    },
+    {
+      "name": "Grickalice",
+      "products": [
+        {
+          "id": 217,
+          "name": "Čips",
+          "unit": "kom",
+          "price": 180
+        },
+        {
+          "id": 218,
+          "name": "Smoki",
+          "unit": "kom",
+          "price": 60
+        },
+        {
+          "id": 219,
+          "name": "Kikiriki",
+          "unit": "kom",
+          "price": 250
+        },
+        {
+          "id": 220,
+          "name": "Grickalice proizvod 4",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 221,
+          "name": "Grickalice proizvod 5",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 222,
+          "name": "Grickalice proizvod 6",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 223,
+          "name": "Grickalice proizvod 7",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 224,
+          "name": "Grickalice proizvod 8",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 225,
+          "name": "Grickalice proizvod 9",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 226,
+          "name": "Grickalice proizvod 10",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 227,
+          "name": "Grickalice proizvod 11",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 228,
+          "name": "Grickalice proizvod 12",
+          "unit": "kom",
+          "price": null
+        }
+      ]
+    },
+    {
+      "name": "Pića",
+      "products": [
+        {
+          "id": 229,
+          "name": "Voda",
+          "unit": "kom",
+          "price": 60
+        },
+        {
+          "id": 230,
+          "name": "Mineralna voda",
+          "unit": "kom",
+          "price": 90
+        },
+        {
+          "id": 231,
+          "name": "Sok",
+          "unit": "kom",
+          "price": 150
+        },
+        {
+          "id": 232,
+          "name": "Kafa",
+          "unit": "kom",
+          "price": 400
+        },
+        {
+          "id": 233,
+          "name": "Čaj",
+          "unit": "kom",
+          "price": 250
+        },
+        {
+          "id": 234,
+          "name": "Pića proizvod 6",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 235,
+          "name": "Pića proizvod 7",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 236,
+          "name": "Pića proizvod 8",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 237,
+          "name": "Pića proizvod 9",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 238,
+          "name": "Pića proizvod 10",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 239,
+          "name": "Pića proizvod 11",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 240,
+          "name": "Pića proizvod 12",
+          "unit": "kom",
+          "price": null
+        }
+      ]
+    },
+    {
+      "name": "Higijena",
+      "products": [
+        {
+          "id": 241,
+          "name": "Toalet papir",
+          "unit": "kom",
+          "price": 300
+        },
+        {
+          "id": 242,
+          "name": "Sapun",
+          "unit": "kom",
+          "price": 100
+        },
+        {
+          "id": 243,
+          "name": "Šampon",
+          "unit": "kom",
+          "price": 350
+        },
+        {
+          "id": 244,
+          "name": "Pasta za zube",
+          "unit": "kom",
+          "price": 250
+        },
+        {
+          "id": 245,
+          "name": "Higijena proizvod 5",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 246,
+          "name": "Higijena proizvod 6",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 247,
+          "name": "Higijena proizvod 7",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 248,
+          "name": "Higijena proizvod 8",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 249,
+          "name": "Higijena proizvod 9",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 250,
+          "name": "Higijena proizvod 10",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 251,
+          "name": "Higijena proizvod 11",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 252,
+          "name": "Higijena proizvod 12",
+          "unit": "kom",
+          "price": null
+        }
+      ]
+    },
+    {
+      "name": "Kućna hemija",
+      "products": [
+        {
+          "id": 253,
+          "name": "Prašak za veš",
+          "unit": "kom",
+          "price": 600
+        },
+        {
+          "id": 254,
+          "name": "Deterdžent za sudove",
+          "unit": "kom",
+          "price": 250
+        },
+        {
+          "id": 255,
+          "name": "Omekšivač",
+          "unit": "kom",
+          "price": 300
+        },
+        {
+          "id": 256,
+          "name": "Kućna hemija proizvod 4",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 257,
+          "name": "Kućna hemija proizvod 5",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 258,
+          "name": "Kućna hemija proizvod 6",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 259,
+          "name": "Kućna hemija proizvod 7",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 260,
+          "name": "Kućna hemija proizvod 8",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 261,
+          "name": "Kućna hemija proizvod 9",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 262,
+          "name": "Kućna hemija proizvod 10",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 263,
+          "name": "Kućna hemija proizvod 11",
+          "unit": "kom",
+          "price": null
+        },
+        {
+          "id": 264,
+          "name": "Kućna hemija proizvod 12",
+          "unit": "kom",
+          "price": null
+        }
+      ]
+    }
+  ]
+}
