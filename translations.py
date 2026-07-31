@@ -129,6 +129,7 @@ PREVODI = {
         "db_subcategories_empty": "Nema potkategorija jos.",
         "db_subcategories_of": "Potkategorije: {naziv}",
         "db_back_to_categories": "< Kategorije",
+        "db_new_product_btn": "+ Novi proizvod",
         "db_added_to_list_msg": "Dodato u listu.",
 
         "set_title": "Podesavanja",
@@ -265,6 +266,7 @@ PREVODI = {
         "db_subcategories_empty": "No subcategories yet.",
         "db_subcategories_of": "Subcategories: {naziv}",
         "db_back_to_categories": "< Categories",
+        "db_new_product_btn": "+ New product",
         "db_added_to_list_msg": "Added to list.",
 
         "set_title": "Settings",
@@ -401,6 +403,7 @@ PREVODI = {
         "db_subcategories_empty": "Zatial ziadne podkategorie.",
         "db_subcategories_of": "Podkategorie: {naziv}",
         "db_back_to_categories": "< Kategorie",
+        "db_new_product_btn": "+ Novy produkt",
         "db_added_to_list_msg": "Pridane do zoznamu.",
 
         "set_title": "Nastavenia",
@@ -537,6 +540,7 @@ PREVODI = {
         "db_subcategories_empty": "Ще немає підкатегорій.",
         "db_subcategories_of": "Підкатегорії: {naziv}",
         "db_back_to_categories": "< Категорії",
+        "db_new_product_btn": "+ Новий товар",
         "db_added_to_list_msg": "Додано у список.",
 
         "set_title": "Налаштування",
