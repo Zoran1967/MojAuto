@@ -58,6 +58,9 @@ PREVODI = {
         "hist_back": "Nazad",
         "hist_delete_receipt": "Obrisi ovaj racun",
         "hist_confirm_delete": "Sigurno? Klikni jos jednom za trajno brisanje",
+        "hist_print_btn": "Sacuvaj PDF / Stampaj",
+        "hist_pdf_saved_msg": "PDF sacuvan: {putanja}\nOtvori ga iz Downloads foldera da odstampas.",
+        "hist_pdf_error_msg": "Greska pri pravljenju PDF-a: {greska}",
 
         "db_title": "Baza proizvoda i prodavnica",
         "db_tab_products": "Proizvodi",
@@ -195,6 +198,9 @@ PREVODI = {
         "hist_back": "Back",
         "hist_delete_receipt": "Delete this receipt",
         "hist_confirm_delete": "Sure? Tap again to permanently delete",
+        "hist_print_btn": "Save PDF / Print",
+        "hist_pdf_saved_msg": "PDF saved: {putanja}\nOpen it from Downloads to print.",
+        "hist_pdf_error_msg": "Error creating PDF: {greska}",
 
         "db_title": "Product & store database",
         "db_tab_products": "Products",
@@ -332,6 +338,9 @@ PREVODI = {
         "hist_back": "Spat",
         "hist_delete_receipt": "Vymazat tuto uctenku",
         "hist_confirm_delete": "Naozaj? Klikni znova pre trvale vymazanie",
+        "hist_print_btn": "Ulozit PDF / Tlacit",
+        "hist_pdf_saved_msg": "PDF ulozeny: {putanja}\nOtvor ho zo zlozky Downloads a vytlac.",
+        "hist_pdf_error_msg": "Chyba pri vytvarani PDF: {greska}",
 
         "db_title": "Databaza produktov a obchodov",
         "db_tab_products": "Produkty",
@@ -469,6 +478,9 @@ PREVODI = {
         "hist_back": "Назад",
         "hist_delete_receipt": "Видалити цей чек",
         "hist_confirm_delete": "Точно? Натисніть ще раз для остаточного видалення",
+        "hist_print_btn": "Зберегти PDF / Друк",
+        "hist_pdf_saved_msg": "PDF збережено: {putanja}\nВідкрийте його з Downloads, щоб надрукувати.",
+        "hist_pdf_error_msg": "Помилка створення PDF: {greska}",
 
         "db_title": "База товарів та магазинів",
         "db_tab_products": "Товари",
