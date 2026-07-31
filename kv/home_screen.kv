@@ -1,15 +1,14 @@
 #:import dp kivy.metrics.dp
 
 <IconHomeButton@ButtonBehavior+BoxLayout>:
-    bg_color: 0.2, 0.4, 0.8, 1
     icon_source: ""
     label_text: ""
     orientation: "vertical"
-    padding: dp(8)
+    padding: dp(6)
     spacing: dp(2)
     canvas.before:
         Color:
-            rgba: self.bg_color
+            rgba: 0.06, 0.06, 0.08, 1
         RoundedRectangle:
             pos: self.pos
             size: self.size
@@ -18,7 +17,7 @@
         source: root.icon_source
         allow_stretch: True
         keep_ratio: True
-        size_hint_y: 0.55
+        size_hint_y: 0.72
     Label:
         text: root.label_text
         font_size: "14sp"
@@ -26,7 +25,47 @@
         halign: "center"
         valign: "middle"
         text_size: self.width, None
-        size_hint_y: 0.45
+        size_hint_y: 0.28
+
+
+<RoundedImageBox@Widget>:
+    radius: dp(26)
+    canvas.before:
+        StencilPush
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [self.radius]
+        StencilUse
+    canvas.after:
+        StencilUnUse
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [self.radius]
+        StencilPop
+
+
+<LanguagePill@ButtonBehavior+BoxLayout>:
+    orientation: "horizontal"
+    padding: dp(6)
+    spacing: dp(4)
+    canvas.before:
+        Color:
+            rgba: 0.15, 0.15, 0.18, 0.92
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [dp(18)]
+    Image:
+        source: app.assets_dir + "globus.png"
+        allow_stretch: True
+        keep_ratio: True
+        size_hint_x: 0.38
+    Label:
+        text: "Language"
+        font_size: "12sp"
+        bold: True
 
 
 <HomeScreen>:
@@ -56,25 +95,21 @@
             size_hint_y: 0.55
 
             IconHomeButton:
-                bg_color: 0.55, 0.25, 0.75, 1
                 icon_source: app.assets_dir + "baza.png"
                 label_text: root.txt_database
                 on_release: root.go_to_database()
 
             IconHomeButton:
-                bg_color: 0.15, 0.55, 0.25, 1
                 icon_source: app.assets_dir + "istorija.png"
                 label_text: root.txt_history
                 on_release: root.go_to_history()
 
             IconHomeButton:
-                bg_color: 0.15, 0.45, 0.85, 1
                 icon_source: app.assets_dir + "nova_lista.png"
                 label_text: root.txt_new_list
                 on_release: root.go_to_new_list()
 
             IconHomeButton:
-                bg_color: 0.85, 0.55, 0.1, 1
                 icon_source: app.assets_dir + "podesavanja.png"
                 label_text: root.txt_settings
                 on_release: root.go_to_settings()
@@ -82,20 +117,21 @@
         FloatLayout:
             size_hint_y: 0.45
 
-            Image:
-                source: app.assets_dir + "icon.png"
-                allow_stretch: True
-                keep_ratio: True
-                pos_hint: {"center_x": 0.5, "center_y": 0.5}
+            RoundedImageBox:
+                id: cart_box
                 size_hint: 1, 1
+                pos_hint: {"center_x": 0.5, "center_y": 0.5}
+                radius: dp(28)
 
-            Button:
-                text: "Jezik"
-                font_size: "13sp"
-                bold: True
+                Image:
+                    source: app.assets_dir + "icon.png"
+                    allow_stretch: True
+                    keep_ratio: True
+                    pos: cart_box.pos
+                    size: cart_box.size
+
+            LanguagePill:
                 size_hint: None, None
-                size: dp(64), dp(40)
+                size: dp(96), dp(40)
                 pos_hint: {"right": 0.98, "y": 0.02}
-                background_normal: ""
-                background_color: 0.15, 0.15, 0.18, 0.9
                 on_release: root.open_language_picker()
