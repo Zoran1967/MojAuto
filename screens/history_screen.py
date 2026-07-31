@@ -20,6 +20,13 @@ class HistoryScreen(Screen):
     Napomena o valutama: sve vrednosti dolaze iz baze UVEK u RSD i
     prikazuju se konvertovane preko db.rsd_u_prikaz().
     Tekstovi se prevode preko prevedi() prema trenutno izabranom jeziku.
+
+    Napomena o PDF-u (novo): u prikazu pojedinacnog racuna
+    (open_receipt_detail) dodato je dugme za izvoz racuna u PDF fajl
+    (pdf_export.generisi_racun_pdf) - PDF se cuva u javni Downloads
+    folder na telefonu, odakle korisnik moze da ga otvori u bilo kom
+    PDF citacu i odstampa ga odatle (koristeci "Stampaj" dugme koje
+    vec postoji u tim aplikacijama).
     """
 
     def on_pre_enter(self, *args):
@@ -90,7 +97,7 @@ class HistoryScreen(Screen):
                 )
                 btn.bind(
                     on_release=lambda inst, lid=lista_id, d=datum, u=ukupno_rsd:
-                        self.open_receipt_detail(lid, d, u, popup, refresh_receipts)
+                        self.open_receipt_detail(lid, d, u, naziv, popup, refresh_receipts)
                 )
                 receipts_box.add_widget(btn)
 
@@ -103,7 +110,8 @@ class HistoryScreen(Screen):
 
     # ---------- Nivo 2: stavke jednog racuna ----------
 
-    def open_receipt_detail(self, lista_id, datum, ukupno_rsd, parent_popup, refresh_parent):
+    def open_receipt_detail(self, lista_id, datum, ukupno_rsd, prodavnica_naziv,
+                             parent_popup, refresh_parent):
         jezik = _jezik()
         content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
         content.add_widget(
@@ -141,10 +149,40 @@ class HistoryScreen(Screen):
         total_row.add_widget(Label(text=f"{db.rsd_u_prikaz(ukupno_rsd):.2f} {db.valuta_oznaka()}", bold=True))
         content.add_widget(total_row)
 
+        pdf_status_label = Label(
+            text="", size_hint_y=None, height=dp(0), font_size="12sp",
+            color=(0.6, 0.85, 1, 1),
+        )
+        pdf_status_label.bind(
+            texture_size=lambda inst, val: setattr(inst, "height", val[1] + dp(6) if inst.text else 0)
+        )
+        content.add_widget(pdf_status_label)
+
         detail_popup = Popup(
             title=prevedi("hist_receipt_popup_title", jezik), content=content, size_hint=(0.94, 0.85),
             overlay_color=(0, 0, 0, 0.85),
         )
+
+        def izvezi_pdf(*a):
+            try:
+                from pdf_export import generisi_racun_pdf
+                stavke_prikaz = [
+                    (naziv, kolicina, db.rsd_u_prikaz(cena_rsd), db.rsd_u_prikaz(total_rsd))
+                    for naziv, kolicina, cena_rsd, total_rsd in stavke
+                ]
+                putanja = generisi_racun_pdf(
+                    prodavnica_naziv, datum, stavke_prikaz,
+                    db.rsd_u_prikaz(ukupno_rsd), db.valuta_oznaka(),
+                )
+                pdf_status_label.text = prevedi("hist_pdf_saved_msg", jezik).format(putanja=putanja)
+            except Exception as e:
+                pdf_status_label.text = prevedi("hist_pdf_error_msg", jezik).format(greska=str(e))
+
+        pdf_btn = PrimaryButton(
+            text=prevedi("hist_print_btn", jezik), size_hint_y=None, height=dp(44),
+        )
+        pdf_btn.bind(on_release=izvezi_pdf)
+        content.add_widget(pdf_btn)
 
         delete_state = {"confirm": False}
 
