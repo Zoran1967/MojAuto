@@ -29,20 +29,19 @@
 
 
 <RoundedImageBox@Widget>:
-    radius: dp(26)
     canvas.before:
         StencilPush
         RoundedRectangle:
             pos: self.pos
             size: self.size
-            radius: [self.radius]
+            radius: [dp(28)]
         StencilUse
     canvas.after:
         StencilUnUse
         RoundedRectangle:
             pos: self.pos
             size: self.size
-            radius: [self.radius]
+            radius: [dp(28)]
         StencilPop
 
 
@@ -121,7 +120,6 @@
                 id: cart_box
                 size_hint: 1, 1
                 pos_hint: {"center_x": 0.5, "center_y": 0.5}
-                radius: dp(28)
 
                 Image:
                     source: app.assets_dir + "icon.png"
