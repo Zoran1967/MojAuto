@@ -143,6 +143,16 @@ class DatabaseScreen(Screen):
         )
         box.add_widget(naslov)
 
+        novi_proizvod_btn = PrimaryButton(
+            text=prevedi("db_new_product_btn", jezik), size_hint_y=None, height=dp(44),
+        )
+        novi_proizvod_btn.bind(
+            on_release=lambda inst: self.open_new_proizvod_u_kategoriji_popup(
+                kategorija_id, kategorija_naziv
+            )
+        )
+        box.add_widget(novi_proizvod_btn)
+
         proizvodi = db.get_proizvodi_po_kategoriji(kategorija_id)
         if not proizvodi:
             box.add_widget(Label(
@@ -160,6 +170,61 @@ class DatabaseScreen(Screen):
                     kategorija_id, prodavnica_id,
                 )
             )
+
+    def open_new_proizvod_u_kategoriji_popup(self, kategorija_id, kategorija_naziv):
+        """Popup za dodavanje potpuno NOVOG proizvoda direktno u ovu
+        grupu (npr. 'Grcki jogurt' u 'Mlecni proizvodi'). Proizvod se
+        cuva sa cenom 0 - cena se unosi kasnije, kad se prvi put doda
+        na listu za neku prodavnicu (isto kao i za sve ostale
+        proizvode iz seed liste)."""
+        jezik = _jezik()
+        content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
+
+        content.add_widget(Label(
+            text=kategorija_naziv, bold=True, size_hint_y=None, height=dp(26),
+            color=(0.7, 0.7, 0.7, 1),
+        ))
+
+        naziv_input = StyledTextInput(
+            hint_text=prevedi("sl_product_name_hint", jezik), multiline=False,
+            size_hint_y=None, height=dp(44),
+        )
+        content.add_widget(naziv_input)
+
+        jedinica_input = StyledTextInput(
+            text="kom", hint_text=prevedi("db_label_unit", jezik), multiline=False,
+            size_hint_y=None, height=dp(44),
+        )
+        content.add_widget(jedinica_input)
+
+        error_label = Label(text="", size_hint_y=None, height=dp(24), color=(1, 0.4, 0.4, 1))
+        content.add_widget(error_label)
+
+        popup = Popup(
+            title=prevedi("db_new_product_btn", jezik), content=content, size_hint=(0.85, 0.5),
+            overlay_color=(0, 0, 0, 0.85), auto_dismiss=False,
+        )
+
+        def dodaj(*a):
+            naziv = naziv_input.text.strip()
+            if not naziv:
+                error_label.text = prevedi("db_err_empty_name", jezik)
+                return
+            jedinica = jedinica_input.text.strip() or "kom"
+            db.add_or_update_proizvod(naziv, jedinica, 0, None, kategorija_id)
+            popup.dismiss()
+            self.show_proizvodi_iz_kategorije(kategorija_id, kategorija_naziv)
+
+        btn_row = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
+        save_btn = PrimaryButton(text=prevedi("db_save", jezik))
+        save_btn.bind(on_release=dodaj)
+        cancel_btn = SecondaryButton(text=prevedi("sl_cancel", jezik))
+        cancel_btn.bind(on_release=popup.dismiss)
+        btn_row.add_widget(save_btn)
+        btn_row.add_widget(cancel_btn)
+        content.add_widget(btn_row)
+
+        popup.open()
 
     def _napravi_red_proizvoda(self, proizvod_id, naziv, jedinica, zadnja_cena_rsd,
                                 kategorija_id, prodavnica_id):
