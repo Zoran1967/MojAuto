@@ -2,10 +2,11 @@ from kivy.uix.screenmanager import Screen
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.button import Button
-from kivy.uix.image import Image as KivyImage
 from kivy.uix.behaviors import ButtonBehavior
 from kivy.uix.popup import Popup
 from kivy.uix.scrollview import ScrollView
+from kivy.properties import StringProperty
+from kivy.lang import Builder
 from kivy.metrics import dp
 from kivy.app import App
 
@@ -13,27 +14,49 @@ from database import db
 from widgets import PrimaryButton, SecondaryButton, DangerButton, StyledTextInput
 
 
-class IconTabButton(ButtonBehavior, BoxLayout):
-    """Dugme sa ikonicom iznad teksta, koristi se za dodatne tabove
-    (Gume, Registracija, Osiguranje, Akumulator, Kvarovi, Dokumenta)."""
+Builder.load_string("""
+<IconTabButton>:
+    orientation: "vertical"
+    padding: dp(4)
+    spacing: dp(2)
+    canvas.before:
+        Color:
+            rgba: 0.14, 0.14, 0.17, 1
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [dp(12)]
+    Image:
+        source: root.icon_source
+        allow_stretch: True
+        keep_ratio: True
+        size_hint_y: 0.65
+    Label:
+        text: root.text
+        font_size: "11sp"
+        bold: True
+        size_hint_y: 0.35
+""")
 
-    def __init__(self, icon_source, text, **kwargs):
-        super().__init__(orientation="vertical", padding=dp(4), spacing=dp(2), **kwargs)
-        self.icon_source = icon_source
-        self.label_text = text
-        self.add_widget(KivyImage(source=icon_source, allow_stretch=True, keep_ratio=True, size_hint_y=0.7))
-        self.add_widget(Label(
-            text=text, font_size="11sp", bold=True, size_hint_y=0.3,
-            halign="center", valign="middle", text_size=(dp(84), None),
-        ))
+
+class IconTabButton(ButtonBehavior, BoxLayout):
+    """Dugme sa ikonicom iznad teksta, koristi se za tabove
+    (Gorivo/Servisi/Troskovi i Gume/Registracija/Osiguranje/
+    Akumulator/Kvarovi/Dokumenta/Podsetnici). icon_source i text
+    su Kivy Properties (ne konstruktorski argumenti) da bi kv
+    Builder mogao da instancira widget bez argumenata i onda
+    postavi vrednosti."""
+
+    icon_source = StringProperty("")
+    text = StringProperty("")
 
 
 class DatabaseScreen(Screen):
     """
     Ekran za unos zapisa po vozilu, sa tabovima: Gorivo, Servisi,
     Troskovi (glavna 3 dugmeta iz kv fajla) i Gume, Registracija,
-    Osiguranje, Akumulator, Kvarovi, Dokumenta (dinamicki dodati
-    u extra_tabs_box, sa ikonicama).
+    Osiguranje, Akumulator, Kvarovi, Dokumenta, Podsetnici (dinamicki
+    dodati u extra_tabs_box, sa ikonicama).
     """
 
     TAB_DEFS = {
@@ -141,6 +164,16 @@ class DatabaseScreen(Screen):
             ],
             "prikaz": lambda r: f"{r['tip']} - {r['naziv'] or '-'}",
         },
+        "podsetnici": {
+            "naslov": "Podsetnici",
+            "fields": [
+                ("tip", "Tip podsetnika (npr. registracija, servis)", "text"),
+                ("naslov", "Naslov", "text"),
+                ("datum_isteka", "Datum isteka (DD.MM.GGGG)", "text"),
+                ("kilometraza_isteka", "Kilometraza isteka", "int"),
+            ],
+            "prikaz": lambda r: f"{r['naslov'] or r['tip']} - istice {r['datum_isteka'] or '-'}",
+        },
     }
 
     EXTRA_TAB_ICONS = {
@@ -150,6 +183,7 @@ class DatabaseScreen(Screen):
         "akumulator": "akumulator.png",
         "kvarovi": "kvarovi.png",
         "dokumenti": "dokumenti.png",
+        "podsetnici": "podsetnici.png",
     }
 
     def on_pre_enter(self, *args):
@@ -170,7 +204,7 @@ class DatabaseScreen(Screen):
             btn = IconTabButton(
                 icon_source=assets_dir + icon_fajl,
                 text=self.TAB_DEFS[tabela]["naslov"],
-                size_hint_x=None, width=dp(92),
+                size_hint_x=None, width=dp(70),
             )
             btn.bind(on_release=lambda inst, t=tabela: self._prikazi_vozila_za_tab(t))
             box.add_widget(btn)
@@ -323,6 +357,8 @@ class DatabaseScreen(Screen):
                 data["ukupna_cena"] = round(data.get("cena_delova", 0) + data.get("cena_rada", 0), 2)
             elif tabela == "kvarovi":
                 data["ukupna_cena"] = round(data.get("cena_rada", 0) + data.get("cena_delova", 0), 2)
+            elif tabela == "podsetnici":
+                data["aktivan"] = 1
             data["vehicle_id"] = vehicle_id
             db.insert(tabela, data)
             popup.dismiss()
