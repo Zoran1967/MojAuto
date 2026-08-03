@@ -2,19 +2,35 @@ from kivy.uix.screenmanager import Screen
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.button import Button
+from kivy.uix.image import Image as KivyImage
+from kivy.uix.behaviors import ButtonBehavior
 from kivy.uix.popup import Popup
 from kivy.uix.scrollview import ScrollView
 from kivy.metrics import dp
+from kivy.app import App
 
 from database import db
 from widgets import PrimaryButton, SecondaryButton, DangerButton, StyledTextInput
 
 
+class IconTabButton(ButtonBehavior, BoxLayout):
+    """Dugme sa ikonicom iznad teksta, koristi se za dodatne tabove
+    (Gume, Registracija, Osiguranje, Akumulator, Kvarovi, Dokumenta)."""
+
+    def __init__(self, icon_source, text, **kwargs):
+        super().__init__(orientation="vertical", padding=dp(4), spacing=dp(2), **kwargs)
+        self.icon_source = icon_source
+        self.label_text = text
+        self.add_widget(KivyImage(source=icon_source, allow_stretch=True, keep_ratio=True, size_hint_y=0.65))
+        self.add_widget(Label(text=text, font_size="11sp", bold=True, size_hint_y=0.35))
+
+
 class DatabaseScreen(Screen):
     """
-    Ekran za unos zapisa po vozilu, sa tri taba: Gorivo, Servisi, Troskovi.
-    Svaki tab prikazuje vozila; klik na vozilo otvara zapise tog tipa
-    za to vozilo, sa dodavanjem/izmenom/brisanjem.
+    Ekran za unos zapisa po vozilu, sa tabovima: Gorivo, Servisi,
+    Troskovi (glavna 3 dugmeta iz kv fajla) i Gume, Registracija,
+    Osiguranje, Akumulator, Kvarovi, Dokumenta (dinamicki dodati
+    u extra_tabs_box, sa ikonicama).
     """
 
     TAB_DEFS = {
@@ -53,6 +69,84 @@ class DatabaseScreen(Screen):
             ],
             "prikaz": lambda r: f"{r['datum']} - {r['vrsta']} - {r['iznos']} din",
         },
+        "gume": {
+            "naslov": "Gume",
+            "fields": [
+                ("sezona", "Sezona (letnje/zimske)", "text"),
+                ("marka", "Marka", "text"),
+                ("model", "Model", "text"),
+                ("dimenzija", "Dimenzija", "text"),
+                ("dot", "DOT", "text"),
+                ("cena", "Cena", "float"),
+                ("datum_kupovine", "Datum kupovine (DD.MM.GGGG)", "text"),
+                ("kilometraza_montaze", "Kilometraza montaze", "int"),
+                ("napomena", "Napomena", "text"),
+            ],
+            "prikaz": lambda r: f"{r['sezona']} - {r['marka'] or '-'} {r['model'] or '-'} ({r['dimenzija'] or '-'})",
+        },
+        "registracija": {
+            "naslov": "Registracija",
+            "fields": [
+                ("datum_registracije", "Datum registracije (DD.MM.GGGG)", "text"),
+                ("istek", "Istek (DD.MM.GGGG)", "text"),
+                ("cena", "Cena", "float"),
+                ("tehnicki_pregled", "Tehnicki pregled", "text"),
+                ("napomena", "Napomena", "text"),
+            ],
+            "prikaz": lambda r: f"{r['datum_registracije'] or '-'} - istice {r['istek'] or '-'}",
+        },
+        "osiguranje": {
+            "naslov": "Osiguranje",
+            "fields": [
+                ("vrsta", "Vrsta osiguranja", "text"),
+                ("cena", "Cena", "float"),
+                ("datum", "Datum (DD.MM.GGGG)", "text"),
+                ("istek", "Istek (DD.MM.GGGG)", "text"),
+            ],
+            "prikaz": lambda r: f"{r['vrsta'] or '-'} - istice {r['istek'] or '-'}",
+        },
+        "akumulator": {
+            "naslov": "Akumulator",
+            "fields": [
+                ("marka", "Marka", "text"),
+                ("model", "Model", "text"),
+                ("kapacitet", "Kapacitet", "text"),
+                ("datum_kupovine", "Datum kupovine (DD.MM.GGGG)", "text"),
+                ("cena", "Cena", "float"),
+                ("garancija", "Garancija", "text"),
+            ],
+            "prikaz": lambda r: f"{r['marka'] or '-'} {r['model'] or '-'} - {r['kapacitet'] or '-'}",
+        },
+        "kvarovi": {
+            "naslov": "Kvarovi",
+            "fields": [
+                ("datum", "Datum (DD.MM.GGGG)", "text"),
+                ("kilometraza", "Kilometraza", "int"),
+                ("opis", "Opis", "text"),
+                ("cena_rada", "Cena rada", "float"),
+                ("cena_delova", "Cena delova", "float"),
+            ],
+            "prikaz": lambda r: f"{r['datum']} - {r['ukupna_cena']} din",
+        },
+        "dokumenti": {
+            "naslov": "Dokumenta",
+            "fields": [
+                ("tip", "Tip dokumenta", "text"),
+                ("naziv", "Naziv", "text"),
+                ("putanja", "Putanja/naziv fajla", "text"),
+                ("datum_dodavanja", "Datum dodavanja (DD.MM.GGGG)", "text"),
+            ],
+            "prikaz": lambda r: f"{r['tip']} - {r['naziv'] or '-'}",
+        },
+    }
+
+    EXTRA_TAB_ICONS = {
+        "gume": "gume.png",
+        "registracija": "registracija.png",
+        "osiguranje": "osiguranje.png",
+        "akumulator": "akumulator.png",
+        "kvarovi": "kvarovi.png",
+        "dokumenti": "dokumenti.png",
     }
 
     def on_pre_enter(self, *args):
@@ -60,7 +154,23 @@ class DatabaseScreen(Screen):
         self.ids.tab_products.text = "Gorivo"
         self.ids.tab_stores.text = "Servisi"
         self.ids.tab_categories.text = "Troskovi"
+        self._build_extra_tabs()
         self.show_proizvodi()
+
+    # ---------- Dodatni tabovi (dinamicki, sa ikonicama, u extra_tabs_box) ----------
+
+    def _build_extra_tabs(self):
+        box = self.ids.extra_tabs_box
+        box.clear_widgets()
+        assets_dir = App.get_running_app().assets_dir
+        for tabela, icon_fajl in self.EXTRA_TAB_ICONS.items():
+            btn = IconTabButton(
+                icon_source=assets_dir + icon_fajl,
+                text=self.TAB_DEFS[tabela]["naslov"],
+                size_hint_x=None, width=dp(70),
+            )
+            btn.bind(on_release=lambda inst, t=tabela: self._prikazi_vozila_za_tab(t))
+            box.add_widget(btn)
 
     # ---------- Tabovi (nazivi metoda zadrzani zbog kv fajla) ----------
 
@@ -208,6 +318,8 @@ class DatabaseScreen(Screen):
                 data["pun_rezervoar"] = 1
             elif tabela == "servisi":
                 data["ukupna_cena"] = round(data.get("cena_delova", 0) + data.get("cena_rada", 0), 2)
+            elif tabela == "kvarovi":
+                data["ukupna_cena"] = round(data.get("cena_rada", 0) + data.get("cena_delova", 0), 2)
             data["vehicle_id"] = vehicle_id
             db.insert(tabela, data)
             popup.dismiss()
@@ -249,6 +361,8 @@ class DatabaseScreen(Screen):
                 data["ukupna_cena"] = round(data.get("litara", 0) * data.get("cena_po_litru", 0), 2)
             elif tabela == "servisi":
                 data["ukupna_cena"] = round(data.get("cena_delova", 0) + data.get("cena_rada", 0), 2)
+            elif tabela == "kvarovi":
+                data["ukupna_cena"] = round(data.get("cena_rada", 0) + data.get("cena_delova", 0), 2)
             db.update(tabela, record_id, data)
             popup.dismiss()
             refresh_parent()
