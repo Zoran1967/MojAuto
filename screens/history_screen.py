@@ -6,199 +6,142 @@ from kivy.uix.scrollview import ScrollView
 from kivy.metrics import dp
 
 from database import db
-from widgets import PrimaryButton, SecondaryButton, DangerButton, Card
-from translations import prevedi
-
-
-def _jezik():
-    return db.get_setting("jezik", "sr")
+from widgets import SecondaryButton, DangerButton
 
 
 class HistoryScreen(Screen):
     """
-    Istorija kupovina - organizovano po prodavnicama.
-    Napomena o valutama: sve vrednosti dolaze iz baze UVEK u RSD i
-    prikazuju se konvertovane preko db.rsd_u_prikaz().
-    Tekstovi se prevode preko prevedi() prema trenutno izabranom jeziku.
-
-    Napomena o PDF-u (novo): u prikazu pojedinacnog racuna
-    (open_receipt_detail) dodato je dugme za izvoz racuna u PDF fajl
-    (pdf_export.generisi_racun_pdf) - PDF se cuva u javni Downloads
-    folder na telefonu, odakle korisnik moze da ga otvori u bilo kom
-    PDF citacu i odstampa ga odatle (koristeci "Stampaj" dugme koje
-    vec postoji u tim aplikacijama).
+    Istorija servisa i troskova - organizovano po vozilu.
+    Prikazuje vozila; klik na vozilo otvara sve servise i troskove
+    tog vozila, sortirano po datumu (najnoviji prvi).
     """
 
     def on_pre_enter(self, *args):
-        jezik = _jezik()
-        self.ids.title_label.text = prevedi("hist_title", jezik)
+        self.ids.title_label.text = "Istorija servisa i troskova"
         self.load_history()
 
     def load_history(self):
-        jezik = _jezik()
         box = self.ids.history_box
         box.clear_widgets()
-        prodavnice = db.get_prodavnice_sa_istorijom()
+        vozila = db.get_all("vozila", order_by="marka")
 
-        if not prodavnice:
+        if not vozila:
             box.add_widget(
                 Label(
-                    text=prevedi("hist_empty", jezik),
+                    text="Nema dodatih vozila.",
                     size_hint_y=None, height=dp(60), color=(0.7, 0.7, 0.7, 1),
                 )
             )
             return
 
-        for pid, naziv, broj_racuna in prodavnice:
+        for vozilo in vozila:
+            broj_zapisa = len(db.get_by_vehicle("servisi", vozilo["id"])) + len(
+                db.get_by_vehicle("troskovi", vozilo["id"])
+            )
             btn = SecondaryButton(
-                text=prevedi("hist_receipts_count", jezik).format(naziv=naziv, broj=broj_racuna),
+                text=f"{vozilo['marka']} {vozilo['model']} ({broj_zapisa} zapisa)",
                 size_hint_y=None, height=dp(52), font_size="16sp",
             )
             btn.bind(
-                on_release=lambda inst, pid=pid, naziv=naziv: self.open_store_history(pid, naziv)
+                on_release=lambda inst, vid=vozilo["id"], naziv=f"{vozilo['marka']} {vozilo['model']}":
+                    self.open_vehicle_history(vid, naziv)
             )
             box.add_widget(btn)
 
-    # ---------- Nivo 1: racuni jedne prodavnice ----------
+    # ---------- Nivo 1: zapisi jednog vozila ----------
 
-    def open_store_history(self, prodavnica_id, naziv):
-        jezik = _jezik()
+    def open_vehicle_history(self, vehicle_id, naziv_vozila):
         content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
         content.add_widget(
-            Label(text=naziv, bold=True, font_size="18sp",
+            Label(text=naziv_vozila, bold=True, font_size="18sp",
                   size_hint_y=None, height=dp(32))
         )
 
-        receipts_box = BoxLayout(orientation="vertical", size_hint_y=None, spacing=dp(6))
-        receipts_box.bind(minimum_height=receipts_box.setter("height"))
+        records_box = BoxLayout(orientation="vertical", size_hint_y=None, spacing=dp(6))
+        records_box.bind(minimum_height=records_box.setter("height"))
         scroll = ScrollView(size_hint_y=1)
-        scroll.add_widget(receipts_box)
+        scroll.add_widget(records_box)
         content.add_widget(scroll)
 
         popup = Popup(
-            title=prevedi("hist_receipts_popup_title", jezik), content=content, size_hint=(0.92, 0.8),
+            title="Zapisi vozila", content=content, size_hint=(0.92, 0.8),
             overlay_color=(0, 0, 0, 0.85),
         )
 
-        def refresh_receipts():
-            receipts_box.clear_widgets()
-            liste = db.get_liste_za_prodavnicu(prodavnica_id)
-            if not liste:
+        def refresh_records():
+            records_box.clear_widgets()
+
+            servisi = [("servisi", r) for r in db.get_by_vehicle("servisi", vehicle_id)]
+            troskovi = [("troskovi", r) for r in db.get_by_vehicle("troskovi", vehicle_id)]
+            svi = servisi + troskovi
+            svi.sort(key=lambda x: x[1]["datum"], reverse=True)
+
+            if not svi:
                 popup.dismiss()
                 self.load_history()
                 return
-            for lista_id, datum, ukupno_rsd in liste:
-                ukupno_prikaz = db.rsd_u_prikaz(ukupno_rsd)
+
+            for tabela, red in svi:
+                if tabela == "servisi":
+                    tekst = f"{red['datum']} - {red['tip']}: {red['ukupna_cena']} din"
+                else:
+                    tekst = f"{red['datum']} - {red['vrsta']}: {red['iznos']} din"
+
                 btn = SecondaryButton(
-                    text=prevedi("hist_receipt_total", jezik).format(
-                        datum=datum, ukupno=f"{ukupno_prikaz:.2f}", valuta=db.valuta_oznaka()
-                    ),
-                    size_hint_y=None, height=dp(56), halign="center",
+                    text=tekst, size_hint_y=None, height=dp(56), halign="center",
                 )
                 btn.bind(
-                    on_release=lambda inst, lid=lista_id, d=datum, u=ukupno_rsd:
-                        self.open_receipt_detail(lid, d, u, naziv, popup, refresh_receipts)
+                    on_release=lambda inst, t=tabela, rid=red["id"]:
+                        self.open_record_detail(t, rid, popup, refresh_records)
                 )
-                receipts_box.add_widget(btn)
+                records_box.add_widget(btn)
 
-        close_btn = SecondaryButton(text=prevedi("hist_close", jezik), size_hint_y=None, height=dp(48))
+        close_btn = SecondaryButton(text="Zatvori", size_hint_y=None, height=dp(48))
         close_btn.bind(on_release=popup.dismiss)
         content.add_widget(close_btn)
 
-        refresh_receipts()
+        refresh_records()
         popup.open()
 
-    # ---------- Nivo 2: stavke jednog racuna ----------
+    # ---------- Nivo 2: detalji jednog zapisa ----------
 
-    def open_receipt_detail(self, lista_id, datum, ukupno_rsd, prodavnica_naziv,
-                             parent_popup, refresh_parent):
-        jezik = _jezik()
+    def open_record_detail(self, tabela, record_id, parent_popup, refresh_parent):
+        red = db.get_by_id(tabela, record_id)
+        if red is None:
+            return
+
         content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
-        content.add_widget(
-            Label(text=datum, bold=True, font_size="16sp",
-                  size_hint_y=None, height=dp(28))
-        )
 
-        header = BoxLayout(size_hint_y=None, height=dp(30))
-        header.add_widget(Label(text=prevedi("hist_col_product", jezik), bold=True, font_size="13sp"))
-        header.add_widget(Label(text=prevedi("hist_col_qty", jezik), bold=True, size_hint_x=0.4, font_size="13sp"))
-        header.add_widget(Label(
-            text=prevedi("hist_col_price", jezik).format(valuta=db.valuta_oznaka()),
-            bold=True, size_hint_x=0.5, font_size="13sp"
-        ))
-        header.add_widget(Label(text=prevedi("hist_col_total", jezik), bold=True, size_hint_x=0.5, font_size="13sp"))
-        content.add_widget(header)
-
-        items_box = BoxLayout(orientation="vertical", size_hint_y=None, spacing=dp(2))
-        items_box.bind(minimum_height=items_box.setter("height"))
-        scroll = ScrollView(size_hint_y=1)
-        scroll.add_widget(items_box)
-        content.add_widget(scroll)
-
-        stavke = db.get_lista_stavke(lista_id)
-        for naziv, kolicina, cena_rsd, total_rsd in stavke:
-            row = BoxLayout(size_hint_y=None, height=dp(36))
-            row.add_widget(Label(text=naziv, font_size="13sp"))
-            row.add_widget(Label(text=f"{kolicina:g}", size_hint_x=0.4, font_size="13sp"))
-            row.add_widget(Label(text=f"{db.rsd_u_prikaz(cena_rsd):.2f}", size_hint_x=0.5, font_size="13sp"))
-            row.add_widget(Label(text=f"{db.rsd_u_prikaz(total_rsd):.2f}", size_hint_x=0.5, font_size="13sp"))
-            items_box.add_widget(row)
-
-        total_row = BoxLayout(size_hint_y=None, height=dp(36))
-        total_row.add_widget(Label(text=prevedi("hist_total_label", jezik), bold=True))
-        total_row.add_widget(Label(text=f"{db.rsd_u_prikaz(ukupno_rsd):.2f} {db.valuta_oznaka()}", bold=True))
-        content.add_widget(total_row)
-
-        pdf_status_label = Label(
-            text="", size_hint_y=None, height=dp(0), font_size="12sp",
-            color=(0.6, 0.85, 1, 1),
-        )
-        pdf_status_label.bind(
-            texture_size=lambda inst, val: setattr(inst, "height", val[1] + dp(6) if inst.text else 0)
-        )
-        content.add_widget(pdf_status_label)
+        if tabela == "servisi":
+            content.add_widget(Label(text=f"{red['datum']} - {red['tip']}", bold=True, font_size="16sp", size_hint_y=None, height=dp(28)))
+            content.add_widget(Label(text=f"Naziv: {red['naziv'] or '-'}", size_hint_y=None, height=dp(28)))
+            content.add_widget(Label(text=f"Opis: {red['opis'] or '-'}", size_hint_y=None, height=dp(28)))
+            content.add_widget(Label(text=f"Ukupna cena: {red['ukupna_cena']} din", bold=True, size_hint_y=None, height=dp(28)))
+        else:
+            content.add_widget(Label(text=f"{red['datum']} - {red['vrsta']}", bold=True, font_size="16sp", size_hint_y=None, height=dp(28)))
+            content.add_widget(Label(text=f"Napomena: {red['napomena'] or '-'}", size_hint_y=None, height=dp(28)))
+            content.add_widget(Label(text=f"Iznos: {red['iznos']} din", bold=True, size_hint_y=None, height=dp(28)))
 
         detail_popup = Popup(
-            title=prevedi("hist_receipt_popup_title", jezik), content=content, size_hint=(0.94, 0.85),
+            title="Detalji zapisa", content=content, size_hint=(0.9, 0.6),
             overlay_color=(0, 0, 0, 0.85),
         )
-
-        def izvezi_pdf(*a):
-            try:
-                from pdf_export import generisi_racun_pdf
-                stavke_prikaz = [
-                    (naziv, kolicina, db.rsd_u_prikaz(cena_rsd), db.rsd_u_prikaz(total_rsd))
-                    for naziv, kolicina, cena_rsd, total_rsd in stavke
-                ]
-                putanja = generisi_racun_pdf(
-                    prodavnica_naziv, datum, stavke_prikaz,
-                    db.rsd_u_prikaz(ukupno_rsd), db.valuta_oznaka(),
-                )
-                pdf_status_label.text = prevedi("hist_pdf_saved_msg", jezik).format(putanja=putanja)
-            except Exception as e:
-                pdf_status_label.text = prevedi("hist_pdf_error_msg", jezik).format(greska=str(e))
-
-        pdf_btn = PrimaryButton(
-            text=prevedi("hist_print_btn", jezik), size_hint_y=None, height=dp(44),
-        )
-        pdf_btn.bind(on_release=izvezi_pdf)
-        content.add_widget(pdf_btn)
 
         delete_state = {"confirm": False}
 
         def delete(instance):
             if not delete_state["confirm"]:
                 delete_state["confirm"] = True
-                instance.text = prevedi("hist_confirm_delete", jezik)
+                instance.text = "Potvrdi brisanje"
                 return
-            db.delete_lista(lista_id)
+            db.delete(tabela, record_id)
             detail_popup.dismiss()
             refresh_parent()
 
         btn_row = BoxLayout(size_hint_y=None, height=dp(48), spacing=dp(6))
-        back_btn = SecondaryButton(text=prevedi("hist_back", jezik))
+        back_btn = SecondaryButton(text="Nazad")
         back_btn.bind(on_release=detail_popup.dismiss)
-        delete_btn = DangerButton(text=prevedi("hist_delete_receipt", jezik))
+        delete_btn = DangerButton(text="Obrisi zapis")
         delete_btn.bind(on_release=delete)
         btn_row.add_widget(back_btn)
         btn_row.add_widget(delete_btn)
