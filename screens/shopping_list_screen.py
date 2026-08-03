@@ -1,491 +1,175 @@
-import os
 from kivy.uix.screenmanager import Screen
 from kivy.uix.popup import Popup
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
-from kivy.uix.camera import Camera
-from kivy.uix.image import Image as KivyImage
-from widgets import PrimaryButton, SecondaryButton, DangerButton, StyledTextInput, Card
 from kivy.uix.label import Label
-from kivy.uix.scrollview import ScrollView
 from kivy.metrics import dp
-from kivy.app import App
-from kivy.utils import platform
 
+from widgets import PrimaryButton, SecondaryButton, DangerButton, StyledTextInput, Card
 from database import db
-from translations import prevedi
-
-
-def _jezik():
-    return db.get_setting("jezik", "sr")
-
-
-def _slika_putanja(oznaka):
-    app = App.get_running_app()
-    folder = app.user_data_dir
-    return os.path.join(folder, f"cena_{oznaka}.jpg")
 
 
 class ShoppingListScreen(Screen):
     """
-    Ekran aktivnih lista za kupovinu.
-
-    NAPOMENA (izmena po zahtevu - vise istovremenih lista): aplikacija
-    sad podrzava VISE istovremeno otvorenih lista, po jednu po
-    prodavnici (npr. kupovina istog dana i u Maxi-ju i u Lidl-u).
-    Nema vise pojma "trenutna lista" (self.lista_id) - umesto toga,
-    svaka prodavnica koja ima otvorenu (nezatvorenu) listu prikazuje se
-    kao zasebna kartica na ovom ekranu, ucitano direktno iz baze
-    (db.get_otvorene_liste()) svaki put kad se ekran otvori.
-
-    Lista postaje deo istorije TEK kad korisnik pritisne "Snimi racun"
-    na kartici te prodavnice (db.close_lista) - do tada ostaje otvorena
-    i vidljiva ovde, cak i ako korisnik ode na drugi ekran i vrati se.
-
-    add_product_to_current_list() je javna metoda koju koristi i ovaj
-    ekran i DatabaseScreen (dugme "Dodaj u listu", i novi grupisani
-    prikaz proizvoda po kategorijama). Ako se ne prosledi prodavnica_id,
-    koristi se prva prodavnica u bazi.
-
-    Napomena o valutama: cene se uvek cuvaju u RSD, prikaz preko
-    db.rsd_u_prikaz(). Tekstovi se prevode preko prevedi().
-
-    Napomena o kameri: funkcije za slikanje (slikaj_za_novi_proizvod,
-    slikaj_za_postojeci_red i pomocne _otvori_kameru_popup i sl.) su
-    OSTAVLJENE NETAKNUTE na izricit zahtev - trenutno nisu povezane
-    na dugmad u novom UI-ju (nisu ni bile pouzdane), ali kod ostaje
-    ovde netaknut za slucaj da se kasnije ponovo poveze.
+    Ekran za pregled i upravljanje vozilima (prepravljen iz Shopping
+    List ekrana - naziv fajla/klase i ids su namerno zadrzani da se ne
+    bi diralo main.py ni kv fajl u istoj izmeni).
     """
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._foto_brojac = 0
+        self._selektovano_vozilo_id = None
 
     def on_pre_enter(self, *args):
-        jezik = _jezik()
-        self.ids.add_product_btn.text = prevedi("sl_add_product_btn", jezik)
-        self.ids.grand_total_word.text = prevedi("sl_grand_total", jezik)
+        self.ids.add_product_btn.text = "+ Dodaj vozilo"
+        self.ids.grand_total_word.text = "UKUPNO VOZILA:"
         self.load_open_lists()
 
-    # ---------- Prikaz svih otvorenih lista (po prodavnici) ----------
+    # ---------- Prikaz liste vozila ----------
 
     def load_open_lists(self):
-        jezik = _jezik()
         box = self.ids.items_box
         box.clear_widgets()
 
-        otvorene = db.get_otvorene_liste()
-        grand_total_rsd = 0.0
+        vozila = db.get_all("vozila", order_by="marka")
 
-        if not otvorene:
+        if not vozila:
             box.add_widget(Label(
-                text=prevedi("sl_no_open_lists", jezik),
+                text="Nema dodatih vozila.",
                 size_hint_y=None, height=dp(60), color=(0.75, 0.75, 0.75, 1),
             ))
         else:
-            for lista_id, prodavnica_id, prodavnica_naziv in otvorene:
-                subtotal_rsd = self._napravi_karticu_prodavnice(
-                    box, lista_id, prodavnica_id, prodavnica_naziv
-                )
-                grand_total_rsd += subtotal_rsd
+            for vozilo in vozila:
+                self._napravi_karticu_vozila(box, vozilo)
 
-        self.ids.grand_total_label.text = f"{db.rsd_u_prikaz(grand_total_rsd):.2f} {db.valuta_oznaka()}"
+        self.ids.grand_total_label.text = str(len(vozila))
 
-    def _napravi_karticu_prodavnice(self, parent_box, lista_id, prodavnica_id, prodavnica_naziv):
-        jezik = _jezik()
+    def _napravi_karticu_vozila(self, parent_box, vozilo):
         card = Card(orientation="vertical", padding=dp(10), spacing=dp(6),
                     size_hint_y=None)
         card.bind(minimum_height=card.setter("height"))
 
         header = Label(
-            text=prodavnica_naziv, bold=True, font_size="16sp",
+            text=f"{vozilo['marka']} {vozilo['model']} ({vozilo['godina'] or '-'})",
+            bold=True, font_size="16sp",
             size_hint_y=None, height=dp(28),
         )
         card.add_widget(header)
 
-        col_header = BoxLayout(size_hint_y=None, height=dp(24))
-        col_header.add_widget(Label(text=prevedi("sl_col_product", jezik), bold=True, font_size="12sp"))
-        col_header.add_widget(Label(text=prevedi("sl_col_qty", jezik), bold=True, size_hint_x=0.4, font_size="12sp"))
-        col_header.add_widget(Label(text=prevedi("sl_col_price", jezik), bold=True, size_hint_x=0.5, font_size="12sp"))
-        col_header.add_widget(Label(text=prevedi("sl_col_total", jezik), bold=True, size_hint_x=0.5, font_size="12sp"))
-        card.add_widget(col_header)
-
-        stavke = db.get_stavke_sa_id(lista_id)
-        subtotal_rsd = 0.0
-
-        for stavka_id, naziv, kolicina, cena_rsd, total_rsd, proizvod_id in stavke:
-            subtotal_rsd += total_rsd
-            row = Button(
-                text=(
-                    f"{naziv}   {kolicina:g}   "
-                    f"{db.rsd_u_prikaz(cena_rsd):.2f}   "
-                    f"{db.rsd_u_prikaz(total_rsd):.2f}"
-                ),
-                size_hint_y=None, height=dp(40),
-                background_normal="", background_color=(0.20, 0.20, 0.22, 1),
-                color=(1, 1, 1, 1), font_size="13sp",
-            )
-            row.bind(
-                on_release=lambda inst, sid=stavka_id, n=naziv, k=kolicina, c=cena_rsd,
-                                  pid=prodavnica_id, pnaziv=prodavnica_naziv, prid=proizvod_id:
-                    self.open_edit_item_popup(sid, n, k, c, pid, pnaziv, prid)
-            )
-            card.add_widget(row)
-
-        subtotal_label = Label(
-            text=f"{prevedi('sl_total_label', jezik)} {db.rsd_u_prikaz(subtotal_rsd):.2f} {db.valuta_oznaka()}",
-            bold=True, size_hint_y=None, height=dp(28),
+        info = Label(
+            text=f"Registracija: {vozilo['registracija'] or '-'}   Kilometraza: {vozilo['kilometraza']} km",
+            font_size="13sp", size_hint_y=None, height=dp(24),
         )
-        card.add_widget(subtotal_label)
+        card.add_widget(info)
 
-        snimi_btn = PrimaryButton(
-            text=prevedi("sl_snimi_racun", jezik), size_hint_y=None, height=dp(44),
+        izmeni_btn = Button(
+            text="Izmeni / Obrisi",
+            size_hint_y=None, height=dp(40),
+            background_normal="", background_color=(0.20, 0.20, 0.22, 1),
+            color=(1, 1, 1, 1), font_size="13sp",
         )
-        snimi_btn.bind(on_release=lambda inst: self.snimi_racun(lista_id, subtotal_rsd))
-        card.add_widget(snimi_btn)
+        izmeni_btn.bind(on_release=lambda inst, vid=vozilo["id"]: self.open_edit_item_popup(vid))
+        card.add_widget(izmeni_btn)
 
         parent_box.add_widget(card)
-        return subtotal_rsd
 
-    def snimi_racun(self, lista_id, ukupno_rsd):
-        """Cuva listu u istoriju TEK sada (zahtev 9) - dok se ovo ne
-        pritisne, lista NIJE deo istorije."""
-        db.close_lista(lista_id, ukupno_rsd)
-        self.load_open_lists()
-
-    # ---------- Zajednicka logika dodavanja stavke (koristi i ovaj ekran i DatabaseScreen) ----------
-
-    def add_product_to_current_list(self, naziv, jedinica, kolicina, cena_rsd, prodavnica_id=None,
-                                     kategorija_id=None, podkategorija_id=None,
-                                     podrazumevana_kolicina=None):
-        """
-        Dodaje proizvod u otvorenu listu date prodavnice. Ako
-        prodavnica_id nije prosledjen, koristi se prva prodavnica u
-        bazi (default) - ovo koristi DatabaseScreen kad dodaje direktno
-        iz baze proizvoda. Vraca True ako je uspelo, False ako ne
-        postoji nijedna prodavnica u bazi.
-
-        kategorija_id/podkategorija_id/podrazumevana_kolicina su
-        OPCIONI (podrazumevano None = ne menjaju postojecu vrednost u
-        bazi za taj proizvod, vidi db.add_or_update_proizvod) - dodati
-        da bi novi grupisani prikaz proizvoda po kategorijama (u
-        DatabaseScreen-u) mogao da sacuva kategoriju kad se PRVI PUT
-        doda potpuno nov proizvod direktno iz te grupe.
-        """
-        if prodavnica_id is None:
-            prva = db.get_prva_prodavnica()
-            if prva is None:
-                return False
-            prodavnica_id = prva[0]
-
-        lista_id = db.get_or_create_otvorena_lista(prodavnica_id)
-        proizvod_id = db.add_or_update_proizvod(
-            naziv, jedinica, cena_rsd, prodavnica_id,
-            kategorija_id, podkategorija_id, podrazumevana_kolicina,
-        )
-        db.add_stavka(lista_id, proizvod_id, naziv, kolicina, cena_rsd)
-        # Pamti ovu cenu za ovu konkretnu prodavnicu (za buduce poredjenje)
-        db.zabelezi_cenu_za_prodavnicu(proizvod_id, prodavnica_id, cena_rsd)
-        return True
-
-    # ---------- Poruka (npr. "nema prodavnica") ----------
-
-    def _prikazi_poruku(self, tekst):
-        jezik = _jezik()
-        content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
-        content.add_widget(Label(text=tekst))
-        popup = Popup(title="", content=content, size_hint=(0.85, 0.35), overlay_color=(0, 0, 0, 0.85))
-        close_btn = SecondaryButton(text=prevedi("sl_cancel", jezik), size_hint_y=None, height=dp(44))
-        close_btn.bind(on_release=popup.dismiss)
-        content.add_widget(close_btn)
-        popup.open()
-
-    # ---------- Izbor prodavnice (generican picker - koristi se i za dodavanje i za izmenu stavke) ----------
-
-    def open_store_picker_popup(self, on_chosen):
-        jezik = _jezik()
-        content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
-
-        search = StyledTextInput(
-            hint_text=prevedi("sl_search_store_hint", jezik),
-            size_hint_y=None, height=dp(44), multiline=False,
-        )
-        content.add_widget(search)
-
-        results_box = BoxLayout(orientation="vertical", size_hint_y=None, spacing=dp(4))
-        results_box.bind(minimum_height=results_box.setter("height"))
-        scroll = ScrollView(size_hint_y=1)
-        scroll.add_widget(results_box)
-        content.add_widget(scroll)
-
-        popup = Popup(
-            title=prevedi("sl_pick_store_title", jezik), content=content,
-            size_hint=(0.9, 0.75), auto_dismiss=False,
-            overlay_color=(0, 0, 0, 0.85),
-        )
-
-        def choose(pid, naziv):
-            on_chosen(pid, naziv)
-            popup.dismiss()
-
-        def refresh(*a):
-            results_box.clear_widgets()
-            query = search.text.strip().lower()
-            for pid, naziv in db.get_prodavnice():
-                if query in naziv.lower():
-                    btn = SecondaryButton(text=naziv, size_hint_y=None, height=dp(44))
-                    btn.bind(on_release=lambda inst, pid=pid, naziv=naziv: choose(pid, naziv))
-                    results_box.add_widget(btn)
-
-        def add_new(*a):
-            naziv = search.text.strip()
-            if not naziv:
-                return
-            pid = db.add_prodavnica(naziv)
-            choose(pid, naziv)
-
-        search.bind(text=refresh)
-
-        btn_row = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
-        add_btn = PrimaryButton(text=prevedi("sl_add_store_btn", jezik))
-        add_btn.bind(on_release=add_new)
-        cancel_btn = SecondaryButton(text=prevedi("sl_cancel", jezik))
-        cancel_btn.bind(on_release=popup.dismiss)
-        btn_row.add_widget(add_btn)
-        btn_row.add_widget(cancel_btn)
-        content.add_widget(btn_row)
-
-        refresh()
-        popup.open()
-
-    # ---------- Dodavanje proizvoda (zahtev 5: default prva prodavnica, jednim klikom promeni) ----------
+    # ---------- Dodavanje vozila ----------
 
     def add_item(self):
-        prva = db.get_prva_prodavnica()
-        if prva is None:
-            # Nema nijedne prodavnice - umesto da samo blokiramo porukom,
-            # odmah otvaramo picker koji ima "+ Prodavnica" dugme za
-            # dodavanje, pa nastavljamo direktno na dodavanje proizvoda.
-            def posle_dodavanja_prodavnice(pid, naziv):
-                self.open_add_item_popup(pid, naziv)
-            self.open_store_picker_popup(posle_dodavanja_prodavnice)
-            return
-        self.open_add_item_popup(prva[0], prva[1])
+        self.open_add_item_popup()
 
-    def open_add_item_popup(self, prodavnica_id, prodavnica_naziv):
-        jezik = _jezik()
+    def open_add_item_popup(self):
         content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
 
-        store_state = {"id": prodavnica_id, "naziv": prodavnica_naziv}
-        store_btn = SecondaryButton(
-            text=prevedi("sl_store_label", jezik).format(naziv=prodavnica_naziv),
-            size_hint_y=None, height=dp(44),
-        )
-        content.add_widget(store_btn)
+        marka_input = StyledTextInput(hint_text="Marka", size_hint_y=None, height=dp(44), multiline=False)
+        model_input = StyledTextInput(hint_text="Model", size_hint_y=None, height=dp(44), multiline=False)
+        godina_input = StyledTextInput(hint_text="Godina", input_filter="int", size_hint_y=None, height=dp(44), multiline=False)
+        registracija_input = StyledTextInput(hint_text="Registracija", size_hint_y=None, height=dp(44), multiline=False)
+        kilometraza_input = StyledTextInput(hint_text="Kilometraza", input_filter="int", size_hint_y=None, height=dp(44), multiline=False)
 
-        naziv_input = StyledTextInput(
-            hint_text=prevedi("sl_product_name_hint", jezik), size_hint_y=None, height=dp(44), multiline=False,
-        )
-        content.add_widget(naziv_input)
-
-        suggestions_box = BoxLayout(orientation="vertical", size_hint_y=None, spacing=dp(2))
-        suggestions_box.bind(minimum_height=suggestions_box.setter("height"))
-        sugg_scroll = ScrollView(size_hint_y=None, height=dp(120))
-        sugg_scroll.add_widget(suggestions_box)
-        content.add_widget(sugg_scroll)
-
-        row = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
-        jedinica_input = StyledTextInput(hint_text=prevedi("sl_unit_hint", jezik), multiline=False)
-        kolicina_input = StyledTextInput(hint_text=prevedi("sl_qty_hint", jezik), input_filter="float", multiline=False)
-        cena_input = StyledTextInput(
-            hint_text=prevedi("sl_price_hint", jezik).format(valuta=db.valuta_oznaka()),
-            input_filter="float", multiline=False,
-        )
-        row.add_widget(jedinica_input)
-        row.add_widget(kolicina_input)
-        row.add_widget(cena_input)
-        content.add_widget(row)
-
-        cene_pregled_label = Label(
-            text="", size_hint_y=None, height=dp(0), font_size="12sp",
-            color=(0.6, 0.85, 1, 1), halign="left",
-        )
-        cene_pregled_label.bind(
-            texture_size=lambda inst, val: setattr(inst, "height", val[1] + dp(6))
-        )
-        content.add_widget(cene_pregled_label)
-
-        total_label = Label(
-            text=prevedi("sl_total_prefix", jezik).format(total="0.00", valuta=db.valuta_oznaka()),
-            size_hint_y=None, height=dp(30),
-        )
-        content.add_widget(total_label)
-
-        def update_total(*a):
-            try:
-                k = float(kolicina_input.text.replace(",", "."))
-                c = float(cena_input.text.replace(",", "."))
-                total_label.text = prevedi("sl_total_prefix", jezik).format(total=f"{k * c:.2f}", valuta=db.valuta_oznaka())
-            except ValueError:
-                total_label.text = prevedi("sl_total_prefix", jezik).format(total="0.00", valuta=db.valuta_oznaka())
-
-        kolicina_input.bind(text=update_total)
-        cena_input.bind(text=update_total)
-
-        trenutni_proizvod = {"id": None}
-
-        def osvezi_pregled_cena():
-            if trenutni_proizvod["id"] is None:
-                cene_pregled_label.text = ""
-                return
-            sve_cene = db.get_sve_cene_proizvoda(trenutni_proizvod["id"])
-            if not sve_cene:
-                cene_pregled_label.text = ""
-                return
-            linije = []
-            for prodavnica_naziv, cena_rsd, datum in sve_cene:
-                cena_prikaz = db.rsd_u_prikaz(cena_rsd)
-                oznaka = " <--" if prodavnica_naziv == store_state["naziv"] else ""
-                linije.append(f"{prodavnica_naziv}: {cena_prikaz:.2f} {db.valuta_oznaka()}{oznaka}")
-            cene_pregled_label.text = "\\n".join(linije)
-
-        def pick_suggestion(proizvod_id, naziv, jedinica):
-            naziv_input.unbind(text=refresh_suggestions)
-            naziv_input.text = naziv
-            naziv_input.bind(text=refresh_suggestions)
-            jedinica_input.text = jedinica
-            trenutni_proizvod["id"] = proizvod_id
-            osvezi_pregled_cena()
-            suggestions_box.clear_widgets()
-
-        def refresh_suggestions(*a):
-            suggestions_box.clear_widgets()
-            trenutni_proizvod["id"] = None
-            cene_pregled_label.text = ""
-            query = naziv_input.text.strip().lower()
-            if not query:
-                return
-            for pid, naziv, jedinica, cena_rsd in db.search_proizvodi(query):
-                btn = SecondaryButton(
-                    text=f"{naziv}  ({jedinica})",
-                    size_hint_y=None, height=dp(36),
-                )
-                btn.bind(
-                    on_release=lambda inst, i=pid, n=naziv, j=jedinica: pick_suggestion(i, n, j)
-                )
-                suggestions_box.add_widget(btn)
-
-        naziv_input.bind(text=refresh_suggestions)
-
-        def on_store_chosen(pid, pnaziv):
-            store_state["id"] = pid
-            store_state["naziv"] = pnaziv
-            store_btn.text = prevedi("sl_store_label", jezik).format(naziv=pnaziv)
-            osvezi_pregled_cena()
-
-        store_btn.bind(on_release=lambda inst: self.open_store_picker_popup(on_store_chosen))
-
-        btn_row2 = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
-        add_btn = PrimaryButton(text=prevedi("sl_add_to_list_btn", jezik))
-        cancel_btn = SecondaryButton(text=prevedi("sl_cancel", jezik))
-        btn_row2.add_widget(add_btn)
-        btn_row2.add_widget(cancel_btn)
-        content.add_widget(btn_row2)
-
-        popup = Popup(
-            title=prevedi("sl_add_item_title", jezik), content=content, size_hint=(0.9, 0.9),
-            overlay_color=(0, 0, 0, 0.85), auto_dismiss=False,
-        )
-        cancel_btn.bind(on_release=popup.dismiss)
-
-        def confirm(*a):
-            naziv = naziv_input.text.strip()
-            jedinica = jedinica_input.text.strip() or "kom"
-
-            if not naziv:
-                return
-            try:
-                kolicina = float(kolicina_input.text.replace(",", "."))
-                cena_prikaz = float(cena_input.text.replace(",", "."))
-            except ValueError:
-                return
-            if kolicina <= 0 or cena_prikaz < 0:
-                return
-
-            cena_rsd = db.prikaz_u_rsd(cena_prikaz)
-            self.add_product_to_current_list(naziv, jedinica, kolicina, cena_rsd, store_state["id"])
-            popup.dismiss()
-            self.load_open_lists()
-
-        add_btn.bind(on_release=confirm)
-        popup.open()
-
-    # ---------- Izmena/brisanje/pomeranje pojedinacne stavke (zahtev 6) ----------
-
-    def open_edit_item_popup(self, stavka_id, naziv, kolicina, cena_rsd, prodavnica_id, prodavnica_naziv, proizvod_id=None):
-        jezik = _jezik()
-        content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
-
-        content.add_widget(
-            Label(text=naziv, bold=True, font_size="16sp", size_hint_y=None, height=dp(30))
-        )
-
-        row1 = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
-        kolicina_input = StyledTextInput(text=f"{kolicina:g}", input_filter="float", multiline=False)
-        row1.add_widget(Label(text=prevedi("sl_qty_hint", jezik), size_hint_x=0.4))
-        row1.add_widget(kolicina_input)
-        content.add_widget(row1)
-
-        row2 = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
-        cena_input = StyledTextInput(
-            text=f"{db.rsd_u_prikaz(cena_rsd):.2f}", input_filter="float", multiline=False
-        )
-        row2.add_widget(Label(
-            text=prevedi("sl_price_hint", jezik).format(valuta=db.valuta_oznaka()), size_hint_x=0.4
-        ))
-        row2.add_widget(cena_input)
-        content.add_widget(row2)
-
-        store_state = {"id": prodavnica_id, "naziv": prodavnica_naziv}
-        store_btn = SecondaryButton(
-            text=prevedi("sl_change_store_btn", jezik).format(naziv=prodavnica_naziv),
-            size_hint_y=None, height=dp(44),
-        )
-        content.add_widget(store_btn)
-
-        def on_store_chosen(pid, pnaziv):
-            store_state["id"] = pid
-            store_state["naziv"] = pnaziv
-            store_btn.text = prevedi("sl_change_store_btn", jezik).format(naziv=pnaziv)
-
-        store_btn.bind(on_release=lambda inst: self.open_store_picker_popup(on_store_chosen))
+        for w in (marka_input, model_input, godina_input, registracija_input, kilometraza_input):
+            content.add_widget(w)
 
         error_label = Label(text="", size_hint_y=None, height=dp(24), color=(1, 0.4, 0.4, 1))
         content.add_widget(error_label)
 
         popup = Popup(
-            title=prevedi("sl_item_edit_title", jezik), content=content, size_hint=(0.9, 0.8),
+            title="Dodaj vozilo", content=content, size_hint=(0.9, 0.7),
+            overlay_color=(0, 0, 0, 0.85), auto_dismiss=False,
+        )
+
+        def confirm(*a):
+            marka = marka_input.text.strip()
+            model = model_input.text.strip()
+            if not marka or not model:
+                error_label.text = "Marka i model su obavezni."
+                return
+            db.insert("vozila", {
+                "marka": marka,
+                "model": model,
+                "godina": int(godina_input.text) if godina_input.text.strip() else None,
+                "registracija": registracija_input.text.strip(),
+                "kilometraza": int(kilometraza_input.text) if kilometraza_input.text.strip() else 0,
+            })
+            popup.dismiss()
+            self.load_open_lists()
+
+        btn_row = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
+        add_btn = PrimaryButton(text="Sacuvaj")
+        add_btn.bind(on_release=confirm)
+        cancel_btn = SecondaryButton(text="Otkazi")
+        cancel_btn.bind(on_release=popup.dismiss)
+        btn_row.add_widget(add_btn)
+        btn_row.add_widget(cancel_btn)
+        content.add_widget(btn_row)
+
+        popup.open()
+
+    # ---------- Izmena / brisanje vozila ----------
+
+    def open_edit_item_popup(self, vozilo_id):
+        vozilo = db.get_by_id("vozila", vozilo_id)
+        if vozilo is None:
+            return
+
+        content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
+
+        marka_input = StyledTextInput(text=vozilo["marka"] or "", size_hint_y=None, height=dp(44), multiline=False)
+        model_input = StyledTextInput(text=vozilo["model"] or "", size_hint_y=None, height=dp(44), multiline=False)
+        godina_input = StyledTextInput(
+            text=str(vozilo["godina"]) if vozilo["godina"] else "",
+            input_filter="int", size_hint_y=None, height=dp(44), multiline=False,
+        )
+        registracija_input = StyledTextInput(text=vozilo["registracija"] or "", size_hint_y=None, height=dp(44), multiline=False)
+        kilometraza_input = StyledTextInput(
+            text=str(vozilo["kilometraza"]) if vozilo["kilometraza"] else "0",
+            input_filter="int", size_hint_y=None, height=dp(44), multiline=False,
+        )
+
+        for w in (marka_input, model_input, godina_input, registracija_input, kilometraza_input):
+            content.add_widget(w)
+
+        error_label = Label(text="", size_hint_y=None, height=dp(24), color=(1, 0.4, 0.4, 1))
+        content.add_widget(error_label)
+
+        popup = Popup(
+            title="Izmeni vozilo", content=content, size_hint=(0.9, 0.75),
             overlay_color=(0, 0, 0, 0.85), auto_dismiss=False,
         )
 
         def save(*a):
-            try:
-                nova_kolicina = float(kolicina_input.text.replace(",", "."))
-                nova_cena_prikaz = float(cena_input.text.replace(",", "."))
-            except ValueError:
-                error_label.text = prevedi("db_err_bad_price", jezik)
+            marka = marka_input.text.strip()
+            model = model_input.text.strip()
+            if not marka or not model:
+                error_label.text = "Marka i model su obavezni."
                 return
-            if nova_kolicina <= 0 or nova_cena_prikaz < 0:
-                error_label.text = prevedi("db_err_negative_price", jezik)
-                return
-            nova_cena_rsd = db.prikaz_u_rsd(nova_cena_prikaz)
-
-            if store_state["id"] != prodavnica_id:
-                db.move_stavka_prodavnica(stavka_id, store_state["id"])
-
-            db.update_stavka(stavka_id, nova_kolicina, nova_cena_rsd)
-            if proizvod_id is not None:
-                db.zabelezi_cenu_za_prodavnicu(proizvod_id, store_state["id"], nova_cena_rsd)
+            db.update("vozila", vozilo_id, {
+                "marka": marka,
+                "model": model,
+                "godina": int(godina_input.text) if godina_input.text.strip() else None,
+                "registracija": registracija_input.text.strip(),
+                "kilometraza": int(kilometraza_input.text) if kilometraza_input.text.strip() else 0,
+            })
             popup.dismiss()
             self.load_open_lists()
 
@@ -494,133 +178,26 @@ class ShoppingListScreen(Screen):
         def delete(instance):
             if not delete_state["confirm"]:
                 delete_state["confirm"] = True
-                instance.text = prevedi("sl_confirm_delete_item", jezik)
+                instance.text = "Potvrdi brisanje"
                 return
-            # Brise SAMO stavku sa liste - proizvod u bazi ostaje netaknut
-            # (zahtev: "brisanje sa liste ne sme obrisati proizvod iz baze proizvoda")
-            db.delete_stavka(stavka_id)
+            db.delete("vozila", vozilo_id)
             popup.dismiss()
             self.load_open_lists()
 
         btn_row = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
-        save_btn = PrimaryButton(text=prevedi("sl_save", jezik))
+        save_btn = PrimaryButton(text="Sacuvaj")
         save_btn.bind(on_release=save)
-        cancel_btn = SecondaryButton(text=prevedi("sl_cancel", jezik))
+        cancel_btn = SecondaryButton(text="Otkazi")
         cancel_btn.bind(on_release=popup.dismiss)
         btn_row.add_widget(save_btn)
         btn_row.add_widget(cancel_btn)
         content.add_widget(btn_row)
 
-        delete_btn = DangerButton(
-            text=prevedi("sl_delete_item_btn", jezik), size_hint_y=None, height=dp(44),
-        )
+        delete_btn = DangerButton(text="Obrisi vozilo", size_hint_y=None, height=dp(44))
         delete_btn.bind(on_release=delete)
         content.add_widget(delete_btn)
 
         popup.open()
-
-    # ---------- Kamera (NETAKNUTO - ostavljeno kako je bilo, nije povezano na novi UI) ----------
-
-    def _sledeca_foto_putanja(self):
-        self._foto_brojac += 1
-        return _slika_putanja(self._foto_brojac)
-
-    def _zatrazi_dozvolu_pa_otvori_kameru(self, na_snimljeno=None):
-        if platform == "android":
-            try:
-                from android.permissions import request_permissions, Permission, check_permission
-
-                if check_permission(Permission.CAMERA):
-                    self._otvori_kameru_popup(na_snimljeno)
-                    return
-
-                def callback(permissions, results):
-                    if all(results):
-                        from kivy.clock import Clock
-                        Clock.schedule_once(lambda dt: self._otvori_kameru_popup(na_snimljeno), 0)
-                    else:
-                        self._prikazi_gresku_dozvole()
-
-                request_permissions([Permission.CAMERA], callback)
-                return
-            except Exception:
-                pass
-
-        self._otvori_kameru_popup(na_snimljeno)
-
-    def _prikazi_gresku_dozvole(self):
-        jezik = _jezik()
-        content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
-        content.add_widget(Label(text="Dozvola za kameru nije odobrena.\nProveri Podesavanja telefona -> Aplikacije -> Shoping -> Dozvole."))
-        popup = Popup(title="Kamera", content=content, size_hint=(0.85, 0.4))
-        close_btn = SecondaryButton(text=prevedi("sl_cancel", jezik), size_hint_y=None, height=dp(48))
-        close_btn.bind(on_release=popup.dismiss)
-        content.add_widget(close_btn)
-        popup.open()
-
-    def _otvori_kameru_popup(self, na_snimljeno=None):
-        jezik = _jezik()
-        content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
-
-        try:
-            cam_widget = Camera(play=True, resolution=(640, 480))
-        except Exception:
-            content.add_widget(Label(text="Kamera nije dostupna na ovom uredjaju."))
-            popup = Popup(title="Kamera", content=content, size_hint=(0.9, 0.7))
-            close_btn = SecondaryButton(text=prevedi("sl_cancel", jezik), size_hint_y=None, height=dp(48))
-            close_btn.bind(on_release=popup.dismiss)
-            content.add_widget(close_btn)
-            popup.open()
-            return
-
-        content.add_widget(cam_widget)
-
-        btn_row = BoxLayout(size_hint_y=None, height=dp(48), spacing=dp(8))
-        snimi_btn = PrimaryButton(text="Snimi")
-        otkazi_btn = SecondaryButton(text=prevedi("sl_cancel", jezik))
-        btn_row.add_widget(snimi_btn)
-        btn_row.add_widget(otkazi_btn)
-        content.add_widget(btn_row)
-
-        popup = Popup(
-            title="Slikaj cenu", content=content, size_hint=(0.95, 0.9),
-            overlay_color=(0, 0, 0, 0.85), auto_dismiss=False,
-        )
-        otkazi_btn.bind(on_release=lambda inst: (setattr(cam_widget, "play", False), popup.dismiss()))
-
-        def snimi(*a):
-            putanja = self._sledeca_foto_putanja()
-            try:
-                cam_widget.export_to_png(putanja)
-            except Exception:
-                return
-            cam_widget.play = False
-            popup.dismiss()
-            self._pokazi_snimljenu_sliku(putanja, na_snimljeno)
-
-        snimi_btn.bind(on_release=snimi)
-        popup.open()
-
-    def _pokazi_snimljenu_sliku(self, putanja_slike, na_snimljeno=None):
-        jezik = _jezik()
-        if not putanja_slike or not os.path.exists(putanja_slike):
-            return
-        content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
-        img = KivyImage(source=putanja_slike, allow_stretch=True, keep_ratio=True)
-        content.add_widget(img)
-        close_btn = SecondaryButton(text=prevedi("sl_cancel", jezik), size_hint_y=None, height=dp(48))
-        content.add_widget(close_btn)
-        popup = Popup(title="Foto", content=content, size_hint=(0.92, 0.85), overlay_color=(0, 0, 0, 0.85))
-        close_btn.bind(on_release=popup.dismiss)
-        popup.open()
-        if na_snimljeno:
-            na_snimljeno(putanja_slike)
-
-    def slikaj_za_novi_proizvod(self, cena_input_widget):
-        self._zatrazi_dozvolu_pa_otvori_kameru()
-
-    def slikaj_za_postojeci_red(self, naziv_proizvoda):
-        self._zatrazi_dozvolu_pa_otvori_kameru()
 
     # ---------- Navigacija ----------
 
