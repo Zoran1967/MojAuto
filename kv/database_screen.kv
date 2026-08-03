@@ -6,14 +6,12 @@
             padding: 15
             spacing: 10
             size_hint: 1, 1
-
             Label:
                 id: title_label
                 text: "Baza proizvoda i prodavnica"
                 font_size: "15sp"
                 size_hint_y: None
                 height: dp(36)
-
             BoxLayout:
                 size_hint_y: None
                 height: dp(48)
@@ -30,7 +28,17 @@
                     id: tab_categories
                     text: "Kategorije"
                     on_release: root.show_kategorije()
-
+            ScrollView:
+                size_hint_y: None
+                height: dp(48)
+                do_scroll_y: False
+                BoxLayout:
+                    id: extra_tabs_box
+                    orientation: "horizontal"
+                    size_hint_x: None
+                    width: self.minimum_width
+                    spacing: dp(6)
+                    height: dp(48)
             ScrollView:
                 BoxLayout:
                     id: database_box
@@ -38,7 +46,6 @@
                     size_hint_y: None
                     height: self.minimum_height
                     spacing: dp(4)
-
         Button:
             size_hint: None, None
             size: dp(110), dp(50)
