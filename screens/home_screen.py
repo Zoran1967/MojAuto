@@ -1,49 +1,20 @@
 from kivy.uix.screenmanager import Screen
-from kivy.uix.popup import Popup
-from kivy.uix.boxlayout import BoxLayout
-from kivy.metrics import dp
 from kivy.properties import StringProperty
-
-from database import db
-from widgets import PrimaryButton, SecondaryButton
-from translations import prevedi
 
 
 class HomeScreen(Screen):
     """
-    Početni ekran: dugmad za Novu listu, Istoriju, Bazu proizvoda/prodavnica
-    i Podešavanja, plus dugme za izbor jezika.
-
-    Napomena: aplikacija sad podrzava VISE istovremeno otvorenih lista
-    (po jedna po prodavnici) - vidi database.get_otvorene_liste() i
-    screens/shopping_list_screen.py. go_to_new_list() zato vise ne radi
-    nikakav "reset" - ShoppingListScreen sam ucitava sve trenutno
-    otvorene liste iz baze svaki put kad se ekran otvori.
+    Pocetni ekran: dugmad za Vozila, Istoriju, Zapise (gorivo/servisi/troskovi)
+    i Podesavanja.
     """
 
-    JEZICI = [
-        ("sr", "Srpski"),
-        ("en", "English"),
-        ("sk", "Slovencina"),
-        ("uk", "Українська"),
-    ]
-
-    txt_new_list = StringProperty("")
-    txt_history = StringProperty("")
-    txt_database = StringProperty("")
-    txt_settings = StringProperty("")
-    txt_language_label = StringProperty("")
+    txt_new_list = StringProperty("Vozila")
+    txt_history = StringProperty("Istorija")
+    txt_database = StringProperty("Zapisi")
+    txt_settings = StringProperty("Podesavanja")
 
     def on_pre_enter(self, *args):
-        self.osvezi_tekstove()
-
-    def osvezi_tekstove(self):
-        jezik = db.get_setting("jezik", "sr")
-        self.txt_new_list = prevedi("home_new_list", jezik)
-        self.txt_history = prevedi("home_history", jezik)
-        self.txt_database = prevedi("home_database", jezik)
-        self.txt_settings = prevedi("home_settings", jezik)
-        self.txt_language_label = prevedi("home_language_label", jezik)
+        pass
 
     def go_to_new_list(self):
         self.manager.current = "shopping_list"
@@ -56,34 +27,3 @@ class HomeScreen(Screen):
 
     def go_to_settings(self):
         self.manager.current = "settings"
-
-    # ---------- Izbor jezika ----------
-
-    def open_language_picker(self):
-        content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
-
-        trenutni = db.get_setting("jezik", "sr")
-
-        for kod, naziv in self.JEZICI:
-            is_current = kod == trenutni
-            btn_cls = PrimaryButton if is_current else SecondaryButton
-            btn = btn_cls(
-                text=(f"{naziv}  (aktivan)" if is_current else naziv),
-                size_hint_y=None, height=dp(48),
-            )
-            btn.bind(on_release=lambda inst, k=kod: self.choose_language(k))
-            content.add_widget(btn)
-
-        popup = Popup(
-            title="Izaberi jezik / Select language",
-            content=content, size_hint=(0.8, 0.6),
-            overlay_color=(0, 0, 0, 0.85),
-        )
-        self._language_popup = popup
-        popup.open()
-
-    def choose_language(self, kod):
-        db.set_setting("jezik", kod)
-        self.osvezi_tekstove()
-        if hasattr(self, "_language_popup"):
-            self._language_popup.dismiss()
