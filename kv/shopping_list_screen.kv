@@ -7,15 +7,13 @@
             spacing: 10
             size_hint: 1, 1
             pos_hint: {"x": 0, "y": 0}
-
             BoxLayout:
                 size_hint_y: None
                 height: dp(30)
                 Label:
-                    text: "Shopping List"
+                    text: "Vozila"
                     font_size: "18sp"
                     bold: True
-
             ScrollView:
                 size_hint_y: 1
                 BoxLayout:
@@ -24,14 +22,12 @@
                     size_hint_y: None
                     height: self.minimum_height
                     spacing: dp(12)
-
             PrimaryButton:
                 id: add_product_btn
                 text: "+ Dodaj proizvod"
                 size_hint_y: None
                 height: dp(52)
                 on_release: root.add_item()
-
             BoxLayout:
                 size_hint_y: None
                 height: dp(40)
@@ -45,7 +41,6 @@
                     text: "0.00"
                     bold: True
                     font_size: "16sp"
-
         Button:
             size_hint: None, None
             size: dp(110), dp(48)
