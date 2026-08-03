@@ -14,23 +14,26 @@
                 height: dp(36)
             BoxLayout:
                 size_hint_y: None
-                height: dp(48)
+                height: dp(64)
                 spacing: 6
-                PrimaryButton:
+                IconTabButton:
                     id: tab_products
-                    text: "Proizvodi"
+                    icon_source: app.assets_dir + "gorivo.png"
+                    text: "Gorivo"
                     on_release: root.show_proizvodi()
-                PrimaryButton:
+                IconTabButton:
                     id: tab_stores
-                    text: "Prodavnice"
+                    icon_source: app.assets_dir + "servisi.png"
+                    text: "Servisi"
                     on_release: root.show_prodavnice()
-                PrimaryButton:
+                IconTabButton:
                     id: tab_categories
-                    text: "Kategorije"
+                    icon_source: app.assets_dir + "troskovi.png"
+                    text: "Troskovi"
                     on_release: root.show_kategorije()
             ScrollView:
                 size_hint_y: None
-                height: dp(48)
+                height: dp(70)
                 do_scroll_y: False
                 BoxLayout:
                     id: extra_tabs_box
@@ -38,7 +41,7 @@
                     size_hint_x: None
                     width: self.minimum_width
                     spacing: dp(6)
-                    height: dp(48)
+                    height: dp(70)
             ScrollView:
                 BoxLayout:
                     id: database_box
