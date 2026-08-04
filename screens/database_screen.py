@@ -26,6 +26,13 @@ Builder.load_string("""
             pos: self.pos
             size: self.size
             radius: [dp(12)]
+    canvas.after:
+        Color:
+            rgba: (0, 0, 0, 0.45) if self.state == "down" else (0, 0, 0, 0)
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [dp(12)]
     Image:
         source: root.icon_source
         allow_stretch: True
@@ -45,7 +52,8 @@ class IconTabButton(ButtonBehavior, BoxLayout):
     Akumulator/Kvarovi/Dokumenta/Podsetnici). icon_source i text
     su Kivy Properties (ne konstruktorski argumenti) da bi kv
     Builder mogao da instancira widget bez argumenata i onda
-    postavi vrednosti."""
+    postavi vrednosti. canvas.after zatamni dugme dok je pritisnuto
+    (ButtonBehavior.state == 'down'), da pritisak bude vidljiv."""
 
     icon_source = StringProperty("")
     text = StringProperty("")
@@ -204,7 +212,7 @@ class DatabaseScreen(Screen):
             btn = IconTabButton(
                 icon_source=assets_dir + icon_fajl,
                 text=self.TAB_DEFS[tabela]["naslov"],
-                size_hint_x=None, width=dp(70),
+                size_hint=(None, None), size=(dp(84), dp(84)),
             )
             btn.bind(on_release=lambda inst, t=tabela: self._prikazi_vozila_za_tab(t))
             box.add_widget(btn)
