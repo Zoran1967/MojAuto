@@ -191,7 +191,7 @@ class DatabaseScreen(Screen):
         "kvarovi": ("kvarovi.png", "Kvarovi"),
         "dokumenti": ("dokumenti.png", "Dokumenta"),
         "podsetnici": ("podsetnici.png", "Podsetnici"),
-        "pdf": ("pdf_izvestaji.png", "PDF Izvestaj"),
+        "pdf": ("pdf_izvestaji.png", "PDF"),
     }
 
     def on_pre_enter(self, *args):
