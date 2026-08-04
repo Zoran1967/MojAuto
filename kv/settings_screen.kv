@@ -16,105 +16,36 @@
                 size_hint_y: None
                 height: dp(36)
 
-            ScrollView:
-                BoxLayout:
-                    orientation: "vertical"
+            BoxLayout:
+                orientation: "vertical"
+                spacing: dp(14)
+                size_hint_y: None
+                height: self.minimum_height
+                padding: [0, dp(10), 0, 0]
+
+                PrimaryButton:
+                    text: "Tema (boja dugmadi)"
                     size_hint_y: None
-                    height: self.minimum_height
-                    spacing: dp(15)
-                    padding: 0, 0, 0, dp(20)
+                    height: dp(54)
+                    on_release: root.open_theme_popup()
 
-                    Label:
-                        id: theme_label
-                        text: "Boja teme aplikacije (dugmad)"
-                        font_size: "16sp"
-                        size_hint_y: None
-                        height: dp(30)
-                        color: 0.7, 0.7, 0.7, 1
+                PrimaryButton:
+                    text: "Boja pozadine ekrana"
+                    size_hint_y: None
+                    height: dp(54)
+                    on_release: root.open_bg_popup()
 
-                    BoxLayout:
-                        id: theme_box
-                        orientation: "vertical"
-                        size_hint_y: None
-                        height: self.minimum_height
-                        spacing: dp(10)
+                PrimaryButton:
+                    text: "Boja teksta u poljima"
+                    size_hint_y: None
+                    height: dp(54)
+                    on_release: root.open_input_text_popup()
 
-                    Label:
-                        id: bg_label
-                        text: "Boja pozadine ekrana"
-                        font_size: "16sp"
-                        size_hint_y: None
-                        height: dp(30)
-                        color: 0.7, 0.7, 0.7, 1
-
-                    BoxLayout:
-                        id: bg_box
-                        orientation: "vertical"
-                        size_hint_y: None
-                        height: self.minimum_height
-                        spacing: dp(8)
-
-                    Label:
-                        id: bg_error
-                        text: ""
-                        font_size: "13sp"
-                        size_hint_y: None
-                        height: dp(24) if self.text else 0
-                        color: 1, 0.4, 0.4, 1
-
-                    Label:
-                        id: input_text_label
-                        text: "Boja teksta u poljima za unos"
-                        font_size: "16sp"
-                        size_hint_y: None
-                        height: dp(30)
-                        color: 0.7, 0.7, 0.7, 1
-
-                    BoxLayout:
-                        id: input_text_box
-                        orientation: "vertical"
-                        size_hint_y: None
-                        height: self.minimum_height
-                        spacing: dp(8)
-
-                    Label:
-                        id: input_text_error
-                        text: ""
-                        font_size: "13sp"
-                        size_hint_y: None
-                        height: dp(24) if self.text else 0
-                        color: 1, 0.4, 0.4, 1
-
-                    Label:
-                        id: currency_label
-                        text: "Valuta"
-                        font_size: "16sp"
-                        size_hint_y: None
-                        height: dp(30)
-                        color: 0.7, 0.7, 0.7, 1
-
-                    BoxLayout:
-                        id: currency_box
-                        size_hint_y: None
-                        height: dp(48)
-                        spacing: dp(10)
-
-                    Label:
-                        id: kurs_label
-                        text: "Kurs (1 EUR = ? RSD)"
-                        font_size: "16sp"
-                        size_hint_y: None
-                        height: dp(30)
-                        color: 0.7, 0.7, 0.7, 1
-
-                    StyledTextInput:
-                        id: kurs_input
-                        size_hint_y: None
-                        height: dp(48)
-                        multiline: False
-                        input_filter: "float"
-                        on_text_validate: root.save_kurs(self.text)
-                        on_focus: if not self.focus: root.save_kurs(self.text)
+                PrimaryButton:
+                    text: "Valuta i kurs"
+                    size_hint_y: None
+                    height: dp(54)
+                    on_release: root.open_currency_popup()
 
         Button:
             size_hint: None, None
