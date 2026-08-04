@@ -307,3 +307,28 @@ def set_setting(kljuc, vrednost):
     )
     conn.commit()
     conn.close()
+
+
+# ---------- Konverzija valuta ----------
+
+def get_valuta():
+    return get_setting("valuta", "RSD")
+
+
+def get_kurs():
+    try:
+        return float(get_setting("kurs", "117.5"))
+    except (TypeError, ValueError):
+        return 117.5
+
+
+def rsd_u_prikaz(cena_rsd):
+    if cena_rsd is None:
+        return 0
+    if get_valuta() == "EUR":
+        return cena_rsd / get_kurs()
+    return cena_rsd
+
+
+def valuta_oznaka():
+    return "EUR" if get_valuta() == "EUR" else "RSD"
