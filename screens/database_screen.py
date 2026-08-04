@@ -77,7 +77,10 @@ class DatabaseScreen(Screen):
                 ("pumpa", "Pumpa", "text"),
                 ("grad", "Grad", "text"),
             ],
-            "prikaz": lambda r: f"{r['datum']} - {r['litara']} L - {r['ukupna_cena']} din",
+            "prikaz": lambda r: (
+                f"{r['datum']} - {r['litara']} L - "
+                f"{db.rsd_u_prikaz(r['ukupna_cena']):.2f} {db.valuta_oznaka()}"
+            ),
         },
         "servisi": {
             "naslov": "Servisi",
@@ -90,7 +93,10 @@ class DatabaseScreen(Screen):
                 ("cena_delova", "Cena delova", "float"),
                 ("cena_rada", "Cena rada", "float"),
             ],
-            "prikaz": lambda r: f"{r['datum']} - {r['tip']} - {r['ukupna_cena']} din",
+            "prikaz": lambda r: (
+                f"{r['datum']} - {r['tip']} - "
+                f"{db.rsd_u_prikaz(r['ukupna_cena']):.2f} {db.valuta_oznaka()}"
+            ),
         },
         "troskovi": {
             "naslov": "Troskovi",
@@ -100,7 +106,10 @@ class DatabaseScreen(Screen):
                 ("datum", "Datum (DD.MM.GGGG)", "text"),
                 ("napomena", "Napomena", "text"),
             ],
-            "prikaz": lambda r: f"{r['datum']} - {r['vrsta']} - {r['iznos']} din",
+            "prikaz": lambda r: (
+                f"{r['datum']} - {r['vrsta']} - "
+                f"{db.rsd_u_prikaz(r['iznos']):.2f} {db.valuta_oznaka()}"
+            ),
         },
         "gume": {
             "naslov": "Gume",
@@ -159,7 +168,10 @@ class DatabaseScreen(Screen):
                 ("cena_rada", "Cena rada", "float"),
                 ("cena_delova", "Cena delova", "float"),
             ],
-            "prikaz": lambda r: f"{r['datum']} - {r['ukupna_cena']} din",
+            "prikaz": lambda r: (
+                f"{r['datum']} - "
+                f"{db.rsd_u_prikaz(r['ukupna_cena']):.2f} {db.valuta_oznaka()}"
+            ),
         },
         "dokumenti": {
             "naslov": "Dokumenta",
