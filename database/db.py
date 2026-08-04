@@ -203,3 +203,132 @@ SCHEMA = {
             kilometraza_isteka INTEGER,
             aktivan INTEGER DEFAULT 1,
             FOREIGN KEY (vehicle_id) REFERENCES vozila (id) ON DELETE CASCADE
+        );
+    """,
+    "podesavanja": """
+        CREATE TABLE IF NOT EXISTS podesavanja (
+            kljuc TEXT PRIMARY KEY,
+            vrednost TEXT
+        );
+    """,
+}
+
+
+def get_connection():
+    conn = sqlite3.connect(DB_PATH)
+    conn.execute("PRAGMA foreign_keys = ON")
+    return conn
+
+
+def init_db():
+    conn = get_connection()
+    c = conn.cursor()
+    for tabela_sql in SCHEMA.values():
+        c.execute(tabela_sql)
+    conn.commit()
+    conn.close()
+
+
+# ---------- Generisane CRUD funkcije (rade za sve tabele) ----------
+
+def insert(table, data: dict):
+    columns = ", ".join(data.keys())
+    placeholders = ", ".join("?" for _ in data)
+    values = tuple(data.values())
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute(f"INSERT INTO {table} ({columns}) VALUES ({placeholders})", values)
+    conn.commit()
+    novi_id = c.lastrowid
+    conn.close()
+    return novi_id
+
+
+def update(table, record_id, data: dict):
+    set_clause = ", ".join(f"{key} = ?" for key in data.keys())
+    values = tuple(data.values()) + (record_id,)
+    conn = get_connection()
+    conn.execute(f"UPDATE {table} SET {set_clause} WHERE id = ?", values)
+    conn.commit()
+    conn.close()
+
+
+def delete(table, record_id):
+    conn = get_connection()
+    conn.execute(f"DELETE FROM {table} WHERE id = ?", (record_id,))
+    conn.commit()
+    conn.close()
+
+
+def get_by_id(table, record_id):
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    row = conn.execute(f"SELECT * FROM {table} WHERE id = ?", (record_id,)).fetchone()
+    conn.close()
+    return row
+
+
+def get_all(table, order_by="id"):
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    rows = conn.execute(f"SELECT * FROM {table} ORDER BY {order_by}").fetchall()
+    conn.close()
+    return rows
+
+
+def get_by_vehicle(table, vehicle_id, order_by="id"):
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    rows = conn.execute(
+        f"SELECT * FROM {table} WHERE vehicle_id = ? ORDER BY {order_by}",
+        (vehicle_id,),
+    ).fetchall()
+    conn.close()
+    return rows
+
+
+# ---------- Podesavanja (koristi tema aplikacije - NE MENJATI) ----------
+
+def get_setting(kljuc, default=None):
+    conn = get_connection()
+    row = conn.execute(
+        "SELECT vrednost FROM podesavanja WHERE kljuc = ?", (kljuc,)
+    ).fetchone()
+    conn.close()
+    return row[0] if row else default
+
+
+def set_setting(kljuc, vrednost):
+    conn = get_connection()
+    conn.execute(
+        "INSERT INTO podesavanja (kljuc, vrednost) VALUES (?, ?) "
+        "ON CONFLICT(kljuc) DO UPDATE SET vrednost = excluded.vrednost",
+        (kljuc, vrednost),
+    )
+    conn.commit()
+    conn.close()
+
+
+# ---------- Konverzija valuta ----------
+
+def get_valuta():
+    return get_setting("valuta", "RSD")
+
+
+def get_kurs():
+    try:
+        return float(get_setting("kurs", "117.5"))
+    except (TypeError, ValueError):
+        return 117.5
+
+
+def rsd_u_prikaz(cena_rsd):
+    if cena_rsd is None:
+        return 0
+    if get_valuta() == "EUR":
+        return cena_rsd / get_kurs()
+    return cena_rsd
+
+
+def valuta_oznaka():
+    return "EUR" if get_valuta() == "EUR" else "RSD"
