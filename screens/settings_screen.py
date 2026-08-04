@@ -8,17 +8,21 @@ from widgets import PrimaryButton, SecondaryButton
 
 
 class SettingsScreen(Screen):
-    """Podesavanja - tema boje, pozadina ekrana, boja teksta u poljima."""
+    """Podesavanja - tema boje, pozadina ekrana, boja teksta u poljima, valuta i kurs."""
 
     def on_pre_enter(self, *args):
         self.ids.title_label.text = "Podesavanja"
         self.ids.theme_label.text = "Tema"
         self.ids.bg_label.text = "Boja pozadine"
         self.ids.input_text_label.text = "Boja teksta u poljima"
+        self.ids.currency_label.text = "Valuta"
+        self.ids.kurs_label.text = "Kurs (1 EUR = ? RSD)"
 
         self.build_theme_buttons()
         self.build_bg_buttons()
         self.build_input_text_buttons()
+        self.build_currency_buttons()
+        self.load_kurs()
 
     def build_theme_buttons(self):
         box = self.ids.theme_box
@@ -94,6 +98,39 @@ class SettingsScreen(Screen):
         self.ids.input_text_error.text = ""
         db.set_setting("input_boja", naziv)
         self.build_input_text_buttons()
+
+    # ---------- Valuta ----------
+
+    def build_currency_buttons(self):
+        box = self.ids.currency_box
+        box.clear_widgets()
+
+        trenutna = db.get_setting("valuta", "RSD")
+        for naziv in ("RSD", "EUR"):
+            is_current = naziv == trenutna
+            btn_cls = PrimaryButton if is_current else SecondaryButton
+            btn = btn_cls(
+                text=(naziv + " (aktivno)" if is_current else naziv),
+                size_hint_y=None, height=dp(48),
+            )
+            btn.bind(on_release=lambda inst, n=naziv: self.choose_currency(n))
+            box.add_widget(btn)
+
+    def choose_currency(self, naziv):
+        db.set_setting("valuta", naziv)
+        self.build_currency_buttons()
+
+    def load_kurs(self):
+        kurs = db.get_setting("kurs", "117.5")
+        self.ids.kurs_input.text = str(kurs)
+
+    def save_kurs(self, tekst):
+        tekst = tekst.strip().replace(",", ".")
+        try:
+            vrednost = float(tekst)
+        except ValueError:
+            return
+        db.set_setting("kurs", str(vrednost))
 
     def go_back(self):
         self.manager.current = "home"
