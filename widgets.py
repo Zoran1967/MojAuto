@@ -8,7 +8,6 @@ from kivy.uix.button import Button
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.textinput import TextInput
 from kivy.lang import Builder
-
 Builder.load_string("""
 #:import dp kivy.metrics.dp
 <PrimaryButton>:
@@ -30,7 +29,6 @@ Builder.load_string("""
             pos: self.pos
             size: self.size
             radius: [dp(16)]
-
 <SecondaryButton>:
     background_normal: ""
     background_down: ""
@@ -49,7 +47,6 @@ Builder.load_string("""
             pos: self.pos
             size: self.size
             radius: [dp(16)]
-
 <DangerButton>:
     background_normal: ""
     background_down: ""
@@ -68,7 +65,6 @@ Builder.load_string("""
             pos: self.pos
             size: self.size
             radius: [dp(16)]
-
 <Card>:
     canvas.before:
         Color:
@@ -83,14 +79,13 @@ Builder.load_string("""
             pos: self.pos
             size: self.size
             radius: [dp(14)]
-
 <StyledTextInput>:
     background_normal: ""
     background_active: ""
     background_color: 0, 0, 0, 0
     foreground_color: 1, 1, 1, 1
-    cursor_color: app.theme.accent
-    hint_text_color: 0.6, 0.6, 0.6, 1
+    cursor_color: 1, 1, 1, 1
+    hint_text_color: 0.85, 0.85, 0.85, 1
     padding: [dp(12), dp(12), dp(12), dp(12)]
     canvas.before:
         Color:
@@ -100,28 +95,18 @@ Builder.load_string("""
             size: self.size
             radius: [dp(10)]
         Color:
-            rgba: app.theme.accent if self.focus else (0.30, 0.30, 0.32, 1)
+            rgba: (1, 1, 1, 1) if self.focus else (0.75, 0.75, 0.75, 1)
         Line:
             rounded_rectangle: (self.x, self.y, self.width, self.height, dp(10))
             width: 1.2
 """)
-
-
 class PrimaryButton(Button):
     pass
-
-
 class SecondaryButton(Button):
     pass
-
-
 class DangerButton(Button):
     pass
-
-
 class Card(BoxLayout):
     pass
-
-
 class StyledTextInput(TextInput):
     pass
