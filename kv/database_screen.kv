@@ -14,34 +14,42 @@
                 height: dp(36)
             BoxLayout:
                 size_hint_y: None
-                height: dp(64)
-                spacing: 6
+                height: dp(90)
+                spacing: dp(10)
+                padding: [0, 0, 0, 0]
                 IconTabButton:
                     id: tab_products
                     icon_source: app.assets_dir + "gorivo.png"
                     text: "Gorivo"
+                    size_hint: None, None
+                    size: dp(84), dp(84)
                     on_release: root.show_proizvodi()
                 IconTabButton:
                     id: tab_stores
                     icon_source: app.assets_dir + "servisi.png"
                     text: "Servisi"
+                    size_hint: None, None
+                    size: dp(84), dp(84)
                     on_release: root.show_prodavnice()
                 IconTabButton:
                     id: tab_categories
                     icon_source: app.assets_dir + "troskovi.png"
                     text: "Troskovi"
+                    size_hint: None, None
+                    size: dp(84), dp(84)
                     on_release: root.show_kategorije()
+                Widget:
             ScrollView:
                 size_hint_y: None
-                height: dp(96)
+                height: dp(90)
                 do_scroll_y: False
                 BoxLayout:
                     id: extra_tabs_box
                     orientation: "horizontal"
                     size_hint_x: None
                     width: self.minimum_width
-                    spacing: dp(6)
-                    height: dp(96)
+                    spacing: dp(10)
+                    height: dp(90)
             ScrollView:
                 BoxLayout:
                     id: database_box
