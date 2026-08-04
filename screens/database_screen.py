@@ -12,6 +12,7 @@ from kivy.app import App
 
 from database import db
 from widgets import PrimaryButton, SecondaryButton, DangerButton, StyledTextInput
+import pdf_report
 
 
 Builder.load_string("""
@@ -49,11 +50,7 @@ Builder.load_string("""
 class IconTabButton(ButtonBehavior, BoxLayout):
     """Dugme sa ikonicom iznad teksta, koristi se za tabove
     (Gorivo/Servisi/Troskovi i Gume/Registracija/Osiguranje/
-    Akumulator/Kvarovi/Dokumenta/Podsetnici). icon_source i text
-    su Kivy Properties (ne konstruktorski argumenti) da bi kv
-    Builder mogao da instancira widget bez argumenata i onda
-    postavi vrednosti. canvas.after zatamni dugme dok je pritisnuto
-    (ButtonBehavior.state == 'down'), da pritisak bude vidljiv."""
+    Akumulator/Kvarovi/Dokumenta/Podsetnici/PDF)."""
 
     icon_source = StringProperty("")
     text = StringProperty("")
@@ -63,9 +60,11 @@ class DatabaseScreen(Screen):
     """
     Ekran za unos zapisa po vozilu, sa tabovima: Gorivo, Servisi,
     Troskovi (glavna 3 dugmeta iz kv fajla) i Gume, Registracija,
-    Osiguranje, Akumulator, Kvarovi, Dokumenta, Podsetnici (dinamicki
-    dodati u extra_tabs_box, sa ikonicama).
+    Osiguranje, Akumulator, Kvarovi, Dokumenta, Podsetnici, PDF
+    (dinamicki dodati u extra_tabs_box, sa ikonicama).
     """
+
+    PDF_TAB_KEY = "pdf"
 
     TAB_DEFS = {
         "gorivo": {
@@ -185,13 +184,14 @@ class DatabaseScreen(Screen):
     }
 
     EXTRA_TAB_ICONS = {
-        "gume": "gume.png",
-        "registracija": "registracija.png",
-        "osiguranje": "osiguranje.png",
-        "akumulator": "akumulator.png",
-        "kvarovi": "kvarovi.png",
-        "dokumenti": "dokumenti.png",
-        "podsetnici": "podsetnici.png",
+        "gume": ("gume.png", "Gume"),
+        "registracija": ("registracija.png", "Registracija"),
+        "osiguranje": ("osiguranje.png", "Osiguranje"),
+        "akumulator": ("akumulator.png", "Akumulator"),
+        "kvarovi": ("kvarovi.png", "Kvarovi"),
+        "dokumenti": ("dokumenti.png", "Dokumenta"),
+        "podsetnici": ("podsetnici.png", "Podsetnici"),
+        "pdf": ("pdf_izvestaji.png", "PDF Izvestaj"),
     }
 
     def on_pre_enter(self, *args):
@@ -208,11 +208,10 @@ class DatabaseScreen(Screen):
         box = self.ids.extra_tabs_box
         box.clear_widgets()
         assets_dir = App.get_running_app().assets_dir
-        for tabela, icon_fajl in self.EXTRA_TAB_ICONS.items():
+        for tabela, (icon_fajl, naslov) in self.EXTRA_TAB_ICONS.items():
             btn = IconTabButton(
                 icon_source=assets_dir + icon_fajl,
-                text=self.TAB_DEFS[tabela]["naslov"],
-                size_hint=(None, None), size=(dp(84), dp(84)),
+                text=naslov,
             )
             btn.bind(on_release=lambda inst, t=tabela: self._prikazi_vozila_za_tab(t))
             box.add_widget(btn)
@@ -247,11 +246,43 @@ class DatabaseScreen(Screen):
                 background_normal="", background_color=(0.18, 0.18, 0.22, 1),
                 color=(1, 1, 1, 1),
             )
-            btn.bind(
-                on_release=lambda inst, vid=vozilo["id"], vnaziv=f"{vozilo['marka']} {vozilo['model']}":
-                    self.open_records_popup(tabela, vid, vnaziv)
-            )
+            if tabela == self.PDF_TAB_KEY:
+                btn.bind(
+                    on_release=lambda inst, vid=vozilo["id"]: self._generisi_pdf(vid)
+                )
+            else:
+                btn.bind(
+                    on_release=lambda inst, vid=vozilo["id"], vnaziv=f"{vozilo['marka']} {vozilo['model']}":
+                        self.open_records_popup(tabela, vid, vnaziv)
+                )
             box.add_widget(btn)
+
+    # ---------- PDF izvestaj ----------
+
+    def _generisi_pdf(self, vehicle_id):
+        vozilo = db.get_by_id("vozila", vehicle_id)
+        if vozilo is None:
+            return
+
+        content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
+        popup = Popup(
+            title="PDF izvestaj", content=content, size_hint=(0.85, 0.4),
+            overlay_color=(0, 0, 0, 0.85),
+        )
+
+        try:
+            putanja = pdf_report.generisi_pdf_izvestaj(vozilo)
+            poruka = f"Sacuvano:\n{putanja}"
+        except Exception as e:
+            poruka = f"Greska pri pravljenju PDF-a:\n{e}"
+
+        content.add_widget(Label(text=poruka, font_size="13sp"))
+
+        close_btn = SecondaryButton(text="Zatvori", size_hint_y=None, height=dp(44))
+        close_btn.bind(on_release=popup.dismiss)
+        content.add_widget(close_btn)
+
+        popup.open()
 
     # ---------- Zapisi jednog vozila (za dati tab) ----------
 
@@ -431,14 +462,4 @@ class DatabaseScreen(Screen):
         cancel_btn = SecondaryButton(text="Otkazi")
         cancel_btn.bind(on_release=popup.dismiss)
         btn_row.add_widget(save_btn)
-        btn_row.add_widget(cancel_btn)
-        outer.add_widget(btn_row)
-
-        delete_btn = DangerButton(text="Obrisi zapis", size_hint_y=None, height=dp(44))
-        delete_btn.bind(on_release=delete)
-        outer.add_widget(delete_btn)
-
-        popup.open()
-
-    def go_back(self):
-        self.manager.current = "home"
+        btn_row.add_widget(cance
