@@ -118,19 +118,24 @@ def generisi_pdf_izvestaj(vozilo):
 
     pdf.set_font("Helvetica", "", 11)
     osnovni_podaci = [
-        ("Registracija", vozilo["registracija"]),
-        ("VIN", vozilo["vin"]),
-        ("Broj sasije", vozilo["broj_sasije"]),
-        ("Broj motora", vozilo["broj_motora"]),
-        ("Gorivo", vozilo["gorivo"]),
-        ("Zapremina", vozilo["zapremina"]),
-        ("Snaga (KS)", vozilo["snaga"]),
-        ("Menjac", vozilo["menjac"]),
-        ("Boja", vozilo["boja"]),
-        ("Kilometraza", vozilo["kilometraza"]),
+        ("Registracija", vozilo["registracija"], False),
+        ("VIN", vozilo["vin"], False),
+        ("Broj sasije", vozilo["broj_sasije"], False),
+        ("Broj motora", vozilo["broj_motora"], False),
+        ("Gorivo", vozilo["gorivo"], False),
+        ("Zapremina", vozilo["zapremina"], False),
+        ("Snaga (KS)", vozilo["snaga"], False),
+        ("Menjac", vozilo["menjac"], False),
+        ("Boja", vozilo["boja"], False),
+        ("Broj vrata", vozilo["broj_vrata"] if "broj_vrata" in vozilo.keys() else None, False),
+        ("Kilometraza", vozilo["kilometraza"], False),
+        ("Kupovna cena", vozilo["kupovna_cena"], True),
     ]
-    for naziv, vrednost in osnovni_podaci:
-        vrednost_tekst = _ascii_bezbedno(vrednost) if vrednost not in (None, "") else "-"
+    for naziv, vrednost, je_novac in osnovni_podaci:
+        if je_novac:
+            vrednost_tekst = _formatiraj_vrednost("cena", vrednost) if vrednost not in (None, "") else "-"
+        else:
+            vrednost_tekst = _ascii_bezbedno(vrednost) if vrednost not in (None, "") else "-"
         pdf.cell(0, 7, f"{naziv}: {vrednost_tekst}", ln=True)
 
     pdf.ln(6)
