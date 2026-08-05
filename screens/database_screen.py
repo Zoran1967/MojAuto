@@ -9,6 +9,8 @@ from kivy.properties import StringProperty
 from kivy.lang import Builder
 from kivy.metrics import dp
 from kivy.app import App
+from datetime import datetime, timedelta
+import calendar
 
 from database import db
 from widgets import PrimaryButton, SecondaryButton, DangerButton, StyledTextInput
@@ -56,17 +58,28 @@ class IconTabButton(ButtonBehavior, BoxLayout):
     text = StringProperty("")
 
 
+KATEGORIJE_TROSKOVA = [
+    ("gorivo", "Gorivo"),
+    ("servisi", "Servisi"),
+    ("osiguranje", "Osiguranje"),
+    ("troskovi", "Ostali troskovi"),
+]
+
+
 class DatabaseScreen(Screen):
     """
     Ekran za unos zapisa po vozilu, sa tabovima: Gorivo, Servisi,
     Troskovi (glavna 3 dugmeta iz kv fajla) i Gume, Registracija,
     Osiguranje, Akumulator, Kvarovi, Dokumenta, Podsetnici, PDF
     (dinamicki dodati u extra_tabs_box, sa ikonicama).
+
+    Tab "Troskovi" ima poseban prikaz (open_troskovi_pregled) - zbir
+    po kategorijama za nedelju/mesec/godinu, sa mogucnoscu izbora
+    drugog meseca ili godine.
     """
 
     PDF_TAB_KEY = "pdf"
-
-    NOVCANA_POLJA = {"cena_po_litru", "cena_delova", "cena_rada", "iznos", "cena"}
+    TROSKOVI_TAB_KEY = "troskovi"
 
     TAB_DEFS = {
         "gorivo": {
@@ -264,6 +277,11 @@ class DatabaseScreen(Screen):
                 btn.bind(
                     on_release=lambda inst, vid=vozilo["id"]: self._generisi_pdf(vid)
                 )
+            elif tabela == self.TROSKOVI_TAB_KEY:
+                btn.bind(
+                    on_release=lambda inst, vid=vozilo["id"], vnaziv=f"{vozilo['marka']} {vozilo['model']}":
+                        self.open_troskovi_pregled(vid, vnaziv)
+                )
             else:
                 btn.bind(
                     on_release=lambda inst, vid=vozilo["id"], vnaziv=f"{vozilo['marka']} {vozilo['model']}":
@@ -300,6 +318,207 @@ class DatabaseScreen(Screen):
             size=lambda inst, val: setattr(inst, "text_size", val)
         )
         content.add_widget(poruka_label)
+
+        close_btn = SecondaryButton(text="Zatvori", size_hint_y=None, height=dp(44))
+        close_btn.bind(on_release=popup.dismiss)
+        content.add_widget(close_btn)
+
+        popup.open()
+
+    # ---------- Troskovi: pregled po periodu ----------
+
+    def _prikazi_zbir_u_box(self, box, naslov, zbir):
+        box.add_widget(Label(
+            text=naslov, bold=True, font_size="15sp",
+            size_hint_y=None, height=dp(26),
+        ))
+        for kljuc, label in KATEGORIJE_TROSKOVA:
+            box.add_widget(Label(
+                text=f"{label}: {db.rsd_u_prikaz(zbir[kljuc]):.2f} {db.valuta_oznaka()}",
+                font_size="13sp", size_hint_y=None, height=dp(22),
+            ))
+        box.add_widget(Label(
+            text=f"UKUPNO: {db.rsd_u_prikaz(zbir['ukupno']):.2f} {db.valuta_oznaka()}",
+            bold=True, font_size="14sp", size_hint_y=None, height=dp(26),
+            color=(0.6, 0.85, 1, 1),
+        ))
+
+    def _godine_sa_podacima(self, vehicle_id):
+        """Skuplja sve godine koje se pojavljuju u datumima vozila
+        (iz sve 4 kategorije), plus tekucu godinu."""
+        godine = {datetime.now().year}
+        for tabela, polje in (
+            ("gorivo", "datum"), ("servisi", "datum"),
+            ("osiguranje", "datum"), ("troskovi", "datum"),
+        ):
+            for red in db.get_by_vehicle(tabela, vehicle_id):
+                d = red[polje]
+                if d:
+                    try:
+                        godine.add(datetime.strptime(d.strip(), "%d.%m.%Y").year)
+                    except ValueError:
+                        pass
+        return sorted(godine, reverse=True)
+
+    def open_troskovi_pregled(self, vehicle_id, vozilo_naziv):
+        content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
+        content.add_widget(Label(
+            text=vozilo_naziv, bold=True, font_size="18sp",
+            size_hint_y=None, height=dp(30),
+        ))
+
+        inner = BoxLayout(orientation="vertical", size_hint_y=None, spacing=dp(4))
+        inner.bind(minimum_height=inner.setter("height"))
+        scroll = ScrollView(size_hint_y=1)
+        scroll.add_widget(inner)
+        content.add_widget(scroll)
+
+        popup = Popup(
+            title="Pregled troskova", content=content, size_hint=(0.94, 0.9),
+            overlay_color=(0, 0, 0, 0.85),
+        )
+
+        custom_box = BoxLayout(orientation="vertical", size_hint_y=None, spacing=dp(4))
+        custom_box.bind(minimum_height=custom_box.setter("height"))
+
+        def prikazi_izabrani_mesec(godina, mesec):
+            custom_box.clear_widgets()
+            prvi = datetime(godina, mesec, 1)
+            poslednji_dan = calendar.monthrange(godina, mesec)[1]
+            poslednji = datetime(godina, mesec, poslednji_dan, 23, 59, 59)
+            naziv_meseca = prvi.strftime("%B %Y")
+            zbir = db.troskovi_pregled(vehicle_id, prvi, poslednji)
+            self._prikazi_zbir_u_box(custom_box, f"Izabrano: {naziv_meseca}", zbir)
+
+        def prikazi_izabranu_godinu(godina):
+            custom_box.clear_widgets()
+            prvi = datetime(godina, 1, 1)
+            poslednji = datetime(godina, 12, 31, 23, 59, 59)
+            zbir = db.troskovi_pregled(vehicle_id, prvi, poslednji)
+            self._prikazi_zbir_u_box(custom_box, f"Izabrano: godina {godina}", zbir)
+
+        def open_mesec_picker(*a):
+            godine = self._godine_sa_podacima(vehicle_id)
+            pick_content = BoxLayout(orientation="vertical", spacing=dp(6), padding=dp(10))
+            pick_box = BoxLayout(orientation="vertical", size_hint_y=None, spacing=dp(6))
+            pick_box.bind(minimum_height=pick_box.setter("height"))
+            pick_scroll = ScrollView(size_hint_y=1)
+            pick_scroll.add_widget(pick_box)
+            pick_content.add_widget(pick_scroll)
+
+            pick_popup = Popup(
+                title="Izaberi godinu", content=pick_content, size_hint=(0.8, 0.7),
+                overlay_color=(0, 0, 0, 0.85),
+            )
+
+            def izabrana_godina(g):
+                pick_popup.dismiss()
+                open_mesec_picker_za_godinu(g)
+
+            for g in godine:
+                btn = SecondaryButton(text=str(g), size_hint_y=None, height=dp(44))
+                btn.bind(on_release=lambda inst, gg=g: izabrana_godina(gg))
+                pick_box.add_widget(btn)
+
+            close_btn = SecondaryButton(text="Otkazi", size_hint_y=None, height=dp(44))
+            close_btn.bind(on_release=pick_popup.dismiss)
+            pick_content.add_widget(close_btn)
+
+            pick_popup.open()
+
+        def open_mesec_picker_za_godinu(godina):
+            nazivi_meseci = [
+                "Januar", "Februar", "Mart", "April", "Maj", "Jun",
+                "Jul", "Avgust", "Septembar", "Oktobar", "Novembar", "Decembar",
+            ]
+            pick_content = BoxLayout(orientation="vertical", spacing=dp(6), padding=dp(10))
+            pick_box = BoxLayout(orientation="vertical", size_hint_y=None, spacing=dp(6))
+            pick_box.bind(minimum_height=pick_box.setter("height"))
+            pick_scroll = ScrollView(size_hint_y=1)
+            pick_scroll.add_widget(pick_box)
+            pick_content.add_widget(pick_scroll)
+
+            pick_popup = Popup(
+                title=f"Izaberi mesec ({godina})", content=pick_content, size_hint=(0.8, 0.85),
+                overlay_color=(0, 0, 0, 0.85),
+            )
+
+            for i, naziv in enumerate(nazivi_meseci, start=1):
+                btn = SecondaryButton(text=naziv, size_hint_y=None, height=dp(44))
+                btn.bind(
+                    on_release=lambda inst, m=i: (
+                        pick_popup.dismiss(),
+                        prikazi_izabrani_mesec(godina, m),
+                    )
+                )
+                pick_box.add_widget(btn)
+
+            close_btn = SecondaryButton(text="Otkazi", size_hint_y=None, height=dp(44))
+            close_btn.bind(on_release=pick_popup.dismiss)
+            pick_content.add_widget(close_btn)
+
+            pick_popup.open()
+
+        def open_godina_picker(*a):
+            godine = self._godine_sa_podacima(vehicle_id)
+            pick_content = BoxLayout(orientation="vertical", spacing=dp(6), padding=dp(10))
+            pick_box = BoxLayout(orientation="vertical", size_hint_y=None, spacing=dp(6))
+            pick_box.bind(minimum_height=pick_box.setter("height"))
+            pick_scroll = ScrollView(size_hint_y=1)
+            pick_scroll.add_widget(pick_box)
+            pick_content.add_widget(pick_scroll)
+
+            pick_popup = Popup(
+                title="Izaberi godinu", content=pick_content, size_hint=(0.8, 0.7),
+                overlay_color=(0, 0, 0, 0.85),
+            )
+
+            for g in godine:
+                btn = SecondaryButton(text=str(g), size_hint_y=None, height=dp(44))
+                btn.bind(
+                    on_release=lambda inst, gg=g: (
+                        pick_popup.dismiss(),
+                        prikazi_izabranu_godinu(gg),
+                    )
+                )
+                pick_box.add_widget(btn)
+
+            close_btn = SecondaryButton(text="Otkazi", size_hint_y=None, height=dp(44))
+            close_btn.bind(on_release=pick_popup.dismiss)
+            pick_content.add_widget(close_btn)
+
+            pick_popup.open()
+
+        # ---- Ova nedelja / ovaj mesec / ova godina ----
+        danas = datetime.now()
+
+        pocetak_nedelje = danas - timedelta(days=danas.weekday())
+        pocetak_nedelje = pocetak_nedelje.replace(hour=0, minute=0, second=0)
+        kraj_nedelje = pocetak_nedelje + timedelta(days=6, hours=23, minutes=59, seconds=59)
+        zbir_nedelja = db.troskovi_pregled(vehicle_id, pocetak_nedelje, kraj_nedelje)
+        self._prikazi_zbir_u_box(inner, "Ova nedelja", zbir_nedelja)
+
+        pocetak_meseca = danas.replace(day=1, hour=0, minute=0, second=0)
+        poslednji_dan_meseca = calendar.monthrange(danas.year, danas.month)[1]
+        kraj_meseca = danas.replace(day=poslednji_dan_meseca, hour=23, minute=59, second=59)
+        zbir_mesec = db.troskovi_pregled(vehicle_id, pocetak_meseca, kraj_meseca)
+        self._prikazi_zbir_u_box(inner, "Ovaj mesec", zbir_mesec)
+
+        pocetak_godine = danas.replace(month=1, day=1, hour=0, minute=0, second=0)
+        kraj_godine = danas.replace(month=12, day=31, hour=23, minute=59, second=59)
+        zbir_godina = db.troskovi_pregled(vehicle_id, pocetak_godine, kraj_godine)
+        self._prikazi_zbir_u_box(inner, "Ova godina", zbir_godina)
+
+        inner.add_widget(custom_box)
+
+        btn_row = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
+        mesec_btn = PrimaryButton(text="Izaberi mesec")
+        mesec_btn.bind(on_release=open_mesec_picker)
+        godina_btn = PrimaryButton(text="Izaberi godinu")
+        godina_btn.bind(on_release=open_godina_picker)
+        btn_row.add_widget(mesec_btn)
+        btn_row.add_widget(godina_btn)
+        content.add_widget(btn_row)
 
         close_btn = SecondaryButton(text="Zatvori", size_hint_y=None, height=dp(44))
         close_btn.bind(on_release=popup.dismiss)
@@ -379,33 +598,6 @@ class DatabaseScreen(Screen):
             )
             inputs[key] = tf
             content.add_widget(tf)
-
-            if key in self.NOVCANA_POLJA:
-                konverzija_label = Label(
-                    text="", font_size="12sp", color=(0.6, 0.85, 1, 1),
-                    size_hint_y=None, height=dp(20), halign="left",
-                )
-                konverzija_label.bind(
-                    size=lambda inst, val: setattr(inst, "text_size", val)
-                )
-                content.add_widget(konverzija_label)
-
-                def osvezi_konverziju(instance, value, lbl=konverzija_label):
-                    tekst = value.strip().replace(",", ".")
-                    if not tekst:
-                        lbl.text = ""
-                        return
-                    try:
-                        rsd_vrednost = float(tekst)
-                    except ValueError:
-                        lbl.text = ""
-                        return
-                    prikaz = db.rsd_u_prikaz(rsd_vrednost)
-                    lbl.text = f"\u2248 {prikaz:.2f} {db.valuta_oznaka()}"
-
-                tf.bind(text=osvezi_konverziju)
-                if vrednost:
-                    osvezi_konverziju(tf, vrednost)
 
         return content, inputs
 
