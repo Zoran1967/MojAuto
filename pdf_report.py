@@ -60,6 +60,20 @@ SEKCIJE = [
 NOVCANA_POLJA = {"cena_po_litru", "ukupna_cena", "cena_delova", "cena_rada",
                  "iznos", "cena"}
 
+ZAMENA_SLOVA = str.maketrans({
+    "č": "c", "ć": "c", "đ": "dj",
+    "Č": "C", "Ć": "C", "Đ": "Dj",
+})
+
+
+def _ascii_bezbedno(tekst):
+    """Font koji koristimo (Helvetica) ne podrzava c/c/dj - zamenjuje
+    ih ASCII ekvivalentima da PDF ne bi pukao. s i z ostaju (font ih
+    podrzava)."""
+    if tekst is None:
+        return ""
+    return str(tekst).translate(ZAMENA_SLOVA)
+
 
 def _formatiraj_vrednost(kljuc, vrednost):
     if vrednost is None:
@@ -69,8 +83,8 @@ def _formatiraj_vrednost(kljuc, vrednost):
             prikaz = db.rsd_u_prikaz(float(vrednost))
             return f"{prikaz:.2f} {db.valuta_oznaka()}"
         except (TypeError, ValueError):
-            return str(vrednost)
-    return str(vrednost)
+            return _ascii_bezbedno(vrednost)
+    return _ascii_bezbedno(vrednost)
 
 
 def _izlazna_putanja(naziv_fajla):
@@ -100,7 +114,7 @@ def generisi_pdf_izvestaj(vozilo):
     pdf.ln(4)
 
     pdf.set_font("Helvetica", "B", 14)
-    pdf.cell(0, 10, f"{vozilo['marka']} {vozilo['model']} ({vozilo['godina'] or '-'})", ln=True)
+    pdf.cell(0, 10, _ascii_bezbedno(f"{vozilo['marka']} {vozilo['model']} ({vozilo['godina'] or '-'})"), ln=True)
 
     pdf.set_font("Helvetica", "", 11)
     osnovni_podaci = [
@@ -116,7 +130,8 @@ def generisi_pdf_izvestaj(vozilo):
         ("Kilometraza", vozilo["kilometraza"]),
     ]
     for naziv, vrednost in osnovni_podaci:
-        pdf.cell(0, 7, f"{naziv}: {vrednost if vrednost not in (None, '') else '-'}", ln=True)
+        vrednost_tekst = _ascii_bezbedno(vrednost) if vrednost not in (None, "") else "-"
+        pdf.cell(0, 7, f"{naziv}: {vrednost_tekst}", ln=True)
 
     pdf.ln(6)
 
@@ -145,7 +160,7 @@ def generisi_pdf_izvestaj(vozilo):
         pdf.ln(3)
 
     naziv_fajla = f"MojAuto_{vozilo['marka']}_{vozilo['model']}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
-    naziv_fajla = naziv_fajla.replace(" ", "_")
+    naziv_fajla = _ascii_bezbedno(naziv_fajla).replace(" ", "_")
     putanja = _izlazna_putanja(naziv_fajla)
     pdf.output(putanja)
     return putanja
