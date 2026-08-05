@@ -8,6 +8,7 @@ Tabele:
 """
 import sqlite3
 import os
+from datetime import datetime
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -346,3 +347,53 @@ def rsd_u_prikaz(cena_rsd):
 
 def valuta_oznaka():
     return "EUR" if get_valuta() == "EUR" else "RSD"
+
+
+# ---------- Pregled troskova po periodu (nedelja / mesec / godina) ----------
+
+def _parsiraj_datum(tekst):
+    """Datumi se cuvaju kao 'DD.MM.GGGG'. Vraca datetime ili None ako
+    tekst ne moze da se parsira (prazno, pogresan format, itd.)."""
+    if not tekst:
+        return None
+    try:
+        return datetime.strptime(tekst.strip(), "%d.%m.%Y")
+    except ValueError:
+        return None
+
+
+def _u_periodu(datum, od, do):
+    if datum is None:
+        return False
+    return od <= datum <= do
+
+
+def troskovi_pregled(vehicle_id, od, do):
+    """
+    Vraca dict sa zbirom po kategorijama za dato vozilo, za period
+    [od, do] (datetime objekti, ukljucujuci oba kraja):
+    {'gorivo': iznos_rsd, 'servisi': iznos_rsd, 'osiguranje': iznos_rsd,
+     'troskovi': iznos_rsd, 'ukupno': iznos_rsd}
+    Sve vrednosti su u RSD (osnovna valuta) - konverzija za prikaz se
+    radi posle, preko rsd_u_prikaz().
+    """
+    zbir = {"gorivo": 0.0, "servisi": 0.0, "osiguranje": 0.0, "troskovi": 0.0}
+
+    for red in get_by_vehicle("gorivo", vehicle_id):
+        if _u_periodu(_parsiraj_datum(red["datum"]), od, do):
+            zbir["gorivo"] += red["ukupna_cena"] or 0
+
+    for red in get_by_vehicle("servisi", vehicle_id):
+        if _u_periodu(_parsiraj_datum(red["datum"]), od, do):
+            zbir["servisi"] += red["ukupna_cena"] or 0
+
+    for red in get_by_vehicle("osiguranje", vehicle_id):
+        if _u_periodu(_parsiraj_datum(red["datum"]), od, do):
+            zbir["osiguranje"] += red["cena"] or 0
+
+    for red in get_by_vehicle("troskovi", vehicle_id):
+        if _u_periodu(_parsiraj_datum(red["datum"]), od, do):
+            zbir["troskovi"] += red["iznos"] or 0
+
+    zbir["ukupno"] = sum(zbir.values())
+    return zbir
