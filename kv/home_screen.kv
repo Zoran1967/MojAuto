@@ -40,6 +40,27 @@
             size: self.size
             radius: [dp(28)]
         StencilPop
+<LanguagePill@ButtonBehavior+BoxLayout>:
+    orientation: "vertical"
+    padding: dp(6)
+    spacing: dp(2)
+    canvas.before:
+        Color:
+            rgba: 0.15, 0.15, 0.18, 0.92
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [dp(14)]
+    Image:
+        source: app.assets_dir + "globe_icon.png"
+        allow_stretch: True
+        keep_ratio: True
+        size_hint_y: 0.65
+    Label:
+        text: "LANGUAGE"
+        font_size: "11sp"
+        bold: True
+        size_hint_y: 0.35
 <HomeScreen>:
     canvas.before:
         Color:
@@ -90,3 +111,8 @@
                     keep_ratio: True
                     pos: cart_box.pos
                     size: cart_box.size
+            LanguagePill:
+                size_hint: None, None
+                size: dp(64), dp(64)
+                pos_hint: {"right": 0.98, "y": 0.02}
+                on_release: root.open_language_picker()
