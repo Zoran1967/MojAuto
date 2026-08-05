@@ -9,15 +9,79 @@ from database import db
 from widgets import SecondaryButton, DangerButton
 
 
+SVE_TABELE = [
+    "gorivo", "servisi", "troskovi", "gume", "registracija",
+    "osiguranje", "akumulator", "kvarovi", "dokumenti", "podsetnici",
+]
+
+DATUM_POLJE = {
+    "gorivo": "datum",
+    "servisi": "datum",
+    "troskovi": "datum",
+    "gume": "datum_kupovine",
+    "registracija": "datum_registracije",
+    "osiguranje": "datum",
+    "akumulator": "datum_kupovine",
+    "kvarovi": "datum",
+    "dokumenti": "datum_dodavanja",
+    "podsetnici": "datum_isteka",
+}
+
+NASLOVI = {
+    "gorivo": "Gorivo",
+    "servisi": "Servis",
+    "troskovi": "Trosak",
+    "gume": "Gume",
+    "registracija": "Registracija",
+    "osiguranje": "Osiguranje",
+    "akumulator": "Akumulator",
+    "kvarovi": "Kvar",
+    "dokumenti": "Dokument",
+    "podsetnici": "Podsetnik",
+}
+
+
+def _novcani_prikaz(vrednost):
+    return f"{db.rsd_u_prikaz(vrednost):.2f} {db.valuta_oznaka()}"
+
+
+def _kratak_opis(tabela, red):
+    naslov = NASLOVI[tabela]
+    datum = red[DATUM_POLJE[tabela]] or "-"
+
+    if tabela == "gorivo":
+        return f"{naslov}: {datum} - {red['litara']} L - {_novcani_prikaz(red['ukupna_cena'])}"
+    if tabela == "servisi":
+        return f"{naslov}: {datum} - {red['tip']} - {_novcani_prikaz(red['ukupna_cena'])}"
+    if tabela == "troskovi":
+        return f"{naslov}: {datum} - {red['vrsta']} - {_novcani_prikaz(red['iznos'])}"
+    if tabela == "gume":
+        return f"{naslov}: {datum} - {red['sezona']} {red['marka'] or ''} {red['model'] or ''}".strip()
+    if tabela == "registracija":
+        return f"{naslov}: {datum} - istice {red['istek'] or '-'}"
+    if tabela == "osiguranje":
+        return f"{naslov}: {datum} - istice {red['istek'] or '-'}"
+    if tabela == "akumulator":
+        return f"{naslov}: {datum} - {red['marka'] or ''} {red['model'] or ''}".strip()
+    if tabela == "kvarovi":
+        return f"{naslov}: {datum} - {_novcani_prikaz(red['ukupna_cena'])}"
+    if tabela == "dokumenti":
+        return f"{naslov}: {datum} - {red['tip']} {red['naziv'] or ''}".strip()
+    if tabela == "podsetnici":
+        return f"{naslov}: {datum} - {red['naslov'] or red['tip']}"
+    return f"{naslov}: {datum}"
+
+
 class HistoryScreen(Screen):
     """
-    Istorija servisa i troskova - organizovano po vozilu.
-    Prikazuje vozila; klik na vozilo otvara sve servise i troskove
-    tog vozila, sortirano po datumu (najnoviji prvi).
+    Istorija svih zapisa - organizovano po vozilu. Prikazuje vozila;
+    klik na vozilo otvara SVE zapise tog vozila iz svih kategorija
+    (gorivo, servisi, troskovi, gume, registracija, osiguranje,
+    akumulator, kvarovi, dokumenta, podsetnici), sortirano po datumu.
     """
 
     def on_pre_enter(self, *args):
-        self.ids.title_label.text = "Istorija servisa i troskova"
+        self.ids.title_label.text = "Istorija svih zapisa"
         self.load_history()
 
     def load_history(self):
@@ -35,8 +99,8 @@ class HistoryScreen(Screen):
             return
 
         for vozilo in vozila:
-            broj_zapisa = len(db.get_by_vehicle("servisi", vozilo["id"])) + len(
-                db.get_by_vehicle("troskovi", vozilo["id"])
+            broj_zapisa = sum(
+                len(db.get_by_vehicle(tabela, vozilo["id"])) for tabela in SVE_TABELE
             )
             btn = SecondaryButton(
                 text=f"{vozilo['marka']} {vozilo['model']} ({broj_zapisa} zapisa)",
@@ -48,7 +112,7 @@ class HistoryScreen(Screen):
             )
             box.add_widget(btn)
 
-    # ---------- Nivo 1: zapisi jednog vozila ----------
+    # ---------- Nivo 1: svi zapisi jednog vozila (sve kategorije) ----------
 
     def open_vehicle_history(self, vehicle_id, naziv_vozila):
         content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
@@ -64,17 +128,19 @@ class HistoryScreen(Screen):
         content.add_widget(scroll)
 
         popup = Popup(
-            title="Zapisi vozila", content=content, size_hint=(0.92, 0.8),
+            title="Svi zapisi vozila", content=content, size_hint=(0.92, 0.85),
             overlay_color=(0, 0, 0, 0.85),
         )
 
         def refresh_records():
             records_box.clear_widgets()
 
-            servisi = [("servisi", r) for r in db.get_by_vehicle("servisi", vehicle_id)]
-            troskovi = [("troskovi", r) for r in db.get_by_vehicle("troskovi", vehicle_id)]
-            svi = servisi + troskovi
-            svi.sort(key=lambda x: x[1]["datum"], reverse=True)
+            svi = []
+            for tabela in SVE_TABELE:
+                for red in db.get_by_vehicle(tabela, vehicle_id):
+                    svi.append((tabela, red))
+
+            svi.sort(key=lambda par: par[1][DATUM_POLJE[par[0]]] or "", reverse=True)
 
             if not svi:
                 popup.dismiss()
@@ -82,13 +148,9 @@ class HistoryScreen(Screen):
                 return
 
             for tabela, red in svi:
-                if tabela == "servisi":
-                    tekst = f"{red['datum']} - {red['tip']}: {red['ukupna_cena']} din"
-                else:
-                    tekst = f"{red['datum']} - {red['vrsta']}: {red['iznos']} din"
-
                 btn = SecondaryButton(
-                    text=tekst, size_hint_y=None, height=dp(56), halign="center",
+                    text=_kratak_opis(tabela, red),
+                    size_hint_y=None, height=dp(56), halign="center",
                 )
                 btn.bind(
                     on_release=lambda inst, t=tabela, rid=red["id"]:
@@ -103,27 +165,40 @@ class HistoryScreen(Screen):
         refresh_records()
         popup.open()
 
-    # ---------- Nivo 2: detalji jednog zapisa ----------
+    # ---------- Nivo 2: detalji jednog zapisa (generieno, sve kolone) ----------
 
     def open_record_detail(self, tabela, record_id, parent_popup, refresh_parent):
         red = db.get_by_id(tabela, record_id)
         if red is None:
             return
 
-        content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
+        content = BoxLayout(orientation="vertical", spacing=dp(6), padding=dp(10), size_hint_y=None)
+        content.bind(minimum_height=content.setter("height"))
 
-        if tabela == "servisi":
-            content.add_widget(Label(text=f"{red['datum']} - {red['tip']}", bold=True, font_size="16sp", size_hint_y=None, height=dp(28)))
-            content.add_widget(Label(text=f"Naziv: {red['naziv'] or '-'}", size_hint_y=None, height=dp(28)))
-            content.add_widget(Label(text=f"Opis: {red['opis'] or '-'}", size_hint_y=None, height=dp(28)))
-            content.add_widget(Label(text=f"Ukupna cena: {red['ukupna_cena']} din", bold=True, size_hint_y=None, height=dp(28)))
-        else:
-            content.add_widget(Label(text=f"{red['datum']} - {red['vrsta']}", bold=True, font_size="16sp", size_hint_y=None, height=dp(28)))
-            content.add_widget(Label(text=f"Napomena: {red['napomena'] or '-'}", size_hint_y=None, height=dp(28)))
-            content.add_widget(Label(text=f"Iznos: {red['iznos']} din", bold=True, size_hint_y=None, height=dp(28)))
+        content.add_widget(
+            Label(text=NASLOVI[tabela], bold=True, font_size="16sp",
+                  size_hint_y=None, height=dp(28))
+        )
+
+        for kljuc in red.keys():
+            if kljuc in ("id", "vehicle_id"):
+                continue
+            vrednost = red[kljuc]
+            if vrednost in (None, ""):
+                continue
+            content.add_widget(
+                Label(text=f"{kljuc}: {vrednost}", size_hint_y=None, height=dp(26),
+                      halign="left")
+            )
+
+        scroll = ScrollView(size_hint=(1, 1))
+        scroll.add_widget(content)
+
+        outer = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
+        outer.add_widget(scroll)
 
         detail_popup = Popup(
-            title="Detalji zapisa", content=content, size_hint=(0.9, 0.6),
+            title="Detalji zapisa", content=outer, size_hint=(0.9, 0.75),
             overlay_color=(0, 0, 0, 0.85),
         )
 
@@ -145,7 +220,7 @@ class HistoryScreen(Screen):
         delete_btn.bind(on_release=delete)
         btn_row.add_widget(back_btn)
         btn_row.add_widget(delete_btn)
-        content.add_widget(btn_row)
+        outer.add_widget(btn_row)
 
         detail_popup.open()
 
