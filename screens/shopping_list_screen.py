@@ -30,6 +30,7 @@ class ShoppingListScreen(Screen):
         ("snaga", "Snaga (KS)", "int"),
         ("menjac", "Menjac", "text"),
         ("boja", "Boja", "text"),
+        ("broj_vrata", "Broj vrata", "int"),
         ("datum_kupovine", "Datum kupovine (DD.MM.GGGG)", "text"),
         ("kupovna_cena", "Kupovna cena", "float"),
         ("kilometraza", "Kilometraza", "int"),
@@ -117,7 +118,7 @@ class ShoppingListScreen(Screen):
         return scroll, inputs
 
     def _collect_data(self, inputs):
-        int_fields = {"godina", "snaga", "kilometraza"}
+        int_fields = {"godina", "snaga", "kilometraza", "broj_vrata"}
         float_fields = {"zapremina", "kupovna_cena"}
         data = {}
         for key, _label, _tip in self.FIELD_DEFS:
