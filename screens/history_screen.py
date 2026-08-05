@@ -40,8 +40,15 @@ NASLOVI = {
     "podsetnici": "Podsetnik",
 }
 
+NOVCANA_POLJA = {
+    "cena_po_litru", "ukupna_cena", "cena_delova", "cena_rada",
+    "iznos", "cena", "kupovna_cena",
+}
+
 
 def _novcani_prikaz(vrednost):
+    if vrednost in (None, ""):
+        return "-"
     return f"{db.rsd_u_prikaz(vrednost):.2f} {db.valuta_oznaka()}"
 
 
@@ -56,13 +63,15 @@ def _kratak_opis(tabela, red):
     if tabela == "troskovi":
         return f"{naslov}: {datum} - {red['vrsta']} - {_novcani_prikaz(red['iznos'])}"
     if tabela == "gume":
-        return f"{naslov}: {datum} - {red['sezona']} {red['marka'] or ''} {red['model'] or ''}".strip()
+        opis = f"{red['sezona']} {red['marka'] or ''} {red['model'] or ''}".strip()
+        return f"{naslov}: {datum} - {opis} - {_novcani_prikaz(red['cena'])}"
     if tabela == "registracija":
-        return f"{naslov}: {datum} - istice {red['istek'] or '-'}"
+        return f"{naslov}: {datum} - istice {red['istek'] or '-'} - {_novcani_prikaz(red['cena'])}"
     if tabela == "osiguranje":
-        return f"{naslov}: {datum} - istice {red['istek'] or '-'}"
+        return f"{naslov}: {datum} - istice {red['istek'] or '-'} - {_novcani_prikaz(red['cena'])}"
     if tabela == "akumulator":
-        return f"{naslov}: {datum} - {red['marka'] or ''} {red['model'] or ''}".strip()
+        opis = f"{red['marka'] or ''} {red['model'] or ''}".strip()
+        return f"{naslov}: {datum} - {opis} - {_novcani_prikaz(red['cena'])}"
     if tabela == "kvarovi":
         return f"{naslov}: {datum} - {_novcani_prikaz(red['ukupna_cena'])}"
     if tabela == "dokumenti":
@@ -78,6 +87,8 @@ class HistoryScreen(Screen):
     klik na vozilo otvara SVE zapise tog vozila iz svih kategorija
     (gorivo, servisi, troskovi, gume, registracija, osiguranje,
     akumulator, kvarovi, dokumenta, podsetnici), sortirano po datumu.
+    Sve novcane vrednosti se prikazuju preracunate u trenutno
+    izabranu valutu (RSD ili EUR, iz Podesavanja).
     """
 
     def on_pre_enter(self, *args):
@@ -186,8 +197,12 @@ class HistoryScreen(Screen):
             vrednost = red[kljuc]
             if vrednost in (None, ""):
                 continue
+            if kljuc in NOVCANA_POLJA:
+                prikaz = _novcani_prikaz(vrednost)
+            else:
+                prikaz = vrednost
             content.add_widget(
-                Label(text=f"{kljuc}: {vrednost}", size_hint_y=None, height=dp(26),
+                Label(text=f"{kljuc}: {prikaz}", size_hint_y=None, height=dp(26),
                       halign="left")
             )
 
