@@ -41,7 +41,8 @@ SCHEMA = {
             datum_kupovine TEXT,
             kupovna_cena REAL,
             kilometraza INTEGER DEFAULT 0,
-            napomena TEXT
+            napomena TEXT,
+            broj_vrata INTEGER
         );
     """,
     "gorivo": """
@@ -220,12 +221,25 @@ def get_connection():
     return conn
 
 
+def _kolone_tabele(c, tabela):
+    c.execute(f"PRAGMA table_info({tabela})")
+    return {red[1] for red in c.fetchall()}
+
+
 def init_db():
     conn = get_connection()
     c = conn.cursor()
     for tabela_sql in SCHEMA.values():
         c.execute(tabela_sql)
     conn.commit()
+
+    # --- Migracija: dodavanje nove kolone na POSTOJECU vozila tabelu,
+    # bez brisanja ijednog postojeceg vozila. ---
+    kolone = _kolone_tabele(c, "vozila")
+    if "broj_vrata" not in kolone:
+        c.execute("ALTER TABLE vozila ADD COLUMN broj_vrata INTEGER")
+    conn.commit()
+
     conn.close()
 
 
