@@ -66,6 +66,8 @@ class DatabaseScreen(Screen):
 
     PDF_TAB_KEY = "pdf"
 
+    NOVCANA_POLJA = {"cena_po_litru", "cena_delova", "cena_rada", "iznos", "cena"}
+
     TAB_DEFS = {
         "gorivo": {
             "naslov": "Gorivo",
@@ -377,6 +379,33 @@ class DatabaseScreen(Screen):
             )
             inputs[key] = tf
             content.add_widget(tf)
+
+            if key in self.NOVCANA_POLJA:
+                konverzija_label = Label(
+                    text="", font_size="12sp", color=(0.6, 0.85, 1, 1),
+                    size_hint_y=None, height=dp(20), halign="left",
+                )
+                konverzija_label.bind(
+                    size=lambda inst, val: setattr(inst, "text_size", val)
+                )
+                content.add_widget(konverzija_label)
+
+                def osvezi_konverziju(instance, value, lbl=konverzija_label):
+                    tekst = value.strip().replace(",", ".")
+                    if not tekst:
+                        lbl.text = ""
+                        return
+                    try:
+                        rsd_vrednost = float(tekst)
+                    except ValueError:
+                        lbl.text = ""
+                        return
+                    prikaz = db.rsd_u_prikaz(rsd_vrednost)
+                    lbl.text = f"\u2248 {prikaz:.2f} {db.valuta_oznaka()}"
+
+                tf.bind(text=osvezi_konverziju)
+                if vrednost:
+                    osvezi_konverziju(tf, vrednost)
 
         return content, inputs
 
