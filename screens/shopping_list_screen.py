@@ -37,6 +37,8 @@ class ShoppingListScreen(Screen):
         ("napomena", "Napomena", "text"),
     ]
 
+    NOVCANA_POLJA = {"kupovna_cena"}
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._selektovano_vozilo_id = None
@@ -83,6 +85,15 @@ class ShoppingListScreen(Screen):
         )
         card.add_widget(info)
 
+        if vozilo["kupovna_cena"] not in (None, 0):
+            cena_prikaz = db.rsd_u_prikaz(vozilo["kupovna_cena"])
+            cena_label = Label(
+                text=f"Kupovna cena: {cena_prikaz:.2f} {db.valuta_oznaka()}",
+                font_size="13sp", size_hint_y=None, height=dp(24),
+                color=(0.6, 0.85, 1, 1),
+            )
+            card.add_widget(cena_label)
+
         izmeni_btn = Button(
             text="Izmeni / Obrisi",
             size_hint_y=None, height=dp(40),
@@ -112,6 +123,33 @@ class ShoppingListScreen(Screen):
             )
             inputs[key] = tf
             inner.add_widget(tf)
+
+            if key in self.NOVCANA_POLJA:
+                konverzija_label = Label(
+                    text="", font_size="12sp", color=(0.6, 0.85, 1, 1),
+                    size_hint_y=None, height=dp(20), halign="left",
+                )
+                konverzija_label.bind(
+                    size=lambda inst, val: setattr(inst, "text_size", val)
+                )
+                inner.add_widget(konverzija_label)
+
+                def osvezi_konverziju(instance, value, lbl=konverzija_label):
+                    tekst = value.strip().replace(",", ".")
+                    if not tekst:
+                        lbl.text = ""
+                        return
+                    try:
+                        rsd_vrednost = float(tekst)
+                    except ValueError:
+                        lbl.text = ""
+                        return
+                    prikaz = db.rsd_u_prikaz(rsd_vrednost)
+                    lbl.text = f"\u2248 {prikaz:.2f} {db.valuta_oznaka()}"
+
+                tf.bind(text=osvezi_konverziju)
+                if vrednost:
+                    osvezi_konverziju(tf, vrednost)
 
         scroll = ScrollView(size_hint=(1, None), height=dp(420))
         scroll.add_widget(inner)
