@@ -377,7 +377,7 @@ class DatabaseScreen(Screen):
         for key, _label, tip in tab_def["fields"]:
             tekst = inputs[key].text.strip()
             if tip == "int":
-                data[key] = int(tekst) if tekst else None
+                data[key] = int(tekst) if tekst else 0
             elif tip == "float":
                 data[key] = float(tekst.replace(",", ".")) if tekst else 0.0
             else:
