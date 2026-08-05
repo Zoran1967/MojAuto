@@ -276,19 +276,28 @@ class DatabaseScreen(Screen):
         if vozilo is None:
             return
 
-        content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
+        content = BoxLayout(orientation="vertical", spacing=dp(10), padding=dp(14))
         popup = Popup(
-            title="PDF izvestaj", content=content, size_hint=(0.85, 0.4),
+            title="PDF izvestaj", content=content, size_hint=(0.85, 0.45),
             overlay_color=(0, 0, 0, 0.85),
         )
 
         try:
-            putanja = pdf_report.generisi_pdf_izvestaj(vozilo)
-            poruka = f"Sacuvano:\n{putanja}"
+            pdf_report.generisi_pdf_izvestaj(vozilo)
+            poruka = "PDF je generisan.\n\nIdite u Download da pogledate i stampate ako vam je potreban."
         except Exception as e:
             poruka = f"Greska pri pravljenju PDF-a:\n{e}"
 
-        content.add_widget(Label(text=poruka, font_size="13sp"))
+        poruka_label = Label(
+            text=poruka,
+            font_size="14sp",
+            halign="center",
+            valign="middle",
+        )
+        poruka_label.bind(
+            size=lambda inst, val: setattr(inst, "text_size", val)
+        )
+        content.add_widget(poruka_label)
 
         close_btn = SecondaryButton(text="Zatvori", size_hint_y=None, height=dp(44))
         close_btn.bind(on_release=popup.dismiss)
