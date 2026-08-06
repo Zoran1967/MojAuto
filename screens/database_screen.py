@@ -70,19 +70,16 @@ TABELE_SA_VALUTOM = {
     "registracija", "osiguranje", "akumulator", "kvarovi",
 }
 
+BOJA_NEIZABRANO = (0.18, 0.18, 0.22, 1)
+BOJA_IZABRANO = (0.2, 0.5, 1, 1)
+
 
 class DatabaseScreen(Screen):
     """
-    Ekran za unos zapisa po vozilu, sa tabovima: Gorivo, Servisi,
-    Troskovi (glavna 3 dugmeta iz kv fajla) i Gume, Registracija,
-    Osiguranje, Akumulator, Kvarovi, Dokumenta, Podsetnici, PDF
-    (dinamicki dodati u extra_tabs_box, sa ikonicama).
-
-    Napomena o valuti: svaka novcana stavka bira svoju valutu (RSD ili
-    EUR) prilikom unosa - ta valuta se cuva uz stavku i koristi se za
-    prikaz, bez automatske konverzije. Pregled Troskova ima dugme za
-    RUCNO prebacivanje prikaza zbira izmedju RSD i EUR (koristi kurs
-    iz Podesavanja samo za taj prikaz).
+    Ekran za unos zapisa po vozilu. Redosled je: prvo se BIRA VOZILO
+    iz liste (dugme postaje plavo kad je izabrano), a zatim se klikom
+    na kategoriju gore (Gorivo/Servisi/Troskovi ili donje ikonice)
+    otvara odgovarajuci prozor za TO izabrano vozilo.
     """
 
     PDF_TAB_KEY = "pdf"
@@ -228,13 +225,19 @@ class DatabaseScreen(Screen):
         "pdf": ("pdf_izvestaji.png", "PDF"),
     }
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._izabrano_vozilo_id = None
+        self._vozilo_dugmad = []
+
     def on_pre_enter(self, *args):
         self.ids.title_label.text = "Zapisi vozila"
         self.ids.tab_products.text = "Gorivo"
         self.ids.tab_stores.text = "Servisi"
         self.ids.tab_categories.text = "Troskovi"
+        self._izabrano_vozilo_id = None
         self._build_extra_tabs()
-        self.show_proizvodi()
+        self._prikazi_listu_vozila()
 
     # ---------- Dodatni tabovi (dinamicki, sa ikonicama, u extra_tabs_box) ----------
 
@@ -247,23 +250,56 @@ class DatabaseScreen(Screen):
                 icon_source=assets_dir + icon_fajl,
                 text=naslov,
             )
-            btn.bind(on_release=lambda inst, t=tabela: self._prikazi_vozila_za_tab(t))
+            btn.bind(on_release=lambda inst, t=tabela: self._otvori_kategoriju(t))
             box.add_widget(btn)
 
     # ---------- Tabovi (nazivi metoda zadrzani zbog kv fajla) ----------
 
     def show_proizvodi(self):
-        self._prikazi_vozila_za_tab("gorivo")
+        self._otvori_kategoriju("gorivo")
 
     def show_prodavnice(self):
-        self._prikazi_vozila_za_tab("servisi")
+        self._otvori_kategoriju("servisi")
 
     def show_kategorije(self):
-        self._prikazi_vozila_za_tab("troskovi")
+        self._otvori_kategoriju("troskovi")
 
-    def _prikazi_vozila_za_tab(self, tabela):
+    def _otvori_kategoriju(self, tabela):
+        if self._izabrano_vozilo_id is None:
+            self._prikazi_kratku_poruku("Prvo izaberite vozilo iz liste ispod.")
+            return
+
+        vozilo = db.get_by_id("vozila", self._izabrano_vozilo_id)
+        if vozilo is None:
+            self._izabrano_vozilo_id = None
+            self._osvezi_boje_vozila()
+            return
+
+        vid = vozilo["id"]
+        vnaziv = f"{vozilo['marka']} {vozilo['model']}"
+
+        if tabela == self.PDF_TAB_KEY:
+            self._generisi_pdf(vid)
+        elif tabela == self.TROSKOVI_TAB_KEY:
+            self.open_troskovi_pregled(vid, vnaziv)
+        else:
+            self.open_records_popup(tabela, vid, vnaziv)
+
+    def _prikazi_kratku_poruku(self, tekst):
+        content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
+        content.add_widget(Label(text=tekst, font_size="14sp"))
+        popup = Popup(title="", content=content, size_hint=(0.8, 0.3), overlay_color=(0, 0, 0, 0.85))
+        close_btn = SecondaryButton(text="U redu", size_hint_y=None, height=dp(44))
+        close_btn.bind(on_release=popup.dismiss)
+        content.add_widget(close_btn)
+        popup.open()
+
+    # ---------- Lista vozila (izbor) ----------
+
+    def _prikazi_listu_vozila(self):
         box = self.ids.database_box
         box.clear_widgets()
+        self._vozilo_dugmad = []
 
         vozila = db.get_all("vozila", order_by="marka")
         if not vozila:
@@ -277,24 +313,22 @@ class DatabaseScreen(Screen):
             btn = Button(
                 text=f"{vozilo['marka']} {vozilo['model']}",
                 size_hint_y=None, height=dp(46),
-                background_normal="", background_color=(0.18, 0.18, 0.22, 1),
+                background_normal="", background_color=BOJA_NEIZABRANO,
                 color=(1, 1, 1, 1),
             )
-            if tabela == self.PDF_TAB_KEY:
-                btn.bind(
-                    on_release=lambda inst, vid=vozilo["id"]: self._generisi_pdf(vid)
-                )
-            elif tabela == self.TROSKOVI_TAB_KEY:
-                btn.bind(
-                    on_release=lambda inst, vid=vozilo["id"], vnaziv=f"{vozilo['marka']} {vozilo['model']}":
-                        self.open_troskovi_pregled(vid, vnaziv)
-                )
-            else:
-                btn.bind(
-                    on_release=lambda inst, vid=vozilo["id"], vnaziv=f"{vozilo['marka']} {vozilo['model']}":
-                        self.open_records_popup(tabela, vid, vnaziv)
-                )
+            btn.bind(on_release=lambda inst, vid=vozilo["id"]: self._izaberi_vozilo(vid))
+            self._vozilo_dugmad.append((vozilo["id"], btn))
             box.add_widget(btn)
+
+        self._osvezi_boje_vozila()
+
+    def _izaberi_vozilo(self, vid):
+        self._izabrano_vozilo_id = vid
+        self._osvezi_boje_vozila()
+
+    def _osvezi_boje_vozila(self):
+        for vid, btn in self._vozilo_dugmad:
+            btn.background_color = BOJA_IZABRANO if vid == self._izabrano_vozilo_id else BOJA_NEIZABRANO
 
     # ---------- PDF izvestaj ----------
 
