@@ -4,6 +4,9 @@ pdf_report.py
 Generisanje kompletnog PDF izvestaja o jednom vozilu - svi podaci iz
 svih kategorija (gorivo, servisi, troskovi, gume, registracija,
 osiguranje, akumulator, kvarovi, dokumenta, podsetnici).
+
+Napomena o valuti: svaka novcana stavka ima svoju sacuvanu valutu
+(RSD ili EUR) - PDF prikazuje tacno tu vrednost, bez konverzije.
 """
 import os
 from datetime import datetime
@@ -75,13 +78,12 @@ def _ascii_bezbedno(tekst):
     return str(tekst).translate(ZAMENA_SLOVA)
 
 
-def _formatiraj_vrednost(kljuc, vrednost):
+def _formatiraj_vrednost(kljuc, vrednost, valuta=None):
     if vrednost is None:
         return "-"
     if kljuc in NOVCANA_POLJA:
         try:
-            prikaz = db.rsd_u_prikaz(float(vrednost))
-            return f"{prikaz:.2f} {db.valuta_oznaka()}"
+            return f"{float(vrednost):.2f} {valuta or 'RSD'}"
         except (TypeError, ValueError):
             return _ascii_bezbedno(vrednost)
     return _ascii_bezbedno(vrednost)
@@ -116,6 +118,8 @@ def generisi_pdf_izvestaj(vozilo):
     pdf.set_font("Helvetica", "B", 14)
     pdf.cell(0, 10, _ascii_bezbedno(f"{vozilo['marka']} {vozilo['model']} ({vozilo['godina'] or '-'})"), ln=True)
 
+    vozilo_valuta = vozilo["valuta"] if "valuta" in vozilo.keys() else None
+
     pdf.set_font("Helvetica", "", 11)
     osnovni_podaci = [
         ("Registracija", vozilo["registracija"], False),
@@ -133,7 +137,7 @@ def generisi_pdf_izvestaj(vozilo):
     ]
     for naziv, vrednost, je_novac in osnovni_podaci:
         if je_novac:
-            vrednost_tekst = _formatiraj_vrednost("cena", vrednost) if vrednost not in (None, "") else "-"
+            vrednost_tekst = _formatiraj_vrednost("cena", vrednost, vozilo_valuta) if vrednost not in (None, "") else "-"
         else:
             vrednost_tekst = _ascii_bezbedno(vrednost) if vrednost not in (None, "") else "-"
         pdf.cell(0, 7, f"{naziv}: {vrednost_tekst}", ln=True)
@@ -155,8 +159,9 @@ def generisi_pdf_izvestaj(vozilo):
 
         pdf.set_font("Helvetica", "", 9)
         for red in zapisi:
+            red_valuta = red["valuta"] if "valuta" in red.keys() else None
             linija = " | ".join(
-                f"{label}: {_formatiraj_vrednost(kljuc, red[kljuc])}"
+                f"{label}: {_formatiraj_vrednost(kljuc, red[kljuc], red_valuta)}"
                 for kljuc, label in kolone
             )
             pdf.multi_cell(0, 6, linija)
