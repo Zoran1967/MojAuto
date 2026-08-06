@@ -15,6 +15,9 @@ class ShoppingListScreen(Screen):
     Ekran za pregled i upravljanje vozilima (prepravljen iz Shopping
     List ekrana - naziv fajla/klase i ids su namerno zadrzani da se ne
     bi diralo main.py ni kv fajl u istoj izmeni).
+
+    Napomena o valuti: kupovna_cena bira svoju valutu (RSD ili EUR)
+    prilikom unosa - cuva se uz vozilo, prikazuje se bez konverzije.
     """
 
     FIELD_DEFS = [
@@ -36,8 +39,6 @@ class ShoppingListScreen(Screen):
         ("kilometraza", "Kilometraza", "int"),
         ("napomena", "Napomena", "text"),
     ]
-
-    NOVCANA_POLJA = {"kupovna_cena"}
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -86,9 +87,9 @@ class ShoppingListScreen(Screen):
         card.add_widget(info)
 
         if vozilo["kupovna_cena"] not in (None, 0):
-            cena_prikaz = db.rsd_u_prikaz(vozilo["kupovna_cena"])
+            valuta = vozilo["valuta"] or "RSD"
             cena_label = Label(
-                text=f"Kupovna cena: {cena_prikaz:.2f} {db.valuta_oznaka()}",
+                text=f"Kupovna cena: {vozilo['kupovna_cena']:.2f} {valuta}",
                 font_size="13sp", size_hint_y=None, height=dp(24),
                 color=(0.6, 0.85, 1, 1),
             )
@@ -107,9 +108,25 @@ class ShoppingListScreen(Screen):
 
     # ---------- Zajednicka forma (dodavanje i izmena) ----------
 
-    def _build_form(self, existing=None):
+    def _build_form(self, existing=None, valuta_stanje=None):
         inner = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10), size_hint_y=None)
         inner.bind(minimum_height=inner.setter("height"))
+
+        pocetna_valuta = "RSD"
+        if existing is not None and existing["valuta"]:
+            pocetna_valuta = existing["valuta"]
+        valuta_stanje["valuta"] = pocetna_valuta
+
+        valuta_btn = PrimaryButton(
+            text=f"Valuta (kupovna cena): {pocetna_valuta}", size_hint_y=None, height=dp(44),
+        )
+
+        def promeni_valutu(*a):
+            valuta_stanje["valuta"] = "EUR" if valuta_stanje["valuta"] == "RSD" else "RSD"
+            valuta_btn.text = f"Valuta (kupovna cena): {valuta_stanje['valuta']}"
+
+        valuta_btn.bind(on_release=promeni_valutu)
+        inner.add_widget(valuta_btn)
 
         inputs = {}
         for key, label, tip in self.FIELD_DEFS:
@@ -124,38 +141,11 @@ class ShoppingListScreen(Screen):
             inputs[key] = tf
             inner.add_widget(tf)
 
-            if key in self.NOVCANA_POLJA:
-                konverzija_label = Label(
-                    text="", font_size="12sp", color=(0.6, 0.85, 1, 1),
-                    size_hint_y=None, height=dp(20), halign="left",
-                )
-                konverzija_label.bind(
-                    size=lambda inst, val: setattr(inst, "text_size", val)
-                )
-                inner.add_widget(konverzija_label)
-
-                def osvezi_konverziju(instance, value, lbl=konverzija_label):
-                    tekst = value.strip().replace(",", ".")
-                    if not tekst:
-                        lbl.text = ""
-                        return
-                    try:
-                        rsd_vrednost = float(tekst)
-                    except ValueError:
-                        lbl.text = ""
-                        return
-                    prikaz = db.rsd_u_prikaz(rsd_vrednost)
-                    lbl.text = f"\u2248 {prikaz:.2f} {db.valuta_oznaka()}"
-
-                tf.bind(text=osvezi_konverziju)
-                if vrednost:
-                    osvezi_konverziju(tf, vrednost)
-
         scroll = ScrollView(size_hint=(1, None), height=dp(420))
         scroll.add_widget(inner)
         return scroll, inputs
 
-    def _collect_data(self, inputs):
+    def _collect_data(self, inputs, valuta_stanje):
         int_fields = {"godina", "snaga", "kilometraza", "broj_vrata"}
         float_fields = {"zapremina", "kupovna_cena"}
         data = {}
@@ -167,6 +157,7 @@ class ShoppingListScreen(Screen):
                 data[key] = float(tekst.replace(",", ".")) if tekst else None
             else:
                 data[key] = tekst
+        data["valuta"] = valuta_stanje["valuta"]
         return data
 
     # ---------- Dodavanje vozila ----------
@@ -175,7 +166,8 @@ class ShoppingListScreen(Screen):
         self.open_add_item_popup()
 
     def open_add_item_popup(self):
-        scroll, inputs = self._build_form()
+        valuta_stanje = {}
+        scroll, inputs = self._build_form(valuta_stanje=valuta_stanje)
 
         content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
         content.add_widget(scroll)
@@ -189,7 +181,7 @@ class ShoppingListScreen(Screen):
         )
 
         def confirm(*a):
-            data = self._collect_data(inputs)
+            data = self._collect_data(inputs, valuta_stanje)
             if not data.get("marka") or not data.get("model"):
                 error_label.text = "Marka i model su obavezni."
                 return
@@ -215,7 +207,8 @@ class ShoppingListScreen(Screen):
         if vozilo is None:
             return
 
-        scroll, inputs = self._build_form(existing=vozilo)
+        valuta_stanje = {}
+        scroll, inputs = self._build_form(existing=vozilo, valuta_stanje=valuta_stanje)
 
         content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
         content.add_widget(scroll)
@@ -229,7 +222,7 @@ class ShoppingListScreen(Screen):
         )
 
         def save(*a):
-            data = self._collect_data(inputs)
+            data = self._collect_data(inputs, valuta_stanje)
             if not data.get("marka") or not data.get("model"):
                 error_label.text = "Marka i model su obavezni."
                 return
