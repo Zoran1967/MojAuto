@@ -332,6 +332,21 @@ class DatabaseScreen(Screen):
 
     # ---------- PDF izvestaj ----------
 
+    def _podeli_pdf(self, putanja):
+        """Otvara standardni Android 'Podeli' meni sa generisanim PDF-om
+        (otvori u citacu, posalji na Viber/WhatsApp/mejl, itd). Ako
+        uredjaj to ne podrzava, tiho preskace - PDF ostaje sacuvan u
+        Download folderu, aplikacija se ne rusi."""
+        try:
+            from plyer import share
+            share.share(
+                title="Podeli PDF izvestaj",
+                filepath=putanja,
+                mimetype="application/pdf",
+            )
+        except Exception:
+            pass
+
     def _generisi_pdf(self, vehicle_id):
         vozilo = db.get_by_id("vozila", vehicle_id)
         if vozilo is None:
@@ -344,8 +359,9 @@ class DatabaseScreen(Screen):
         )
 
         try:
-            pdf_report.generisi_pdf_izvestaj(vozilo)
-            poruka = "PDF je generisan.\n\nIdite u Download da pogledate i stampate ako vam je potreban."
+            putanja = pdf_report.generisi_pdf_izvestaj(vozilo)
+            poruka = "PDF je generisan i sacuvan u Download folderu."
+            self._podeli_pdf(putanja)
         except Exception as e:
             poruka = f"Greska pri pravljenju PDF-a:\n{e}"
 
