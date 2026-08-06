@@ -65,6 +65,11 @@ KATEGORIJE_TROSKOVA = [
     ("troskovi", "Ostali troskovi"),
 ]
 
+TABELE_SA_VALUTOM = {
+    "gorivo", "servisi", "troskovi", "gume",
+    "registracija", "osiguranje", "akumulator", "kvarovi",
+}
+
 
 class DatabaseScreen(Screen):
     """
@@ -73,9 +78,11 @@ class DatabaseScreen(Screen):
     Osiguranje, Akumulator, Kvarovi, Dokumenta, Podsetnici, PDF
     (dinamicki dodati u extra_tabs_box, sa ikonicama).
 
-    Tab "Troskovi" ima poseban prikaz (open_troskovi_pregled) - zbir
-    po kategorijama za nedelju/mesec/godinu, sa mogucnoscu izbora
-    drugog meseca ili godine.
+    Napomena o valuti: svaka novcana stavka bira svoju valutu (RSD ili
+    EUR) prilikom unosa - ta valuta se cuva uz stavku i koristi se za
+    prikaz, bez automatske konverzije. Pregled Troskova ima dugme za
+    RUCNO prebacivanje prikaza zbira izmedju RSD i EUR (koristi kurs
+    iz Podesavanja samo za taj prikaz).
     """
 
     PDF_TAB_KEY = "pdf"
@@ -94,7 +101,7 @@ class DatabaseScreen(Screen):
             ],
             "prikaz": lambda r: (
                 f"{r['datum']} - {r['litara']} L - "
-                f"{db.rsd_u_prikaz(r['ukupna_cena']):.2f} {db.valuta_oznaka()}"
+                f"{r['ukupna_cena']:.2f} {r['valuta'] or 'RSD'}"
             ),
         },
         "servisi": {
@@ -110,7 +117,7 @@ class DatabaseScreen(Screen):
             ],
             "prikaz": lambda r: (
                 f"{r['datum']} - {r['tip']} - "
-                f"{db.rsd_u_prikaz(r['ukupna_cena']):.2f} {db.valuta_oznaka()}"
+                f"{r['ukupna_cena']:.2f} {r['valuta'] or 'RSD'}"
             ),
         },
         "troskovi": {
@@ -123,7 +130,7 @@ class DatabaseScreen(Screen):
             ],
             "prikaz": lambda r: (
                 f"{r['datum']} - {r['vrsta']} - "
-                f"{db.rsd_u_prikaz(r['iznos']):.2f} {db.valuta_oznaka()}"
+                f"{r['iznos']:.2f} {r['valuta'] or 'RSD'}"
             ),
         },
         "gume": {
@@ -185,7 +192,7 @@ class DatabaseScreen(Screen):
             ],
             "prikaz": lambda r: (
                 f"{r['datum']} - "
-                f"{db.rsd_u_prikaz(r['ukupna_cena']):.2f} {db.valuta_oznaka()}"
+                f"{r['ukupna_cena']:.2f} {r['valuta'] or 'RSD'}"
             ),
         },
         "dokumenti": {
@@ -325,27 +332,25 @@ class DatabaseScreen(Screen):
 
         popup.open()
 
-    # ---------- Troskovi: pregled po periodu ----------
+    # ---------- Troskovi: pregled po periodu, sa rucnim prebacivanjem prikazne valute ----------
 
-    def _prikazi_zbir_u_box(self, box, naslov, zbir):
+    def _prikazi_zbir_u_box(self, box, naslov, zbir, prikaz_valuta):
         box.add_widget(Label(
             text=naslov, bold=True, font_size="15sp",
             size_hint_y=None, height=dp(26),
         ))
         for kljuc, label in KATEGORIJE_TROSKOVA:
             box.add_widget(Label(
-                text=f"{label}: {db.rsd_u_prikaz(zbir[kljuc]):.2f} {db.valuta_oznaka()}",
+                text=f"{label}: {zbir[kljuc]:.2f} {prikaz_valuta}",
                 font_size="13sp", size_hint_y=None, height=dp(22),
             ))
         box.add_widget(Label(
-            text=f"UKUPNO: {db.rsd_u_prikaz(zbir['ukupno']):.2f} {db.valuta_oznaka()}",
+            text=f"UKUPNO: {zbir['ukupno']:.2f} {prikaz_valuta}",
             bold=True, font_size="14sp", size_hint_y=None, height=dp(26),
             color=(0.6, 0.85, 1, 1),
         ))
 
     def _godine_sa_podacima(self, vehicle_id):
-        """Skuplja sve godine koje se pojavljuju u datumima vozila
-        (iz sve 4 kategorije), plus tekucu godinu."""
         godine = {datetime.now().year}
         for tabela, polje in (
             ("gorivo", "datum"), ("servisi", "datum"),
@@ -361,11 +366,18 @@ class DatabaseScreen(Screen):
         return sorted(godine, reverse=True)
 
     def open_troskovi_pregled(self, vehicle_id, vozilo_naziv):
+        prikaz_stanje = {"valuta": "RSD"}
+
         content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
         content.add_widget(Label(
             text=vozilo_naziv, bold=True, font_size="18sp",
             size_hint_y=None, height=dp(30),
         ))
+
+        prebaci_btn = PrimaryButton(
+            text="Prikazi u EUR", size_hint_y=None, height=dp(44),
+        )
+        content.add_widget(prebaci_btn)
 
         inner = BoxLayout(orientation="vertical", size_hint_y=None, spacing=dp(4))
         inner.bind(minimum_height=inner.setter("height"))
@@ -378,24 +390,51 @@ class DatabaseScreen(Screen):
             overlay_color=(0, 0, 0, 0.85),
         )
 
-        custom_box = BoxLayout(orientation="vertical", size_hint_y=None, spacing=dp(4))
-        custom_box.bind(minimum_height=custom_box.setter("height"))
+        izabrani_period = {"tip": None, "godina": None, "mesec": None}
 
-        def prikazi_izabrani_mesec(godina, mesec):
-            custom_box.clear_widgets()
-            prvi = datetime(godina, mesec, 1)
-            poslednji_dan = calendar.monthrange(godina, mesec)[1]
-            poslednji = datetime(godina, mesec, poslednji_dan, 23, 59, 59)
-            naziv_meseca = prvi.strftime("%B %Y")
-            zbir = db.troskovi_pregled(vehicle_id, prvi, poslednji)
-            self._prikazi_zbir_u_box(custom_box, f"Izabrano: {naziv_meseca}", zbir)
+        def iscrtaj_sve():
+            inner.clear_widgets()
+            pv = prikaz_stanje["valuta"]
+            danas = datetime.now()
 
-        def prikazi_izabranu_godinu(godina):
-            custom_box.clear_widgets()
-            prvi = datetime(godina, 1, 1)
-            poslednji = datetime(godina, 12, 31, 23, 59, 59)
-            zbir = db.troskovi_pregled(vehicle_id, prvi, poslednji)
-            self._prikazi_zbir_u_box(custom_box, f"Izabrano: godina {godina}", zbir)
+            pocetak_nedelje = danas - timedelta(days=danas.weekday())
+            pocetak_nedelje = pocetak_nedelje.replace(hour=0, minute=0, second=0)
+            kraj_nedelje = pocetak_nedelje + timedelta(days=6, hours=23, minutes=59, seconds=59)
+            zbir_nedelja = db.troskovi_pregled(vehicle_id, pocetak_nedelje, kraj_nedelje, pv)
+            self._prikazi_zbir_u_box(inner, "Ova nedelja", zbir_nedelja, pv)
+
+            pocetak_meseca = danas.replace(day=1, hour=0, minute=0, second=0)
+            poslednji_dan_meseca = calendar.monthrange(danas.year, danas.month)[1]
+            kraj_meseca = danas.replace(day=poslednji_dan_meseca, hour=23, minute=59, second=59)
+            zbir_mesec = db.troskovi_pregled(vehicle_id, pocetak_meseca, kraj_meseca, pv)
+            self._prikazi_zbir_u_box(inner, "Ovaj mesec", zbir_mesec, pv)
+
+            pocetak_godine = danas.replace(month=1, day=1, hour=0, minute=0, second=0)
+            kraj_godine = danas.replace(month=12, day=31, hour=23, minute=59, second=59)
+            zbir_godina = db.troskovi_pregled(vehicle_id, pocetak_godine, kraj_godine, pv)
+            self._prikazi_zbir_u_box(inner, "Ova godina", zbir_godina, pv)
+
+            if izabrani_period["tip"] == "mesec":
+                g, m = izabrani_period["godina"], izabrani_period["mesec"]
+                prvi = datetime(g, m, 1)
+                poslednji_dan = calendar.monthrange(g, m)[1]
+                poslednji = datetime(g, m, poslednji_dan, 23, 59, 59)
+                naziv_meseca = prvi.strftime("%B %Y")
+                zbir = db.troskovi_pregled(vehicle_id, prvi, poslednji, pv)
+                self._prikazi_zbir_u_box(inner, f"Izabrano: {naziv_meseca}", zbir, pv)
+            elif izabrani_period["tip"] == "godina":
+                g = izabrani_period["godina"]
+                prvi = datetime(g, 1, 1)
+                poslednji = datetime(g, 12, 31, 23, 59, 59)
+                zbir = db.troskovi_pregled(vehicle_id, prvi, poslednji, pv)
+                self._prikazi_zbir_u_box(inner, f"Izabrano: godina {g}", zbir, pv)
+
+        def prebaci_valutu(*a):
+            prikaz_stanje["valuta"] = "EUR" if prikaz_stanje["valuta"] == "RSD" else "RSD"
+            prebaci_btn.text = "Prikazi u RSD" if prikaz_stanje["valuta"] == "EUR" else "Prikazi u EUR"
+            iscrtaj_sve()
+
+        prebaci_btn.bind(on_release=prebaci_valutu)
 
         def open_mesec_picker(*a):
             godine = self._godine_sa_podacima(vehicle_id)
@@ -443,14 +482,16 @@ class DatabaseScreen(Screen):
                 overlay_color=(0, 0, 0, 0.85),
             )
 
+            def izabran(m):
+                pick_popup.dismiss()
+                izabrani_period["tip"] = "mesec"
+                izabrani_period["godina"] = godina
+                izabrani_period["mesec"] = m
+                iscrtaj_sve()
+
             for i, naziv in enumerate(nazivi_meseci, start=1):
                 btn = SecondaryButton(text=naziv, size_hint_y=None, height=dp(44))
-                btn.bind(
-                    on_release=lambda inst, m=i: (
-                        pick_popup.dismiss(),
-                        prikazi_izabrani_mesec(godina, m),
-                    )
-                )
+                btn.bind(on_release=lambda inst, m=i: izabran(m))
                 pick_box.add_widget(btn)
 
             close_btn = SecondaryButton(text="Otkazi", size_hint_y=None, height=dp(44))
@@ -473,14 +514,15 @@ class DatabaseScreen(Screen):
                 overlay_color=(0, 0, 0, 0.85),
             )
 
+            def izabrana(g):
+                pick_popup.dismiss()
+                izabrani_period["tip"] = "godina"
+                izabrani_period["godina"] = g
+                iscrtaj_sve()
+
             for g in godine:
                 btn = SecondaryButton(text=str(g), size_hint_y=None, height=dp(44))
-                btn.bind(
-                    on_release=lambda inst, gg=g: (
-                        pick_popup.dismiss(),
-                        prikazi_izabranu_godinu(gg),
-                    )
-                )
+                btn.bind(on_release=lambda inst, gg=g: izabrana(gg))
                 pick_box.add_widget(btn)
 
             close_btn = SecondaryButton(text="Otkazi", size_hint_y=None, height=dp(44))
@@ -488,28 +530,6 @@ class DatabaseScreen(Screen):
             pick_content.add_widget(close_btn)
 
             pick_popup.open()
-
-        # ---- Ova nedelja / ovaj mesec / ova godina ----
-        danas = datetime.now()
-
-        pocetak_nedelje = danas - timedelta(days=danas.weekday())
-        pocetak_nedelje = pocetak_nedelje.replace(hour=0, minute=0, second=0)
-        kraj_nedelje = pocetak_nedelje + timedelta(days=6, hours=23, minutes=59, seconds=59)
-        zbir_nedelja = db.troskovi_pregled(vehicle_id, pocetak_nedelje, kraj_nedelje)
-        self._prikazi_zbir_u_box(inner, "Ova nedelja", zbir_nedelja)
-
-        pocetak_meseca = danas.replace(day=1, hour=0, minute=0, second=0)
-        poslednji_dan_meseca = calendar.monthrange(danas.year, danas.month)[1]
-        kraj_meseca = danas.replace(day=poslednji_dan_meseca, hour=23, minute=59, second=59)
-        zbir_mesec = db.troskovi_pregled(vehicle_id, pocetak_meseca, kraj_meseca)
-        self._prikazi_zbir_u_box(inner, "Ovaj mesec", zbir_mesec)
-
-        pocetak_godine = danas.replace(month=1, day=1, hour=0, minute=0, second=0)
-        kraj_godine = danas.replace(month=12, day=31, hour=23, minute=59, second=59)
-        zbir_godina = db.troskovi_pregled(vehicle_id, pocetak_godine, kraj_godine)
-        self._prikazi_zbir_u_box(inner, "Ova godina", zbir_godina)
-
-        inner.add_widget(custom_box)
 
         btn_row = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
         mesec_btn = PrimaryButton(text="Izaberi mesec")
@@ -524,6 +544,7 @@ class DatabaseScreen(Screen):
         close_btn.bind(on_release=popup.dismiss)
         content.add_widget(close_btn)
 
+        iscrtaj_sve()
         popup.open()
 
     # ---------- Zapisi jednog vozila (za dati tab) ----------
@@ -581,10 +602,27 @@ class DatabaseScreen(Screen):
 
     # ---------- Dodavanje / izmena zapisa ----------
 
-    def _build_form(self, tabela, existing=None):
+    def _build_form(self, tabela, existing=None, valuta_stanje=None):
         tab_def = self.TAB_DEFS[tabela]
         content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10), size_hint_y=None)
         content.bind(minimum_height=content.setter("height"))
+
+        if tabela in TABELE_SA_VALUTOM:
+            pocetna_valuta = "RSD"
+            if existing is not None and existing["valuta"]:
+                pocetna_valuta = existing["valuta"]
+            valuta_stanje["valuta"] = pocetna_valuta
+
+            valuta_btn = PrimaryButton(
+                text=f"Valuta: {pocetna_valuta}", size_hint_y=None, height=dp(44),
+            )
+
+            def promeni_valutu(*a):
+                valuta_stanje["valuta"] = "EUR" if valuta_stanje["valuta"] == "RSD" else "RSD"
+                valuta_btn.text = f"Valuta: {valuta_stanje['valuta']}"
+
+            valuta_btn.bind(on_release=promeni_valutu)
+            content.add_widget(valuta_btn)
 
         inputs = {}
         for key, label, tip in tab_def["fields"]:
@@ -601,7 +639,7 @@ class DatabaseScreen(Screen):
 
         return content, inputs
 
-    def _collect_data(self, tabela, inputs):
+    def _collect_data(self, tabela, inputs, valuta_stanje=None):
         tab_def = self.TAB_DEFS[tabela]
         data = {}
         for key, _label, tip in tab_def["fields"]:
@@ -612,10 +650,13 @@ class DatabaseScreen(Screen):
                 data[key] = float(tekst.replace(",", ".")) if tekst else 0.0
             else:
                 data[key] = tekst
+        if tabela in TABELE_SA_VALUTOM and valuta_stanje is not None:
+            data["valuta"] = valuta_stanje["valuta"]
         return data
 
     def open_add_record_popup(self, tabela, vehicle_id, parent_popup, refresh_parent):
-        content, inputs = self._build_form(tabela)
+        valuta_stanje = {}
+        content, inputs = self._build_form(tabela, valuta_stanje=valuta_stanje)
         error_label = Label(text="", size_hint_y=None, height=dp(24), color=(1, 0.4, 0.4, 1))
         content.add_widget(error_label)
 
@@ -630,7 +671,7 @@ class DatabaseScreen(Screen):
         )
 
         def save(*a):
-            data = self._collect_data(tabela, inputs)
+            data = self._collect_data(tabela, inputs, valuta_stanje)
             if tabela == "gorivo":
                 data["ukupna_cena"] = round(data.get("litara", 0) * data.get("cena_po_litru", 0), 2)
                 data["pun_rezervoar"] = 1
@@ -661,7 +702,8 @@ class DatabaseScreen(Screen):
         if red is None:
             return
 
-        content, inputs = self._build_form(tabela, existing=red)
+        valuta_stanje = {}
+        content, inputs = self._build_form(tabela, existing=red, valuta_stanje=valuta_stanje)
         error_label = Label(text="", size_hint_y=None, height=dp(24), color=(1, 0.4, 0.4, 1))
         content.add_widget(error_label)
 
@@ -676,7 +718,7 @@ class DatabaseScreen(Screen):
         )
 
         def save(*a):
-            data = self._collect_data(tabela, inputs)
+            data = self._collect_data(tabela, inputs, valuta_stanje)
             if tabela == "gorivo":
                 data["ukupna_cena"] = round(data.get("litara", 0) * data.get("cena_po_litru", 0), 2)
             elif tabela == "servisi":
