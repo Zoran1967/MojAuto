@@ -154,13 +154,23 @@ class SettingsScreen(Screen):
         db.set_setting("input_boja", naziv)
         refresh()
 
-    # ---------- Valuta ----------
+    # ---------- Kurs (koristi se samo kad korisnik rucno trazi prikaz u drugoj valuti) ----------
 
     def open_currency_popup(self):
         content = BoxLayout(orientation="vertical", spacing=dp(10), padding=dp(10))
 
-        currency_box = BoxLayout(size_hint_y=None, height=dp(48), spacing=dp(10))
-        content.add_widget(currency_box)
+        info_label = Label(
+            text="Ovaj kurs se koristi samo kad rucno zatrazis prikaz "
+                 "u drugoj valuti (npr. u pregledu Troskova). Svaka "
+                 "stavka i dalje cuva svoju valutu onako kako je uneta.",
+            font_size="13sp", color=(0.7, 0.7, 0.7, 1),
+            size_hint_y=None,
+        )
+        info_label.bind(
+            width=lambda inst, val: setattr(inst, "text_size", (val, None)),
+            texture_size=lambda inst, val: setattr(inst, "height", val[1] + dp(10)),
+        )
+        content.add_widget(info_label)
 
         kurs_label = Label(
             text="Kurs (1 EUR = ? RSD)", font_size="14sp",
@@ -187,33 +197,15 @@ class SettingsScreen(Screen):
         kurs_input.bind(focus=lambda inst, val: None if val else save_kurs())
 
         popup = Popup(
-            title="Valuta", content=content, size_hint=(0.85, 0.55),
+            title="Kurs", content=content, size_hint=(0.85, 0.5),
             overlay_color=(0, 0, 0, 0.85), auto_dismiss=False,
         )
-
-        def refresh_currency():
-            currency_box.clear_widgets()
-            trenutna = db.get_setting("valuta", "RSD")
-            for naziv in ("RSD", "EUR"):
-                is_current = naziv == trenutna
-                btn_cls = PrimaryButton if is_current else SecondaryButton
-                btn = btn_cls(
-                    text=(naziv + " (aktivno)" if is_current else naziv),
-                    size_hint_y=None, height=dp(48),
-                )
-                btn.bind(on_release=lambda inst, n=naziv: self._choose_currency(n, refresh_currency))
-                currency_box.add_widget(btn)
 
         close_btn = SecondaryButton(text="Zatvori", size_hint_y=None, height=dp(44))
         close_btn.bind(on_release=lambda inst: (save_kurs(), popup.dismiss()))
         content.add_widget(close_btn)
 
-        refresh_currency()
         popup.open()
-
-    def _choose_currency(self, naziv, refresh):
-        db.set_setting("valuta", naziv)
-        refresh()
 
     def go_back(self):
         self.manager.current = "home"
