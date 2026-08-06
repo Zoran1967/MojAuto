@@ -46,34 +46,35 @@ NOVCANA_POLJA = {
 }
 
 
-def _novcani_prikaz(vrednost):
+def _novcani_prikaz(vrednost, valuta):
     if vrednost in (None, ""):
         return "-"
-    return f"{db.rsd_u_prikaz(vrednost):.2f} {db.valuta_oznaka()}"
+    return f"{vrednost:.2f} {valuta or 'RSD'}"
 
 
 def _kratak_opis(tabela, red):
     naslov = NASLOVI[tabela]
     datum = red[DATUM_POLJE[tabela]] or "-"
+    valuta = red["valuta"] if "valuta" in red.keys() else None
 
     if tabela == "gorivo":
-        return f"{naslov}: {datum} - {red['litara']} L - {_novcani_prikaz(red['ukupna_cena'])}"
+        return f"{naslov}: {datum} - {red['litara']} L - {_novcani_prikaz(red['ukupna_cena'], valuta)}"
     if tabela == "servisi":
-        return f"{naslov}: {datum} - {red['tip']} - {_novcani_prikaz(red['ukupna_cena'])}"
+        return f"{naslov}: {datum} - {red['tip']} - {_novcani_prikaz(red['ukupna_cena'], valuta)}"
     if tabela == "troskovi":
-        return f"{naslov}: {datum} - {red['vrsta']} - {_novcani_prikaz(red['iznos'])}"
+        return f"{naslov}: {datum} - {red['vrsta']} - {_novcani_prikaz(red['iznos'], valuta)}"
     if tabela == "gume":
         opis = f"{red['sezona']} {red['marka'] or ''} {red['model'] or ''}".strip()
-        return f"{naslov}: {datum} - {opis} - {_novcani_prikaz(red['cena'])}"
+        return f"{naslov}: {datum} - {opis} - {_novcani_prikaz(red['cena'], valuta)}"
     if tabela == "registracija":
-        return f"{naslov}: {datum} - istice {red['istek'] or '-'} - {_novcani_prikaz(red['cena'])}"
+        return f"{naslov}: {datum} - istice {red['istek'] or '-'} - {_novcani_prikaz(red['cena'], valuta)}"
     if tabela == "osiguranje":
-        return f"{naslov}: {datum} - istice {red['istek'] or '-'} - {_novcani_prikaz(red['cena'])}"
+        return f"{naslov}: {datum} - istice {red['istek'] or '-'} - {_novcani_prikaz(red['cena'], valuta)}"
     if tabela == "akumulator":
         opis = f"{red['marka'] or ''} {red['model'] or ''}".strip()
-        return f"{naslov}: {datum} - {opis} - {_novcani_prikaz(red['cena'])}"
+        return f"{naslov}: {datum} - {opis} - {_novcani_prikaz(red['cena'], valuta)}"
     if tabela == "kvarovi":
-        return f"{naslov}: {datum} - {_novcani_prikaz(red['ukupna_cena'])}"
+        return f"{naslov}: {datum} - {_novcani_prikaz(red['ukupna_cena'], valuta)}"
     if tabela == "dokumenti":
         return f"{naslov}: {datum} - {red['tip']} {red['naziv'] or ''}".strip()
     if tabela == "podsetnici":
@@ -87,8 +88,8 @@ class HistoryScreen(Screen):
     klik na vozilo otvara SVE zapise tog vozila iz svih kategorija
     (gorivo, servisi, troskovi, gume, registracija, osiguranje,
     akumulator, kvarovi, dokumenta, podsetnici), sortirano po datumu.
-    Sve novcane vrednosti se prikazuju preracunate u trenutno
-    izabranu valutu (RSD ili EUR, iz Podesavanja).
+    Svaka novcana vrednost se prikazuje u SVOJOJ sacuvanoj valuti
+    (bez automatske konverzije - valuta se bira prilikom unosa).
     """
 
     def on_pre_enter(self, *args):
@@ -183,6 +184,8 @@ class HistoryScreen(Screen):
         if red is None:
             return
 
+        valuta = red["valuta"] if "valuta" in red.keys() else None
+
         content = BoxLayout(orientation="vertical", spacing=dp(6), padding=dp(10), size_hint_y=None)
         content.bind(minimum_height=content.setter("height"))
 
@@ -192,13 +195,13 @@ class HistoryScreen(Screen):
         )
 
         for kljuc in red.keys():
-            if kljuc in ("id", "vehicle_id"):
+            if kljuc in ("id", "vehicle_id", "valuta"):
                 continue
             vrednost = red[kljuc]
             if vrednost in (None, ""):
                 continue
             if kljuc in NOVCANA_POLJA:
-                prikaz = _novcani_prikaz(vrednost)
+                prikaz = _novcani_prikaz(vrednost, valuta)
             else:
                 prikaz = vrednost
             content.add_widget(
