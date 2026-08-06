@@ -7,6 +7,7 @@ from kivy.properties import StringProperty
 
 from database import db
 from widgets import PrimaryButton, SecondaryButton
+from translations import prevedi
 
 
 class HomeScreen(Screen):
@@ -32,7 +33,14 @@ class HomeScreen(Screen):
     txt_settings = StringProperty("Podesavanja")
 
     def on_pre_enter(self, *args):
-        pass
+        self.osvezi_tekstove()
+
+    def osvezi_tekstove(self):
+        jezik = db.get_setting("jezik", "sr")
+        self.txt_new_list = prevedi("home_vozila", jezik)
+        self.txt_history = prevedi("home_istorija", jezik)
+        self.txt_database = prevedi("home_zapisi", jezik)
+        self.txt_settings = prevedi("home_podesavanja", jezik)
 
     def go_to_new_list(self):
         self.manager.current = "shopping_list"
@@ -82,4 +90,5 @@ class HomeScreen(Screen):
 
     def choose_language(self, kod, popup):
         db.set_setting("jezik", kod)
+        self.osvezi_tekstove()
         popup.dismiss()
