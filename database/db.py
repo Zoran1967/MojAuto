@@ -5,10 +5,15 @@ Tabele:
 - vozila, gorivo, servisi, ulje, filteri, gume, registracija,
   osiguranje, akumulator, kvarovi, troskovi, dokumenti, podsetnici
 - podesavanja (kljuc, vrednost) - koristi je tema aplikacije, NE DIRATI
+
+Napomena o valuti: svaka stavka koja ima cenu sad cuva i SVOJU valutu
+(kolona 'valuta', RSD ili EUR) - korisnik bira valutu prilikom unosa,
+cena se pamti tacno onako kako je uneta, bez preracunavanja. Kurs
+(get_kurs) se koristi samo kad korisnik RUCNO zatrazi prikaz u drugoj
+valuti (npr. u pregledu Troskova), preko konvertuj().
 """
 import sqlite3
 import os
-from datetime import datetime
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -43,7 +48,8 @@ SCHEMA = {
             kupovna_cena REAL,
             kilometraza INTEGER DEFAULT 0,
             napomena TEXT,
-            broj_vrata INTEGER
+            broj_vrata INTEGER,
+            valuta TEXT DEFAULT 'RSD'
         );
     """,
     "gorivo": """
@@ -60,6 +66,7 @@ SCHEMA = {
             ukupna_cena REAL NOT NULL,
             pun_rezervoar INTEGER DEFAULT 1,
             napomena TEXT,
+            valuta TEXT DEFAULT 'RSD',
             FOREIGN KEY (vehicle_id) REFERENCES vozila (id) ON DELETE CASCADE
         );
     """,
@@ -78,6 +85,7 @@ SCHEMA = {
             fotografije TEXT,
             racun TEXT,
             napomena TEXT,
+            valuta TEXT DEFAULT 'RSD',
             FOREIGN KEY (vehicle_id) REFERENCES vozila (id) ON DELETE CASCADE
         );
     """,
@@ -120,6 +128,7 @@ SCHEMA = {
             datum_kupovine TEXT,
             kilometraza_montaze INTEGER,
             napomena TEXT,
+            valuta TEXT DEFAULT 'RSD',
             FOREIGN KEY (vehicle_id) REFERENCES vozila (id) ON DELETE CASCADE
         );
     """,
@@ -132,6 +141,7 @@ SCHEMA = {
             cena REAL,
             tehnicki_pregled TEXT,
             napomena TEXT,
+            valuta TEXT DEFAULT 'RSD',
             FOREIGN KEY (vehicle_id) REFERENCES vozila (id) ON DELETE CASCADE
         );
     """,
@@ -143,6 +153,7 @@ SCHEMA = {
             cena REAL,
             datum TEXT,
             istek TEXT,
+            valuta TEXT DEFAULT 'RSD',
             FOREIGN KEY (vehicle_id) REFERENCES vozila (id) ON DELETE CASCADE
         );
     """,
@@ -156,6 +167,7 @@ SCHEMA = {
             datum_kupovine TEXT,
             cena REAL,
             garancija TEXT,
+            valuta TEXT DEFAULT 'RSD',
             FOREIGN KEY (vehicle_id) REFERENCES vozila (id) ON DELETE CASCADE
         );
     """,
@@ -170,6 +182,7 @@ SCHEMA = {
             cena_delova REAL DEFAULT 0,
             ukupna_cena REAL DEFAULT 0,
             fotografije TEXT,
+            valuta TEXT DEFAULT 'RSD',
             FOREIGN KEY (vehicle_id) REFERENCES vozila (id) ON DELETE CASCADE
         );
     """,
@@ -181,6 +194,7 @@ SCHEMA = {
             iznos REAL NOT NULL,
             datum TEXT NOT NULL,
             napomena TEXT,
+            valuta TEXT DEFAULT 'RSD',
             FOREIGN KEY (vehicle_id) REFERENCES vozila (id) ON DELETE CASCADE
         );
     """,
@@ -215,6 +229,11 @@ SCHEMA = {
     """,
 }
 
+TABELE_SA_VALUTOM = {
+    "vozila", "gorivo", "servisi", "troskovi", "gume",
+    "registracija", "osiguranje", "akumulator", "kvarovi",
+}
+
 
 def get_connection():
     conn = sqlite3.connect(DB_PATH)
@@ -234,13 +253,19 @@ def init_db():
         c.execute(tabela_sql)
     conn.commit()
 
-    # --- Migracija: dodavanje nove kolone na POSTOJECU vozila tabelu,
-    # bez brisanja ijednog postojeceg vozila. ---
-    kolone = _kolone_tabele(c, "vozila")
-    if "broj_vrata" not in kolone:
+    # --- Migracije: dodavanje novih kolona na POSTOJECE tabele, bez
+    # brisanja ijednog postojeceg reda. Postojeci podaci dobijaju
+    # 'RSD' kao podrazumevanu valutu. ---
+    kolone_vozila = _kolone_tabele(c, "vozila")
+    if "broj_vrata" not in kolone_vozila:
         c.execute("ALTER TABLE vozila ADD COLUMN broj_vrata INTEGER")
-    conn.commit()
 
+    for tabela in TABELE_SA_VALUTOM:
+        kolone = _kolone_tabele(c, tabela)
+        if "valuta" not in kolone:
+            c.execute(f"ALTER TABLE {tabela} ADD COLUMN valuta TEXT DEFAULT 'RSD'")
+
+    conn.commit()
     conn.close()
 
 
@@ -324,11 +349,7 @@ def set_setting(kljuc, vrednost):
     conn.close()
 
 
-# ---------- Konverzija valuta ----------
-
-def get_valuta():
-    return get_setting("valuta", "RSD")
-
+# ---------- Kurs i konverzija (samo za RUCNI prikaz u drugoj valuti) ----------
 
 def get_kurs():
     try:
@@ -337,19 +358,25 @@ def get_kurs():
         return 117.5
 
 
-def rsd_u_prikaz(cena_rsd):
-    if cena_rsd is None:
+def konvertuj(iznos, iz_valute, u_valutu):
+    """Konvertuje iznos iz jedne valute u drugu po kursu iz Podesavanja.
+    Ako su valute iste, vraca iznos nepromenjen."""
+    if iznos is None:
         return 0
-    if get_valuta() == "EUR":
-        return cena_rsd / get_kurs()
-    return cena_rsd
-
-
-def valuta_oznaka():
-    return "EUR" if get_valuta() == "EUR" else "RSD"
+    if iz_valute == u_valutu:
+        return iznos
+    kurs = get_kurs()
+    if iz_valute == "RSD" and u_valutu == "EUR":
+        return iznos / kurs
+    if iz_valute == "EUR" and u_valutu == "RSD":
+        return iznos * kurs
+    return iznos
 
 
 # ---------- Pregled troskova po periodu (nedelja / mesec / godina) ----------
+
+from datetime import datetime
+
 
 def _parsiraj_datum(tekst):
     """Datumi se cuvaju kao 'DD.MM.GGGG'. Vraca datetime ili None ako
@@ -368,32 +395,32 @@ def _u_periodu(datum, od, do):
     return od <= datum <= do
 
 
-def troskovi_pregled(vehicle_id, od, do):
+def troskovi_pregled(vehicle_id, od, do, prikaz_valuta="RSD"):
     """
     Vraca dict sa zbirom po kategorijama za dato vozilo, za period
-    [od, do] (datetime objekti, ukljucujuci oba kraja):
-    {'gorivo': iznos_rsd, 'servisi': iznos_rsd, 'osiguranje': iznos_rsd,
-     'troskovi': iznos_rsd, 'ukupno': iznos_rsd}
-    Sve vrednosti su u RSD (osnovna valuta) - konverzija za prikaz se
-    radi posle, preko rsd_u_prikaz().
+    [od, do] (datetime objekti, ukljucujuci oba kraja), preracunato
+    u prikaz_valuta (svaka stavka se konvertuje iz SVOJE sacuvane
+    valute u trazenu, preko kursa):
+    {'gorivo': iznos, 'servisi': iznos, 'osiguranje': iznos,
+     'troskovi': iznos, 'ukupno': iznos}
     """
     zbir = {"gorivo": 0.0, "servisi": 0.0, "osiguranje": 0.0, "troskovi": 0.0}
 
     for red in get_by_vehicle("gorivo", vehicle_id):
         if _u_periodu(_parsiraj_datum(red["datum"]), od, do):
-            zbir["gorivo"] += red["ukupna_cena"] or 0
+            zbir["gorivo"] += konvertuj(red["ukupna_cena"] or 0, red["valuta"] or "RSD", prikaz_valuta)
 
     for red in get_by_vehicle("servisi", vehicle_id):
         if _u_periodu(_parsiraj_datum(red["datum"]), od, do):
-            zbir["servisi"] += red["ukupna_cena"] or 0
+            zbir["servisi"] += konvertuj(red["ukupna_cena"] or 0, red["valuta"] or "RSD", prikaz_valuta)
 
     for red in get_by_vehicle("osiguranje", vehicle_id):
         if _u_periodu(_parsiraj_datum(red["datum"]), od, do):
-            zbir["osiguranje"] += red["cena"] or 0
+            zbir["osiguranje"] += konvertuj(red["cena"] or 0, red["valuta"] or "RSD", prikaz_valuta)
 
     for red in get_by_vehicle("troskovi", vehicle_id):
         if _u_periodu(_parsiraj_datum(red["datum"]), od, do):
-            zbir["troskovi"] += red["iznos"] or 0
+            zbir["troskovi"] += konvertuj(red["iznos"] or 0, red["valuta"] or "RSD", prikaz_valuta)
 
     zbir["ukupno"] = sum(zbir.values())
     return zbir
