@@ -14,7 +14,12 @@ import calendar
 
 from database import db
 from widgets import PrimaryButton, SecondaryButton, DangerButton, StyledTextInput
+from translations import prevedi
 import pdf_report
+
+
+def _jezik():
+    return db.get_setting("jezik", "sr")
 
 
 Builder.load_string("""
@@ -59,10 +64,10 @@ class IconTabButton(ButtonBehavior, BoxLayout):
 
 
 KATEGORIJE_TROSKOVA = [
-    ("gorivo", "Gorivo"),
-    ("servisi", "Servisi"),
-    ("osiguranje", "Osiguranje"),
-    ("troskovi", "Ostali troskovi"),
+    ("gorivo", "kat_gorivo"),
+    ("servisi", "kat_servisi"),
+    ("osiguranje", "kat_osiguranje"),
+    ("troskovi", "kat_troskovi"),
 ]
 
 TABELE_SA_VALUTOM = {
@@ -73,13 +78,28 @@ TABELE_SA_VALUTOM = {
 BOJA_NEIZABRANO = (0.18, 0.18, 0.22, 1)
 BOJA_IZABRANO = (0.2, 0.5, 1, 1)
 
+NASLOVI = {
+    "gorivo": "kat_gorivo",
+    "servisi": "kat_servisi",
+    "troskovi": "kat_troskovi",
+    "gume": "kat_gume",
+    "registracija": "kat_registracija",
+    "osiguranje": "kat_osiguranje",
+    "akumulator": "kat_akumulator",
+    "kvarovi": "kat_kvarovi",
+    "dokumenti": "kat_dokumenta",
+    "podsetnici": "kat_podsetnici",
+}
+
 
 class DatabaseScreen(Screen):
     """
     Ekran za unos zapisa po vozilu. Redosled je: prvo se BIRA VOZILO
     iz liste (dugme postaje plavo kad je izabrano), a zatim se klikom
     na kategoriju gore (Gorivo/Servisi/Troskovi ili donje ikonice)
-    otvara odgovarajuci prozor za TO izabrano vozilo.
+    otvara odgovarajuci prozor za TO izabrano vozilo. Tekstovi se
+    prevode preko translations.prevedi() prema trenutno izabranom
+    jeziku.
     """
 
     PDF_TAB_KEY = "pdf"
@@ -87,14 +107,13 @@ class DatabaseScreen(Screen):
 
     TAB_DEFS = {
         "gorivo": {
-            "naslov": "Gorivo",
             "fields": [
-                ("datum", "Datum (DD.MM.GGGG)", "text"),
-                ("kilometraza", "Kilometraza", "int"),
-                ("litara", "Litara", "float"),
-                ("cena_po_litru", "Cena po litru", "float"),
-                ("pumpa", "Pumpa", "text"),
-                ("grad", "Grad", "text"),
+                ("datum", "polje_datum", "text"),
+                ("kilometraza", "polje_kilometraza", "int"),
+                ("litara", "polje_litara", "float"),
+                ("cena_po_litru", "polje_cena_po_litru", "float"),
+                ("pumpa", "polje_pumpa", "text"),
+                ("grad", "polje_grad", "text"),
             ],
             "prikaz": lambda r: (
                 f"{r['datum']} - {r['litara']} L - "
@@ -102,15 +121,14 @@ class DatabaseScreen(Screen):
             ),
         },
         "servisi": {
-            "naslov": "Servisi",
             "fields": [
-                ("tip", "Tip servisa", "text"),
-                ("datum", "Datum (DD.MM.GGGG)", "text"),
-                ("kilometraza", "Kilometraza", "int"),
-                ("naziv", "Naziv", "text"),
-                ("opis", "Opis", "text"),
-                ("cena_delova", "Cena delova", "float"),
-                ("cena_rada", "Cena rada", "float"),
+                ("tip", "polje_tip_servisa", "text"),
+                ("datum", "polje_datum", "text"),
+                ("kilometraza", "polje_kilometraza", "int"),
+                ("naziv", "polje_naziv", "text"),
+                ("opis", "polje_opis", "text"),
+                ("cena_delova", "polje_cena_delova", "float"),
+                ("cena_rada", "polje_cena_rada", "float"),
             ],
             "prikaz": lambda r: (
                 f"{r['datum']} - {r['tip']} - "
@@ -118,12 +136,11 @@ class DatabaseScreen(Screen):
             ),
         },
         "troskovi": {
-            "naslov": "Troskovi",
             "fields": [
-                ("vrsta", "Vrsta troska", "text"),
-                ("iznos", "Iznos", "float"),
-                ("datum", "Datum (DD.MM.GGGG)", "text"),
-                ("napomena", "Napomena", "text"),
+                ("vrsta", "polje_vrsta_troska", "text"),
+                ("iznos", "polje_iznos", "float"),
+                ("datum", "polje_datum", "text"),
+                ("napomena", "polje_napomena", "text"),
             ],
             "prikaz": lambda r: (
                 f"{r['datum']} - {r['vrsta']} - "
@@ -131,61 +148,56 @@ class DatabaseScreen(Screen):
             ),
         },
         "gume": {
-            "naslov": "Gume",
             "fields": [
-                ("sezona", "Sezona (letnje/zimske)", "text"),
-                ("marka", "Marka", "text"),
-                ("model", "Model", "text"),
-                ("dimenzija", "Dimenzija", "text"),
-                ("dot", "DOT", "text"),
-                ("cena", "Cena", "float"),
-                ("datum_kupovine", "Datum kupovine (DD.MM.GGGG)", "text"),
-                ("kilometraza_montaze", "Kilometraza montaze", "int"),
-                ("napomena", "Napomena", "text"),
+                ("sezona", "polje_sezona", "text"),
+                ("marka", "polje_marka", "text"),
+                ("model", "polje_model", "text"),
+                ("dimenzija", "polje_dimenzija", "text"),
+                ("dot", "polje_dot", "text"),
+                ("cena", "polje_cena", "float"),
+                ("datum_kupovine", "polje_datum_kupovine", "text"),
+                ("kilometraza_montaze", "polje_kilometraza_montaze", "int"),
+                ("napomena", "polje_napomena", "text"),
             ],
             "prikaz": lambda r: f"{r['sezona']} - {r['marka'] or '-'} {r['model'] or '-'} ({r['dimenzija'] or '-'})",
         },
         "registracija": {
-            "naslov": "Registracija",
             "fields": [
-                ("datum_registracije", "Datum registracije (DD.MM.GGGG)", "text"),
-                ("istek", "Istek (DD.MM.GGGG)", "text"),
-                ("cena", "Cena", "float"),
-                ("tehnicki_pregled", "Tehnicki pregled", "text"),
-                ("napomena", "Napomena", "text"),
+                ("datum_registracije", "polje_datum_registracije", "text"),
+                ("istek", "polje_istek", "text"),
+                ("cena", "polje_cena", "float"),
+                ("tehnicki_pregled", "polje_tehnicki_pregled", "text"),
+                ("napomena", "polje_napomena", "text"),
             ],
             "prikaz": lambda r: f"{r['datum_registracije'] or '-'} - istice {r['istek'] or '-'}",
         },
         "osiguranje": {
-            "naslov": "Osiguranje",
             "fields": [
-                ("vrsta", "Vrsta osiguranja", "text"),
-                ("cena", "Cena", "float"),
-                ("datum", "Datum (DD.MM.GGGG)", "text"),
-                ("istek", "Istek (DD.MM.GGGG)", "text"),
+                ("vrsta", "polje_vrsta_osiguranja", "text"),
+                ("cena", "polje_cena", "float"),
+                ("datum", "polje_datum", "text"),
+                ("istek", "polje_istek", "text"),
             ],
             "prikaz": lambda r: f"{r['vrsta'] or '-'} - istice {r['istek'] or '-'}",
         },
         "akumulator": {
-            "naslov": "Akumulator",
             "fields": [
-                ("marka", "Marka", "text"),
-                ("model", "Model", "text"),
-                ("kapacitet", "Kapacitet", "text"),
-                ("datum_kupovine", "Datum kupovine (DD.MM.GGGG)", "text"),
-                ("cena", "Cena", "float"),
-                ("garancija", "Garancija", "text"),
+                ("marka", "polje_marka", "text"),
+                ("model", "polje_model", "text"),
+                ("kapacitet", "polje_kapacitet", "text"),
+                ("datum_kupovine", "polje_datum_kupovine", "text"),
+                ("cena", "polje_cena", "float"),
+                ("garancija", "polje_garancija", "text"),
             ],
             "prikaz": lambda r: f"{r['marka'] or '-'} {r['model'] or '-'} - {r['kapacitet'] or '-'}",
         },
         "kvarovi": {
-            "naslov": "Kvarovi",
             "fields": [
-                ("datum", "Datum (DD.MM.GGGG)", "text"),
-                ("kilometraza", "Kilometraza", "int"),
-                ("opis", "Opis", "text"),
-                ("cena_rada", "Cena rada", "float"),
-                ("cena_delova", "Cena delova", "float"),
+                ("datum", "polje_datum", "text"),
+                ("kilometraza", "polje_kilometraza", "int"),
+                ("opis", "polje_opis", "text"),
+                ("cena_rada", "polje_cena_rada", "float"),
+                ("cena_delova", "polje_cena_delova", "float"),
             ],
             "prikaz": lambda r: (
                 f"{r['datum']} - "
@@ -193,36 +205,34 @@ class DatabaseScreen(Screen):
             ),
         },
         "dokumenti": {
-            "naslov": "Dokumenta",
             "fields": [
-                ("tip", "Tip dokumenta", "text"),
-                ("naziv", "Naziv", "text"),
-                ("putanja", "Putanja/naziv fajla", "text"),
-                ("datum_dodavanja", "Datum dodavanja (DD.MM.GGGG)", "text"),
+                ("tip", "polje_tip_dokumenta", "text"),
+                ("naziv", "polje_naziv", "text"),
+                ("putanja", "polje_putanja", "text"),
+                ("datum_dodavanja", "polje_datum_dodavanja", "text"),
             ],
             "prikaz": lambda r: f"{r['tip']} - {r['naziv'] or '-'}",
         },
         "podsetnici": {
-            "naslov": "Podsetnici",
             "fields": [
-                ("tip", "Tip podsetnika (npr. registracija, servis)", "text"),
-                ("naslov", "Naslov", "text"),
-                ("datum_isteka", "Datum isteka (DD.MM.GGGG)", "text"),
-                ("kilometraza_isteka", "Kilometraza isteka", "int"),
+                ("tip", "polje_tip_podsetnika", "text"),
+                ("naslov", "polje_naslov", "text"),
+                ("datum_isteka", "polje_datum_isteka", "text"),
+                ("kilometraza_isteka", "polje_kilometraza_isteka", "int"),
             ],
             "prikaz": lambda r: f"{r['naslov'] or r['tip']} - istice {r['datum_isteka'] or '-'}",
         },
     }
 
     EXTRA_TAB_ICONS = {
-        "gume": ("gume.png", "Gume"),
-        "registracija": ("registracija.png", "Registracija"),
-        "osiguranje": ("osiguranje.png", "Osiguranje"),
-        "akumulator": ("akumulator.png", "Akumulator"),
-        "kvarovi": ("kvarovi.png", "Kvarovi"),
-        "dokumenti": ("dokumenti.png", "Dokumenta"),
-        "podsetnici": ("podsetnici.png", "Podsetnici"),
-        "pdf": ("pdf_izvestaji.png", "PDF"),
+        "gume": ("gume.png", "kat_gume"),
+        "registracija": ("registracija.png", "kat_registracija"),
+        "osiguranje": ("osiguranje.png", "kat_osiguranje"),
+        "akumulator": ("akumulator.png", "kat_akumulator"),
+        "kvarovi": ("kvarovi.png", "kat_kvarovi"),
+        "dokumenti": ("dokumenti.png", "kat_dokumenta"),
+        "podsetnici": ("podsetnici.png", "kat_podsetnici"),
+        "pdf": ("pdf_izvestaji.png", "kat_pdf"),
     }
 
     def __init__(self, **kwargs):
@@ -231,10 +241,11 @@ class DatabaseScreen(Screen):
         self._vozilo_dugmad = []
 
     def on_pre_enter(self, *args):
-        self.ids.title_label.text = "Zapisi vozila"
-        self.ids.tab_products.text = "Gorivo"
-        self.ids.tab_stores.text = "Servisi"
-        self.ids.tab_categories.text = "Troskovi"
+        jezik = _jezik()
+        self.ids.title_label.text = prevedi("zapisi_naslov", jezik)
+        self.ids.tab_products.text = prevedi("kat_gorivo", jezik)
+        self.ids.tab_stores.text = prevedi("kat_servisi", jezik)
+        self.ids.tab_categories.text = prevedi("kat_troskovi", jezik)
         self._izabrano_vozilo_id = None
         self._build_extra_tabs()
         self._prikazi_listu_vozila()
@@ -242,13 +253,14 @@ class DatabaseScreen(Screen):
     # ---------- Dodatni tabovi (dinamicki, sa ikonicama, u extra_tabs_box) ----------
 
     def _build_extra_tabs(self):
+        jezik = _jezik()
         box = self.ids.extra_tabs_box
         box.clear_widgets()
         assets_dir = App.get_running_app().assets_dir
-        for tabela, (icon_fajl, naslov) in self.EXTRA_TAB_ICONS.items():
+        for tabela, (icon_fajl, naslov_kljuc) in self.EXTRA_TAB_ICONS.items():
             btn = IconTabButton(
                 icon_source=assets_dir + icon_fajl,
-                text=naslov,
+                text=prevedi(naslov_kljuc, jezik),
             )
             btn.bind(on_release=lambda inst, t=tabela: self._otvori_kategoriju(t))
             box.add_widget(btn)
@@ -265,8 +277,9 @@ class DatabaseScreen(Screen):
         self._otvori_kategoriju("troskovi")
 
     def _otvori_kategoriju(self, tabela):
+        jezik = _jezik()
         if self._izabrano_vozilo_id is None:
-            self._prikazi_kratku_poruku("Prvo izaberite vozilo iz liste ispod.")
+            self._prikazi_kratku_poruku(prevedi("zapisi_prvo_izaberi", jezik))
             return
 
         vozilo = db.get_by_id("vozila", self._izabrano_vozilo_id)
@@ -286,10 +299,11 @@ class DatabaseScreen(Screen):
             self.open_records_popup(tabela, vid, vnaziv)
 
     def _prikazi_kratku_poruku(self, tekst):
+        jezik = _jezik()
         content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
         content.add_widget(Label(text=tekst, font_size="14sp"))
         popup = Popup(title="", content=content, size_hint=(0.8, 0.3), overlay_color=(0, 0, 0, 0.85))
-        close_btn = SecondaryButton(text="U redu", size_hint_y=None, height=dp(44))
+        close_btn = SecondaryButton(text=prevedi("zapisi_u_redu", jezik), size_hint_y=None, height=dp(44))
         close_btn.bind(on_release=popup.dismiss)
         content.add_widget(close_btn)
         popup.open()
@@ -297,6 +311,7 @@ class DatabaseScreen(Screen):
     # ---------- Lista vozila (izbor) ----------
 
     def _prikazi_listu_vozila(self):
+        jezik = _jezik()
         box = self.ids.database_box
         box.clear_widgets()
         self._vozilo_dugmad = []
@@ -304,7 +319,7 @@ class DatabaseScreen(Screen):
         vozila = db.get_all("vozila", order_by="marka")
         if not vozila:
             box.add_widget(Label(
-                text="Nema dodatih vozila.", size_hint_y=None,
+                text=prevedi("zapisi_nema_vozila", jezik), size_hint_y=None,
                 height=dp(40), color=(1, 1, 1, 1),
             ))
             return
@@ -352,9 +367,10 @@ class DatabaseScreen(Screen):
         if vozilo is None:
             return
 
+        jezik = _jezik()
         content = BoxLayout(orientation="vertical", spacing=dp(10), padding=dp(14))
         popup = Popup(
-            title="PDF izvestaj", content=content, size_hint=(0.85, 0.45),
+            title=prevedi("kat_pdf", jezik), content=content, size_hint=(0.85, 0.45),
             overlay_color=(0, 0, 0, 0.85),
         )
 
@@ -376,7 +392,7 @@ class DatabaseScreen(Screen):
         )
         content.add_widget(poruka_label)
 
-        close_btn = SecondaryButton(text="Zatvori", size_hint_y=None, height=dp(44))
+        close_btn = SecondaryButton(text=prevedi("zapisi_zatvori", jezik), size_hint_y=None, height=dp(44))
         close_btn.bind(on_release=popup.dismiss)
         content.add_widget(close_btn)
 
@@ -384,14 +400,14 @@ class DatabaseScreen(Screen):
 
     # ---------- Troskovi: pregled po periodu, sa rucnim prebacivanjem prikazne valute ----------
 
-    def _prikazi_zbir_u_box(self, box, naslov, zbir, prikaz_valuta):
+    def _prikazi_zbir_u_box(self, box, naslov, zbir, prikaz_valuta, jezik):
         box.add_widget(Label(
             text=naslov, bold=True, font_size="15sp",
             size_hint_y=None, height=dp(26),
         ))
-        for kljuc, label in KATEGORIJE_TROSKOVA:
+        for kljuc, label_kljuc in KATEGORIJE_TROSKOVA:
             box.add_widget(Label(
-                text=f"{label}: {zbir[kljuc]:.2f} {prikaz_valuta}",
+                text=f"{prevedi(label_kljuc, jezik)}: {zbir[kljuc]:.2f} {prikaz_valuta}",
                 font_size="13sp", size_hint_y=None, height=dp(22),
             ))
         box.add_widget(Label(
@@ -416,6 +432,7 @@ class DatabaseScreen(Screen):
         return sorted(godine, reverse=True)
 
     def open_troskovi_pregled(self, vehicle_id, vozilo_naziv):
+        jezik = _jezik()
         prikaz_stanje = {"valuta": "RSD"}
 
         content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
@@ -436,7 +453,7 @@ class DatabaseScreen(Screen):
         content.add_widget(scroll)
 
         popup = Popup(
-            title="Pregled troskova", content=content, size_hint=(0.94, 0.9),
+            title=prevedi("kat_troskovi", jezik), content=content, size_hint=(0.94, 0.9),
             overlay_color=(0, 0, 0, 0.85),
         )
 
@@ -451,18 +468,18 @@ class DatabaseScreen(Screen):
             pocetak_nedelje = pocetak_nedelje.replace(hour=0, minute=0, second=0)
             kraj_nedelje = pocetak_nedelje + timedelta(days=6, hours=23, minutes=59, seconds=59)
             zbir_nedelja = db.troskovi_pregled(vehicle_id, pocetak_nedelje, kraj_nedelje, pv)
-            self._prikazi_zbir_u_box(inner, "Ova nedelja", zbir_nedelja, pv)
+            self._prikazi_zbir_u_box(inner, "Ova nedelja", zbir_nedelja, pv, jezik)
 
             pocetak_meseca = danas.replace(day=1, hour=0, minute=0, second=0)
             poslednji_dan_meseca = calendar.monthrange(danas.year, danas.month)[1]
             kraj_meseca = danas.replace(day=poslednji_dan_meseca, hour=23, minute=59, second=59)
             zbir_mesec = db.troskovi_pregled(vehicle_id, pocetak_meseca, kraj_meseca, pv)
-            self._prikazi_zbir_u_box(inner, "Ovaj mesec", zbir_mesec, pv)
+            self._prikazi_zbir_u_box(inner, "Ovaj mesec", zbir_mesec, pv, jezik)
 
             pocetak_godine = danas.replace(month=1, day=1, hour=0, minute=0, second=0)
             kraj_godine = danas.replace(month=12, day=31, hour=23, minute=59, second=59)
             zbir_godina = db.troskovi_pregled(vehicle_id, pocetak_godine, kraj_godine, pv)
-            self._prikazi_zbir_u_box(inner, "Ova godina", zbir_godina, pv)
+            self._prikazi_zbir_u_box(inner, "Ova godina", zbir_godina, pv, jezik)
 
             if izabrani_period["tip"] == "mesec":
                 g, m = izabrani_period["godina"], izabrani_period["mesec"]
@@ -471,13 +488,13 @@ class DatabaseScreen(Screen):
                 poslednji = datetime(g, m, poslednji_dan, 23, 59, 59)
                 naziv_meseca = prvi.strftime("%B %Y")
                 zbir = db.troskovi_pregled(vehicle_id, prvi, poslednji, pv)
-                self._prikazi_zbir_u_box(inner, f"Izabrano: {naziv_meseca}", zbir, pv)
+                self._prikazi_zbir_u_box(inner, f"Izabrano: {naziv_meseca}", zbir, pv, jezik)
             elif izabrani_period["tip"] == "godina":
                 g = izabrani_period["godina"]
                 prvi = datetime(g, 1, 1)
                 poslednji = datetime(g, 12, 31, 23, 59, 59)
                 zbir = db.troskovi_pregled(vehicle_id, prvi, poslednji, pv)
-                self._prikazi_zbir_u_box(inner, f"Izabrano: godina {g}", zbir, pv)
+                self._prikazi_zbir_u_box(inner, f"Izabrano: godina {g}", zbir, pv, jezik)
 
         def prebaci_valutu(*a):
             prikaz_stanje["valuta"] = "EUR" if prikaz_stanje["valuta"] == "RSD" else "RSD"
@@ -590,7 +607,7 @@ class DatabaseScreen(Screen):
         btn_row.add_widget(godina_btn)
         content.add_widget(btn_row)
 
-        close_btn = SecondaryButton(text="Zatvori", size_hint_y=None, height=dp(44))
+        close_btn = SecondaryButton(text=prevedi("zapisi_zatvori", jezik), size_hint_y=None, height=dp(44))
         close_btn.bind(on_release=popup.dismiss)
         content.add_widget(close_btn)
 
@@ -600,11 +617,13 @@ class DatabaseScreen(Screen):
     # ---------- Zapisi jednog vozila (za dati tab) ----------
 
     def open_records_popup(self, tabela, vehicle_id, vozilo_naziv):
-        tab_def = self.TAB_DEFS[tabela]
+        jezik = _jezik()
+        naslov_kljuc = NASLOVI[tabela]
+        naslov_teksta = prevedi(naslov_kljuc, jezik)
         content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
 
         content.add_widget(Label(
-            text=f"{vozilo_naziv} - {tab_def['naslov']}", bold=True, font_size="18sp",
+            text=f"{vozilo_naziv} - {naslov_teksta}", bold=True, font_size="18sp",
             size_hint_y=None, height=dp(32),
         ))
 
@@ -615,16 +634,17 @@ class DatabaseScreen(Screen):
         content.add_widget(scroll)
 
         popup = Popup(
-            title=tab_def["naslov"], content=content, size_hint=(0.94, 0.85),
+            title=naslov_teksta, content=content, size_hint=(0.94, 0.85),
             overlay_color=(0, 0, 0, 0.85),
         )
 
         def refresh():
             records_box.clear_widgets()
+            tab_def = self.TAB_DEFS[tabela]
             zapisi = db.get_by_vehicle(tabela, vehicle_id, order_by="id DESC")
             if not zapisi:
                 records_box.add_widget(Label(
-                    text="Nema zapisa.", size_hint_y=None,
+                    text=prevedi("zapisi_nema_zapisa", jezik), size_hint_y=None,
                     height=dp(36), color=(0.75, 0.75, 0.75, 1),
                 ))
             for red in zapisi:
@@ -637,13 +657,13 @@ class DatabaseScreen(Screen):
                 )
                 records_box.add_widget(btn)
 
-        novi_btn = PrimaryButton(text="+ Dodaj zapis", size_hint_y=None, height=dp(44))
+        novi_btn = PrimaryButton(text=prevedi("zapisi_dodaj_zapis", jezik), size_hint_y=None, height=dp(44))
         novi_btn.bind(
             on_release=lambda inst: self.open_add_record_popup(tabela, vehicle_id, popup, refresh)
         )
         content.add_widget(novi_btn)
 
-        close_btn = SecondaryButton(text="Zatvori", size_hint_y=None, height=dp(44))
+        close_btn = SecondaryButton(text=prevedi("zapisi_zatvori", jezik), size_hint_y=None, height=dp(44))
         close_btn.bind(on_release=popup.dismiss)
         content.add_widget(close_btn)
 
@@ -653,6 +673,7 @@ class DatabaseScreen(Screen):
     # ---------- Dodavanje / izmena zapisa ----------
 
     def _build_form(self, tabela, existing=None, valuta_stanje=None):
+        jezik = _jezik()
         tab_def = self.TAB_DEFS[tabela]
         content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10), size_hint_y=None)
         content.bind(minimum_height=content.setter("height"))
@@ -664,23 +685,23 @@ class DatabaseScreen(Screen):
             valuta_stanje["valuta"] = pocetna_valuta
 
             valuta_btn = PrimaryButton(
-                text=f"Valuta: {pocetna_valuta}", size_hint_y=None, height=dp(44),
+                text=f"{prevedi('polje_valuta', jezik)}: {pocetna_valuta}", size_hint_y=None, height=dp(44),
             )
 
             def promeni_valutu(*a):
                 valuta_stanje["valuta"] = "EUR" if valuta_stanje["valuta"] == "RSD" else "RSD"
-                valuta_btn.text = f"Valuta: {valuta_stanje['valuta']}"
+                valuta_btn.text = f"{prevedi('polje_valuta', jezik)}: {valuta_stanje['valuta']}"
 
             valuta_btn.bind(on_release=promeni_valutu)
             content.add_widget(valuta_btn)
 
         inputs = {}
-        for key, label, tip in tab_def["fields"]:
+        for key, label_kljuc, tip in tab_def["fields"]:
             vrednost = ""
             if existing is not None and existing[key] is not None:
                 vrednost = str(existing[key])
             tf = StyledTextInput(
-                text=vrednost, hint_text=label,
+                text=vrednost, hint_text=prevedi(label_kljuc, jezik),
                 input_filter=("float" if tip == "float" else "int" if tip == "int" else None),
                 multiline=False, size_hint_y=None, height=dp(44),
             )
@@ -692,7 +713,7 @@ class DatabaseScreen(Screen):
     def _collect_data(self, tabela, inputs, valuta_stanje=None):
         tab_def = self.TAB_DEFS[tabela]
         data = {}
-        for key, _label, tip in tab_def["fields"]:
+        for key, _label_kljuc, tip in tab_def["fields"]:
             tekst = inputs[key].text.strip()
             if tip == "int":
                 data[key] = int(tekst) if tekst else 0
@@ -705,6 +726,7 @@ class DatabaseScreen(Screen):
         return data
 
     def open_add_record_popup(self, tabela, vehicle_id, parent_popup, refresh_parent):
+        jezik = _jezik()
         valuta_stanje = {}
         content, inputs = self._build_form(tabela, valuta_stanje=valuta_stanje)
         error_label = Label(text="", size_hint_y=None, height=dp(24), color=(1, 0.4, 0.4, 1))
@@ -716,7 +738,7 @@ class DatabaseScreen(Screen):
         outer.add_widget(scroll_wrap)
 
         popup = Popup(
-            title="Novi zapis", content=outer, size_hint=(0.9, 0.85),
+            title=prevedi("zapisi_novi_zapis", jezik), content=outer, size_hint=(0.9, 0.85),
             overlay_color=(0, 0, 0, 0.85), auto_dismiss=False,
         )
 
@@ -737,9 +759,9 @@ class DatabaseScreen(Screen):
             refresh_parent()
 
         btn_row = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
-        save_btn = PrimaryButton(text="Sacuvaj")
+        save_btn = PrimaryButton(text=prevedi("zapisi_sacuvaj", jezik))
         save_btn.bind(on_release=save)
-        cancel_btn = SecondaryButton(text="Otkazi")
+        cancel_btn = SecondaryButton(text=prevedi("zapisi_otkazi", jezik))
         cancel_btn.bind(on_release=popup.dismiss)
         btn_row.add_widget(save_btn)
         btn_row.add_widget(cancel_btn)
@@ -748,6 +770,7 @@ class DatabaseScreen(Screen):
         popup.open()
 
     def open_edit_record_popup(self, tabela, record_id, vehicle_id, parent_popup, refresh_parent):
+        jezik = _jezik()
         red = db.get_by_id(tabela, record_id)
         if red is None:
             return
@@ -763,7 +786,7 @@ class DatabaseScreen(Screen):
         outer.add_widget(scroll_wrap)
 
         popup = Popup(
-            title="Izmeni zapis", content=outer, size_hint=(0.9, 0.85),
+            title=prevedi("zapisi_izmeni_zapis", jezik), content=outer, size_hint=(0.9, 0.85),
             overlay_color=(0, 0, 0, 0.85), auto_dismiss=False,
         )
 
@@ -784,22 +807,22 @@ class DatabaseScreen(Screen):
         def delete(instance):
             if not delete_state["confirm"]:
                 delete_state["confirm"] = True
-                instance.text = "Potvrdi brisanje"
+                instance.text = prevedi("zapisi_potvrdi_brisanje", jezik)
                 return
             db.delete(tabela, record_id)
             popup.dismiss()
             refresh_parent()
 
         btn_row = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
-        save_btn = PrimaryButton(text="Sacuvaj")
+        save_btn = PrimaryButton(text=prevedi("zapisi_sacuvaj", jezik))
         save_btn.bind(on_release=save)
-        cancel_btn = SecondaryButton(text="Otkazi")
+        cancel_btn = SecondaryButton(text=prevedi("zapisi_otkazi", jezik))
         cancel_btn.bind(on_release=popup.dismiss)
         btn_row.add_widget(save_btn)
         btn_row.add_widget(cancel_btn)
         outer.add_widget(btn_row)
 
-        delete_btn = DangerButton(text="Obrisi zapis", size_hint_y=None, height=dp(44))
+        delete_btn = DangerButton(text=prevedi("zapisi_obrisi_zapis", jezik), size_hint_y=None, height=dp(44))
         delete_btn.bind(on_release=delete)
         outer.add_widget(delete_btn)
 
