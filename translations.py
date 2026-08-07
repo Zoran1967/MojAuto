@@ -5,8 +5,8 @@ Centralni recnik prevoda za MojAuto aplikaciju.
 Jezici: sr (srpski), en (engleski), de (nemacki), sk (slovacki),
 uk (ukrajinski), it (italijanski), fr (francuski), bg (bugarski).
 
-Postepeno se dopunjuje - trenutno sadrzi pocetni ekran, ekran Vozila,
-ekran Zapisi i ekran Istorija.
+Sadrzi pocetni ekran, ekran Vozila, ekran Zapisi, ekran Istorija
+i ekran Podesavanja.
 """
 
 PREVODI = {
@@ -505,6 +505,77 @@ PREVODI = {
     "istorija_naslov_podsetnik": {
         "sr": "Podsetnik", "en": "Reminder", "de": "Erinnerung", "sk": "Pripomienka",
         "uk": "Нагадування", "it": "Promemoria", "fr": "Rappel", "bg": "Напомняне",
+    },
+
+    # ---------- Ekran Podesavanja ----------
+    "podesavanja_naslov": {
+        "sr": "Podesavanja", "en": "Settings", "de": "Einstellungen", "sk": "Nastavenia",
+        "uk": "Налаштування", "it": "Impostazioni", "fr": "Parametres", "bg": "Настройки",
+    },
+    "podesavanja_tema_btn": {
+        "sr": "Tema (boja dugmadi)", "en": "Theme (button color)", "de": "Design (Schaltflachenfarbe)",
+        "sk": "Motiv (farba tlacidiel)", "uk": "Тема (колір кнопок)", "it": "Tema (colore pulsanti)",
+        "fr": "Theme (couleur des boutons)", "bg": "Тема (цвят на бутоните)",
+    },
+    "podesavanja_pozadina_btn": {
+        "sr": "Boja pozadine ekrana", "en": "Screen background color", "de": "Bildschirmhintergrundfarbe",
+        "sk": "Farba pozadia obrazovky", "uk": "Колір фону екрана", "it": "Colore sfondo schermo",
+        "fr": "Couleur de fond de l'ecran", "bg": "Цвят на фона на екрана",
+    },
+    "podesavanja_tekst_btn": {
+        "sr": "Boja teksta u poljima", "en": "Input field text color", "de": "Textfarbe der Eingabefelder",
+        "sk": "Farba textu v poliach", "uk": "Колір тексту в полях", "it": "Colore testo dei campi",
+        "fr": "Couleur du texte des champs", "bg": "Цвят на текста в полетата",
+    },
+    "podesavanja_kurs_btn": {
+        "sr": "Kurs", "en": "Exchange rate", "de": "Wechselkurs", "sk": "Kurz",
+        "uk": "Курс", "it": "Tasso di cambio", "fr": "Taux de change", "bg": "Валутен курс",
+    },
+    "podesavanja_tema_naslov": {
+        "sr": "Tema", "en": "Theme", "de": "Design", "sk": "Motiv",
+        "uk": "Тема", "it": "Tema", "fr": "Theme", "bg": "Тема",
+    },
+    "podesavanja_pozadina_naslov": {
+        "sr": "Boja pozadine", "en": "Background color", "de": "Hintergrundfarbe", "sk": "Farba pozadia",
+        "uk": "Колір фону", "it": "Colore di sfondo", "fr": "Couleur de fond", "bg": "Цвят на фона",
+    },
+    "podesavanja_tekst_naslov": {
+        "sr": "Boja teksta u poljima", "en": "Input field text color", "de": "Textfarbe der Eingabefelder",
+        "sk": "Farba textu v poliach", "uk": "Колір тексту в полях", "it": "Colore testo dei campi",
+        "fr": "Couleur du texte des champs", "bg": "Цвят на текста в полетата",
+    },
+    "podesavanja_kurs_naslov": {
+        "sr": "Kurs", "en": "Exchange rate", "de": "Wechselkurs", "sk": "Kurz",
+        "uk": "Курс", "it": "Tasso di cambio", "fr": "Taux de change", "bg": "Валутен курс",
+    },
+    "podesavanja_aktivno": {
+        "sr": "(aktivno)", "en": "(active)", "de": "(aktiv)", "sk": "(aktivne)",
+        "uk": "(активний)", "it": "(attivo)", "fr": "(actif)", "bg": "(активен)",
+    },
+    "podesavanja_boja_zauzeta": {
+        "sr": "Ta boja je vec zauzeta drugde.", "en": "That color is already used elsewhere.",
+        "de": "Diese Farbe wird bereits an anderer Stelle verwendet.", "sk": "Tato farba sa uz pouziva inde.",
+        "uk": "Цей колір вже використовується деінде.", "it": "Questo colore e gia usato altrove.",
+        "fr": "Cette couleur est deja utilisee ailleurs.", "bg": "Този цвят вече се използва другаде.",
+    },
+    "podesavanja_zatvori": {
+        "sr": "Zatvori", "en": "Close", "de": "Schliessen", "sk": "Zatvorit",
+        "uk": "Закрити", "it": "Chiudi", "fr": "Fermer", "bg": "Затвори",
+    },
+    "podesavanja_kurs_info": {
+        "sr": "Ovaj kurs se koristi samo kad rucno zatrazis prikaz u drugoj valuti (npr. u pregledu Troskova). Svaka stavka i dalje cuva svoju valutu onako kako je uneta.",
+        "en": "This rate is used only when you manually request a display in another currency (e.g. in the Expenses overview). Each item still keeps its own currency as entered.",
+        "de": "Dieser Kurs wird nur verwendet, wenn Sie manuell eine Anzeige in einer anderen Wahrung anfordern (z.B. in der Ausgabenubersicht). Jeder Eintrag behalt weiterhin seine eigene, eingegebene Wahrung.",
+        "sk": "Tento kurz sa pouziva iba vtedy, ked rucne poziadate o zobrazenie v inej mene (napr. v prehlade Nakladov). Kazda polozka si stale zachovava svoju vlastnu zadanu menu.",
+        "uk": "Цей курс використовується лише коли ви вручну запитуєте відображення в іншій валюті (напр. в огляді Витрат). Кожен запис зберігає свою власну введену валюту.",
+        "it": "Questo tasso viene usato solo quando richiedi manualmente la visualizzazione in un'altra valuta (es. nella panoramica Spese). Ogni voce mantiene comunque la propria valuta cosi come inserita.",
+        "fr": "Ce taux n'est utilise que lorsque vous demandez manuellement un affichage dans une autre devise (par ex. dans l'apercu des Depenses). Chaque element conserve sa propre devise telle que saisie.",
+        "bg": "Този курс се използва само когато ръчно поискате показване в друга валута (напр. в прегледа на Разходите). Всеки запис запазва своята въведена валута.",
+    },
+    "podesavanja_kurs_label": {
+        "sr": "Kurs (1 EUR = ? RSD)", "en": "Rate (1 EUR = ? RSD)", "de": "Kurs (1 EUR = ? RSD)",
+        "sk": "Kurz (1 EUR = ? RSD)", "uk": "Курс (1 EUR = ? RSD)", "it": "Tasso (1 EUR = ? RSD)",
+        "fr": "Taux (1 EUR = ? RSD)", "bg": "Курс (1 EUR = ? RSD)",
     },
 }
 
