@@ -5,9 +5,8 @@ Centralni recnik prevoda za MojAuto aplikaciju.
 Jezici: sr (srpski), en (engleski), de (nemacki), sk (slovacki),
 uk (ukrajinski), it (italijanski), fr (francuski), bg (bugarski).
 
-Postepeno se dopunjuje - trenutno sadrzi pocetni ekran, ekran Vozila
-i ekran Zapisi (Gorivo/Servisi/Troskovi/Gume/Registracija/Osiguranje/
-Akumulator/Kvarovi/Dokumenta/Podsetnici/PDF).
+Postepeno se dopunjuje - trenutno sadrzi pocetni ekran, ekran Vozila,
+ekran Zapisi i ekran Istorija.
 """
 
 PREVODI = {
@@ -441,6 +440,71 @@ PREVODI = {
         "sr": "Kilometraza isteka", "en": "Mileage at expiry", "de": "Kilometerstand bei Ablauf",
         "sk": "Najazdene km pri konci platnosti", "uk": "Пробіг закінчення", "it": "Chilometraggio alla scadenza",
         "fr": "Kilometrage a l'expiration", "bg": "Пробег при изтичане",
+    },
+
+    # ---------- Ekran Istorija ----------
+    "istorija_naslov": {
+        "sr": "Istorija svih zapisa", "en": "History of all records", "de": "Verlauf aller Eintrage",
+        "sk": "Historia vsetkych zaznamov", "uk": "Історія всіх записів", "it": "Cronologia di tutti i registri",
+        "fr": "Historique de tous les enregistrements", "bg": "История на всички записи",
+    },
+    "istorija_zapisa_broj": {
+        "sr": "zapisa", "en": "records", "de": "Eintrage", "sk": "zaznamov",
+        "uk": "записів", "it": "registri", "fr": "enregistrements", "bg": "записа",
+    },
+    "istorija_svi_zapisi": {
+        "sr": "Svi zapisi vozila", "en": "All vehicle records", "de": "Alle Fahrzeugeintrage",
+        "sk": "Vsetky zaznamy vozidla", "uk": "Всі записи транспорту", "it": "Tutti i registri del veicolo",
+        "fr": "Tous les enregistrements du vehicule", "bg": "Всички записи за превозното средство",
+    },
+    "istorija_detalji_zapisa": {
+        "sr": "Detalji zapisa", "en": "Record details", "de": "Eintragsdetails", "sk": "Detaily zaznamu",
+        "uk": "Деталі запису", "it": "Dettagli del registro", "fr": "Details de l'enregistrement",
+        "bg": "Детайли на записа",
+    },
+    "istorija_nazad": {
+        "sr": "Nazad", "en": "Back", "de": "Zuruck", "sk": "Spat",
+        "uk": "Назад", "it": "Indietro", "fr": "Retour", "bg": "Назад",
+    },
+    "istorija_naslov_gorivo": {
+        "sr": "Gorivo", "en": "Fuel", "de": "Kraftstoff", "sk": "Palivo",
+        "uk": "Паливо", "it": "Carburante", "fr": "Carburant", "bg": "Гориво",
+    },
+    "istorija_naslov_servis": {
+        "sr": "Servis", "en": "Service", "de": "Wartung", "sk": "Servis",
+        "uk": "Сервіс", "it": "Manutenzione", "fr": "Entretien", "bg": "Сервиз",
+    },
+    "istorija_naslov_trosak": {
+        "sr": "Trosak", "en": "Expense", "de": "Ausgabe", "sk": "Naklad",
+        "uk": "Витрата", "it": "Spesa", "fr": "Depense", "bg": "Разход",
+    },
+    "istorija_naslov_gume": {
+        "sr": "Gume", "en": "Tires", "de": "Reifen", "sk": "Pneumatiky",
+        "uk": "Шини", "it": "Pneumatici", "fr": "Pneus", "bg": "Гуми",
+    },
+    "istorija_naslov_registracija": {
+        "sr": "Registracija", "en": "Registration", "de": "Zulassung", "sk": "Registracia",
+        "uk": "Реєстрація", "it": "Immatricolazione", "fr": "Immatriculation", "bg": "Регистрация",
+    },
+    "istorija_naslov_osiguranje": {
+        "sr": "Osiguranje", "en": "Insurance", "de": "Versicherung", "sk": "Poistenie",
+        "uk": "Страхування", "it": "Assicurazione", "fr": "Assurance", "bg": "Застраховка",
+    },
+    "istorija_naslov_akumulator": {
+        "sr": "Akumulator", "en": "Battery", "de": "Batterie", "sk": "Akumulator",
+        "uk": "Акумулятор", "it": "Batteria", "fr": "Batterie", "bg": "Акумулатор",
+    },
+    "istorija_naslov_kvar": {
+        "sr": "Kvar", "en": "Fault", "de": "Defekt", "sk": "Porucha",
+        "uk": "Несправність", "it": "Guasto", "fr": "Panne", "bg": "Повреда",
+    },
+    "istorija_naslov_dokument": {
+        "sr": "Dokument", "en": "Document", "de": "Dokument", "sk": "Dokument",
+        "uk": "Документ", "it": "Documento", "fr": "Document", "bg": "Документ",
+    },
+    "istorija_naslov_podsetnik": {
+        "sr": "Podsetnik", "en": "Reminder", "de": "Erinnerung", "sk": "Pripomienka",
+        "uk": "Нагадування", "it": "Promemoria", "fr": "Rappel", "bg": "Напомняне",
     },
 }
 
