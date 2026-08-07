@@ -7,6 +7,11 @@ from kivy.metrics import dp
 
 from database import db
 from widgets import SecondaryButton, DangerButton
+from translations import prevedi
+
+
+def _jezik():
+    return db.get_setting("jezik", "sr")
 
 
 SVE_TABELE = [
@@ -27,17 +32,17 @@ DATUM_POLJE = {
     "podsetnici": "datum_isteka",
 }
 
-NASLOVI = {
-    "gorivo": "Gorivo",
-    "servisi": "Servis",
-    "troskovi": "Trosak",
-    "gume": "Gume",
-    "registracija": "Registracija",
-    "osiguranje": "Osiguranje",
-    "akumulator": "Akumulator",
-    "kvarovi": "Kvar",
-    "dokumenti": "Dokument",
-    "podsetnici": "Podsetnik",
+NASLOVI_KLJUCEVI = {
+    "gorivo": "istorija_naslov_gorivo",
+    "servisi": "istorija_naslov_servis",
+    "troskovi": "istorija_naslov_trosak",
+    "gume": "istorija_naslov_gume",
+    "registracija": "istorija_naslov_registracija",
+    "osiguranje": "istorija_naslov_osiguranje",
+    "akumulator": "istorija_naslov_akumulator",
+    "kvarovi": "istorija_naslov_kvar",
+    "dokumenti": "istorija_naslov_dokument",
+    "podsetnici": "istorija_naslov_podsetnik",
 }
 
 NOVCANA_POLJA = {
@@ -52,8 +57,8 @@ def _novcani_prikaz(vrednost, valuta):
     return f"{vrednost:.2f} {valuta or 'RSD'}"
 
 
-def _kratak_opis(tabela, red):
-    naslov = NASLOVI[tabela]
+def _kratak_opis(tabela, red, jezik):
+    naslov = prevedi(NASLOVI_KLJUCEVI[tabela], jezik)
     datum = red[DATUM_POLJE[tabela]] or "-"
     valuta = red["valuta"] if "valuta" in red.keys() else None
 
@@ -90,13 +95,16 @@ class HistoryScreen(Screen):
     akumulator, kvarovi, dokumenta, podsetnici), sortirano po datumu.
     Svaka novcana vrednost se prikazuje u SVOJOJ sacuvanoj valuti
     (bez automatske konverzije - valuta se bira prilikom unosa).
+    Tekstovi se prevode preko translations.prevedi().
     """
 
     def on_pre_enter(self, *args):
-        self.ids.title_label.text = "Istorija svih zapisa"
+        jezik = _jezik()
+        self.ids.title_label.text = prevedi("istorija_naslov", jezik)
         self.load_history()
 
     def load_history(self):
+        jezik = _jezik()
         box = self.ids.history_box
         box.clear_widgets()
         vozila = db.get_all("vozila", order_by="marka")
@@ -104,7 +112,7 @@ class HistoryScreen(Screen):
         if not vozila:
             box.add_widget(
                 Label(
-                    text="Nema dodatih vozila.",
+                    text=prevedi("vozila_nema", jezik),
                     size_hint_y=None, height=dp(60), color=(0.7, 0.7, 0.7, 1),
                 )
             )
@@ -115,7 +123,7 @@ class HistoryScreen(Screen):
                 len(db.get_by_vehicle(tabela, vozilo["id"])) for tabela in SVE_TABELE
             )
             btn = SecondaryButton(
-                text=f"{vozilo['marka']} {vozilo['model']} ({broj_zapisa} zapisa)",
+                text=f"{vozilo['marka']} {vozilo['model']} ({broj_zapisa} {prevedi('istorija_zapisa_broj', jezik)})",
                 size_hint_y=None, height=dp(52), font_size="16sp",
             )
             btn.bind(
@@ -127,6 +135,7 @@ class HistoryScreen(Screen):
     # ---------- Nivo 1: svi zapisi jednog vozila (sve kategorije) ----------
 
     def open_vehicle_history(self, vehicle_id, naziv_vozila):
+        jezik = _jezik()
         content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
         content.add_widget(
             Label(text=naziv_vozila, bold=True, font_size="18sp",
@@ -140,7 +149,7 @@ class HistoryScreen(Screen):
         content.add_widget(scroll)
 
         popup = Popup(
-            title="Svi zapisi vozila", content=content, size_hint=(0.92, 0.85),
+            title=prevedi("istorija_svi_zapisi", jezik), content=content, size_hint=(0.92, 0.85),
             overlay_color=(0, 0, 0, 0.85),
         )
 
@@ -161,7 +170,7 @@ class HistoryScreen(Screen):
 
             for tabela, red in svi:
                 btn = SecondaryButton(
-                    text=_kratak_opis(tabela, red),
+                    text=_kratak_opis(tabela, red, jezik),
                     size_hint_y=None, height=dp(56), halign="center",
                 )
                 btn.bind(
@@ -170,7 +179,7 @@ class HistoryScreen(Screen):
                 )
                 records_box.add_widget(btn)
 
-        close_btn = SecondaryButton(text="Zatvori", size_hint_y=None, height=dp(48))
+        close_btn = SecondaryButton(text=prevedi("zapisi_zatvori", jezik), size_hint_y=None, height=dp(48))
         close_btn.bind(on_release=popup.dismiss)
         content.add_widget(close_btn)
 
@@ -180,6 +189,7 @@ class HistoryScreen(Screen):
     # ---------- Nivo 2: detalji jednog zapisa (generieno, sve kolone) ----------
 
     def open_record_detail(self, tabela, record_id, parent_popup, refresh_parent):
+        jezik = _jezik()
         red = db.get_by_id(tabela, record_id)
         if red is None:
             return
@@ -190,7 +200,7 @@ class HistoryScreen(Screen):
         content.bind(minimum_height=content.setter("height"))
 
         content.add_widget(
-            Label(text=NASLOVI[tabela], bold=True, font_size="16sp",
+            Label(text=prevedi(NASLOVI_KLJUCEVI[tabela], jezik), bold=True, font_size="16sp",
                   size_hint_y=None, height=dp(28))
         )
 
@@ -216,7 +226,7 @@ class HistoryScreen(Screen):
         outer.add_widget(scroll)
 
         detail_popup = Popup(
-            title="Detalji zapisa", content=outer, size_hint=(0.9, 0.75),
+            title=prevedi("istorija_detalji_zapisa", jezik), content=outer, size_hint=(0.9, 0.75),
             overlay_color=(0, 0, 0, 0.85),
         )
 
@@ -225,16 +235,16 @@ class HistoryScreen(Screen):
         def delete(instance):
             if not delete_state["confirm"]:
                 delete_state["confirm"] = True
-                instance.text = "Potvrdi brisanje"
+                instance.text = prevedi("zapisi_potvrdi_brisanje", jezik)
                 return
             db.delete(tabela, record_id)
             detail_popup.dismiss()
             refresh_parent()
 
         btn_row = BoxLayout(size_hint_y=None, height=dp(48), spacing=dp(6))
-        back_btn = SecondaryButton(text="Nazad")
+        back_btn = SecondaryButton(text=prevedi("istorija_nazad", jezik))
         back_btn.bind(on_release=detail_popup.dismiss)
-        delete_btn = DangerButton(text="Obrisi zapis")
+        delete_btn = DangerButton(text=prevedi("zapisi_obrisi_zapis", jezik))
         delete_btn.bind(on_release=delete)
         btn_row.add_widget(back_btn)
         btn_row.add_widget(delete_btn)
