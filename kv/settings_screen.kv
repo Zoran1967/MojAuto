@@ -24,24 +24,28 @@
                 padding: [0, dp(10), 0, 0]
 
                 PrimaryButton:
+                    id: tema_btn
                     text: "Tema (boja dugmadi)"
                     size_hint_y: None
                     height: dp(54)
                     on_release: root.open_theme_popup()
 
                 PrimaryButton:
+                    id: bg_btn
                     text: "Boja pozadine ekrana"
                     size_hint_y: None
                     height: dp(54)
                     on_release: root.open_bg_popup()
 
                 PrimaryButton:
+                    id: tekst_btn
                     text: "Boja teksta u poljima"
                     size_hint_y: None
                     height: dp(54)
                     on_release: root.open_input_text_popup()
 
                 PrimaryButton:
+                    id: kurs_btn
                     text: "Valuta i kurs"
                     size_hint_y: None
                     height: dp(54)
