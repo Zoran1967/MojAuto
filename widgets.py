@@ -7,6 +7,8 @@ Podesavanjima.
 from kivy.uix.button import Button
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.textinput import TextInput
+from kivy.uix.behaviors import ButtonBehavior
+from kivy.properties import StringProperty
 from kivy.lang import Builder
 Builder.load_string("""
 #:import dp kivy.metrics.dp
@@ -99,6 +101,34 @@ Builder.load_string("""
         Line:
             rounded_rectangle: (self.x, self.y, self.width, self.height, dp(10))
             width: 1.2
+<BackButton>:
+    orientation: "horizontal"
+    padding: [dp(14), 0, dp(10), 0]
+    spacing: dp(6)
+    canvas.before:
+        Color:
+            rgba: (0.95, 0.55, 0.15, 1) if self.state == "normal" else (0.85, 0.45, 0.1, 1)
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [dp(25)]
+        Color:
+            rgba: 1, 1, 1, 1
+        Line:
+            rounded_rectangle: (self.x, self.y, self.width, self.height, dp(25))
+            width: 1.5
+    Label:
+        text: "<"
+        font_size: "22sp"
+        bold: True
+        color: 1, 1, 1, 1
+        size_hint_x: None
+        width: dp(18)
+    Label:
+        text: root.text
+        font_size: "16sp"
+        bold: True
+        color: 1, 1, 1, 1
 """)
 class PrimaryButton(Button):
     pass
@@ -110,3 +140,8 @@ class Card(BoxLayout):
     pass
 class StyledTextInput(TextInput):
     pass
+class BackButton(ButtonBehavior, BoxLayout):
+    """Dugme 'Nazad' istog oblika kao nazad_btn.png (narandzasta
+    zaobljena pilula sa strelicom), ali tekst je prevodiv - ne zavisi
+    od slike koja ima fiksan tekst ubacen u nju."""
+    text = StringProperty("Nazad")
