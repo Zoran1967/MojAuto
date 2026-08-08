@@ -1,118 +1,60 @@
 #:import dp kivy.metrics.dp
-<IconHomeButton@ButtonBehavior+BoxLayout>:
-    icon_source: ""
-    label_text: ""
-    orientation: "vertical"
-    padding: dp(6)
-    spacing: dp(2)
-    canvas.before:
-        Color:
-            rgba: 0.06, 0.06, 0.08, 1
-        RoundedRectangle:
-            pos: self.pos
-            size: self.size
-            radius: [dp(18)]
-    Image:
-        source: root.icon_source
-        allow_stretch: True
-        keep_ratio: True
-        size_hint_y: 0.72
-    Label:
-        text: root.label_text
-        font_size: "14sp"
-        bold: True
-        halign: "center"
-        valign: "middle"
-        text_size: self.width, None
-        size_hint_y: 0.28
-<RoundedImageBox@Widget>:
-    canvas.before:
-        StencilPush
-        RoundedRectangle:
-            pos: self.pos
-            size: self.size
-            radius: [dp(28)]
-        StencilUse
-    canvas.after:
-        StencilUnUse
-        RoundedRectangle:
-            pos: self.pos
-            size: self.size
-            radius: [dp(28)]
-        StencilPop
-<LanguagePill@ButtonBehavior+BoxLayout>:
-    orientation: "vertical"
-    padding: dp(6)
-    spacing: dp(2)
-    canvas.before:
-        Color:
-            rgba: 0.15, 0.15, 0.18, 0.92
-        RoundedRectangle:
-            pos: self.pos
-            size: self.size
-            radius: [dp(14)]
-    Image:
-        source: app.assets_dir + "globe_icon.png"
-        allow_stretch: True
-        keep_ratio: True
-        size_hint_y: 0.65
-    Label:
-        text: "LANGUAGE"
-        font_size: "11sp"
-        bold: True
-        size_hint_y: 0.35
-<HomeScreen>:
-    canvas.before:
-        Color:
-            rgba: 0.06, 0.06, 0.08, 1
-        Rectangle:
-            pos: self.pos
-            size: self.size
-    BoxLayout:
-        orientation: "vertical"
-        padding: dp(20)
-        spacing: dp(14)
-        Label:
-            text: "MojAuto"
-            font_size: "28sp"
-            bold: True
-            size_hint_y: None
-            height: dp(50)
-        GridLayout:
-            cols: 2
-            rows: 2
-            spacing: dp(12)
-            size_hint_y: 0.55
-            IconHomeButton:
-                icon_source: app.assets_dir + "baza.png"
-                label_text: root.txt_database
-                on_release: root.go_to_database()
-            IconHomeButton:
-                icon_source: app.assets_dir + "istorija.png"
-                label_text: root.txt_history
-                on_release: root.go_to_history()
-            IconHomeButton:
-                icon_source: app.assets_dir + "nova_lista.png"
-                label_text: root.txt_new_list
-                on_release: root.go_to_new_list()
-            IconHomeButton:
-                icon_source: app.assets_dir + "podesavanja.png"
-                label_text: root.txt_settings
-                on_release: root.go_to_settings()
-        FloatLayout:
-            size_hint_y: 0.45
-            RoundedImageBox:
-                id: cart_box
-                size_hint: 1, 1
-                pos_hint: {"center_x": 0.5, "center_y": 0.5}
-                Image:
-                    source: app.assets_dir + "icon.png"
-                    allow_stretch: True
-                    keep_ratio: True
-                    pos: cart_box.pos
-                    size: cart_box.size
-            LanguagePill:
-                size_hint: None, None
-                size: dp(64), dp(64)
-                pos_hint: {"right": 0.98, "y": 0.02}
-                on_release: root.open_language_picker()
+<SettingsScreen>:
+    FloatLayout:
+        BoxLayout:
+            orientation: "vertical"
+            padding: [20, 20, 20, dp(80)]
+            spacing: 15
+            size_hint: 1, 1
+            pos_hint: {"x": 0, "y": 0}
+
+            Label:
+                id: title_label
+                text: "Podesavanja"
+                font_size: "20sp"
+                bold: True
+                size_hint_y: None
+                height: dp(36)
+
+            BoxLayout:
+                orientation: "vertical"
+                spacing: dp(14)
+                size_hint_y: None
+                height: self.minimum_height
+                padding: [0, dp(10), 0, 0]
+
+                PrimaryButton:
+                    id: tema_btn
+                    text: "Tema (boja dugmadi)"
+                    size_hint_y: None
+                    height: dp(54)
+                    on_release: root.open_theme_popup()
+
+                PrimaryButton:
+                    id: bg_btn
+                    text: "Boja pozadine ekrana"
+                    size_hint_y: None
+                    height: dp(54)
+                    on_release: root.open_bg_popup()
+
+                PrimaryButton:
+                    id: tekst_btn
+                    text: "Boja teksta u poljima"
+                    size_hint_y: None
+                    height: dp(54)
+                    on_release: root.open_input_text_popup()
+
+                PrimaryButton:
+                    id: kurs_btn
+                    text: "Valuta i kurs"
+                    size_hint_y: None
+                    height: dp(54)
+                    on_release: root.open_currency_popup()
+
+        BackButton:
+            id: back_btn
+            text: "Nazad"
+            size_hint: None, None
+            size: dp(120), dp(48)
+            pos_hint: {"x": 0.03, "y": 0.03}
+            on_release: root.go_back()
