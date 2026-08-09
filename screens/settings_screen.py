@@ -28,6 +28,7 @@ class SettingsScreen(Screen):
         self.ids.bg_btn.text = prevedi("podesavanja_pozadina_btn", jezik)
         self.ids.tekst_btn.text = prevedi("podesavanja_tekst_btn", jezik)
         self.ids.kurs_btn.text = prevedi("podesavanja_kurs_btn", jezik)
+        self.ids.back_btn.text = prevedi("istorija_nazad", jezik)
 
     # ---------- Tema (boja dugmadi) ----------
 
