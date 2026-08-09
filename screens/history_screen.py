@@ -101,6 +101,7 @@ class HistoryScreen(Screen):
     def on_pre_enter(self, *args):
         jezik = _jezik()
         self.ids.title_label.text = prevedi("istorija_naslov", jezik)
+        self.ids.back_btn.text = prevedi("istorija_nazad", jezik)
         self.load_history()
 
     def load_history(self):
