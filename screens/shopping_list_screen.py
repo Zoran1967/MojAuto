@@ -55,6 +55,7 @@ class ShoppingListScreen(Screen):
         jezik = _jezik()
         self.ids.add_product_btn.text = prevedi("vozila_dodaj_btn", jezik)
         self.ids.grand_total_word.text = prevedi("vozila_ukupno", jezik)
+        self.ids.back_btn.text = prevedi("istorija_nazad", jezik)
         self.load_open_lists()
 
     # ---------- Prikaz liste vozila ----------
