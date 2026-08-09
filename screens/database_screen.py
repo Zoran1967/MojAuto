@@ -246,6 +246,7 @@ class DatabaseScreen(Screen):
         self.ids.tab_products.text = prevedi("kat_gorivo", jezik)
         self.ids.tab_stores.text = prevedi("kat_servisi", jezik)
         self.ids.tab_categories.text = prevedi("kat_troskovi", jezik)
+        self.ids.back_btn.text = prevedi("istorija_nazad", jezik)
         self._izabrano_vozilo_id = None
         self._build_extra_tabs()
         self._prikazi_listu_vozila()
