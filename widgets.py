@@ -6,7 +6,10 @@ Podesavanjima.
 """
 from kivy.uix.button import Button
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.textinput import TextInput
+from kivy.uix.behaviors import ButtonBehavior
+from kivy.properties import StringProperty
 from kivy.lang import Builder
 Builder.load_string("""
 #:import dp kivy.metrics.dp
@@ -99,6 +102,25 @@ Builder.load_string("""
         Line:
             rounded_rectangle: (self.x, self.y, self.width, self.height, dp(10))
             width: 1.2
+<BackButton>:
+    Image:
+        source: root.image_source
+        allow_stretch: True
+        keep_ratio: False
+        size: root.size
+        pos: root.pos
+    Label:
+        text: root.text
+        font_size: dp(15)
+        bold: True
+        color: 1, 1, 1, 1
+        size: root.size
+        pos: root.pos
+        halign: "center"
+        valign: "middle"
+        text_size: self.width - dp(16), self.height
+        shorten: True
+        shorten_from: "right"
 """)
 class PrimaryButton(Button):
     pass
@@ -110,3 +132,10 @@ class Card(BoxLayout):
     pass
 class StyledTextInput(TextInput):
     pass
+class BackButton(ButtonBehavior, FloatLayout):
+    """Dugme 'Nazad' - prazna slika pilule (nazad_prazno.png) sa
+    prevodivim tekstom preko nje, centriranim tako da ne izlazi van
+    okvira slike (text_size ogranicava sirinu, shorten=True je
+    sigurnosna mreza za predugacke prevode)."""
+    text = StringProperty("Nazad")
+    image_source = StringProperty("")
