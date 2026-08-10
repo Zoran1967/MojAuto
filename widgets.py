@@ -7,6 +7,9 @@ Podesavanjima.
 from kivy.uix.button import Button
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.textinput import TextInput
+from kivy.uix.image import Image
+from kivy.uix.behaviors import ButtonBehavior
+from kivy.properties import StringProperty
 from kivy.lang import Builder
 Builder.load_string("""
 #:import dp kivy.metrics.dp
@@ -99,6 +102,10 @@ Builder.load_string("""
         Line:
             rounded_rectangle: (self.x, self.y, self.width, self.height, dp(10))
             width: 1.2
+<BackButton>:
+    source: root.image_source
+    allow_stretch: True
+    keep_ratio: True
 """)
 class PrimaryButton(Button):
     pass
@@ -110,3 +117,5 @@ class Card(BoxLayout):
     pass
 class StyledTextInput(TextInput):
     pass
+class BackButton(ButtonBehavior, Image):
+    image_source = StringProperty("")
