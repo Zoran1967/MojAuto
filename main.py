@@ -148,6 +148,10 @@ def pokreni_glavnu_app():
 
         def on_start(self):
             Window.clearcolor = (1, 0, 1, 1)  # ROZE = Kivy je stvarno pokrenuo prikaz
+            Clock.schedule_once(self._test_otkucaj, 2)
+
+        def _test_otkucaj(self, dt):
+            Window.clearcolor = (1, 1, 1, 1)  # BELO = render petlja i dalje radi posle 2 sek
 
         def _on_bg_color_change(self, instance, value):
             Window.clearcolor = tuple(value)
