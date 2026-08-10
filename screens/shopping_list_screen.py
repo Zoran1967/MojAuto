@@ -6,7 +6,7 @@ from kivy.uix.label import Label
 from kivy.uix.scrollview import ScrollView
 from kivy.metrics import dp
 
-from widgets import PrimaryButton, SecondaryButton, DangerButton, StyledTextInput, Card
+from widgets import PrimaryButton, SecondaryButton, DangerButton, StyledTextInput, Card, BackButton
 from database import db
 from translations import prevedi
 
@@ -55,7 +55,6 @@ class ShoppingListScreen(Screen):
         jezik = _jezik()
         self.ids.add_product_btn.text = prevedi("vozila_dodaj_btn", jezik)
         self.ids.grand_total_word.text = prevedi("vozila_ukupno", jezik)
-        self.ids.back_btn.text = prevedi("istorija_nazad", jezik)
         self.load_open_lists()
 
     # ---------- Prikaz liste vozila ----------
