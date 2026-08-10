@@ -21,6 +21,28 @@ from kivy.uix.scrollview import ScrollView
 from kivy.graphics import Color, Rectangle
 
 
+def _putanja_za_crash_log():
+    try:
+        from android.storage import primary_external_storage_path
+        downloads = os.path.join(primary_external_storage_path(), "Download")
+    except ImportError:
+        downloads = os.path.join(os.path.expanduser("~"), "Downloads")
+    try:
+        os.makedirs(downloads, exist_ok=True)
+    except Exception:
+        pass
+    return os.path.join(downloads, "mojauto_crash.txt")
+
+
+def _upisi_gresku_u_fajl(greska_tekst):
+    try:
+        putanja = _putanja_za_crash_log()
+        with open(putanja, "w", encoding="utf-8") as f:
+            f.write(greska_tekst)
+    except Exception:
+        pass
+
+
 def _napravi_greska_sadrzaj(greska_tekst):
     content = BoxLayout(orientation="vertical", padding=10, spacing=10)
 
@@ -60,6 +82,7 @@ class CrashPopupHandler(ExceptionHandler):
     def handle_exception(self, inst):
         greska = traceback.format_exc()
         print(greska)
+        _upisi_gresku_u_fajl(greska)
 
         content = _napravi_greska_sadrzaj(greska)
         popup = Popup(title="Greska (kopiraj i posalji)", content=content, size_hint=(0.95, 0.95))
@@ -129,10 +152,12 @@ def pokreni_glavnu_app():
                 sm.add_widget(DatabaseScreen(name="database"))
                 sm.add_widget(SettingsScreen(name="settings"))
                 sm.current = "home"
+                _upisi_gresku_u_fajl("OK - build() zavrsen bez greske, ekrani ucitani.")
                 return sm
             except Exception:
                 greska = traceback.format_exc()
                 print(greska)
+                _upisi_gresku_u_fajl(greska)
                 return _napravi_greska_sadrzaj(greska)
 
         def _on_bg_color_change(self, instance, value):
@@ -147,6 +172,7 @@ if __name__ == "__main__":
     except Exception:
         greska = traceback.format_exc()
         print(greska)
+        _upisi_gresku_u_fajl(greska)
 
         class CrashApp(App):
             def build(self):
