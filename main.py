@@ -12,6 +12,7 @@ from kivy.lang import Builder
 from kivy.core.window import Window
 from kivy.utils import platform
 from kivy.properties import ObjectProperty
+from kivy.clock import Clock
 
 from kivy.base import ExceptionHandler, ExceptionManager
 from kivy.uix.popup import Popup
@@ -86,7 +87,7 @@ def pokreni_glavnu_app():
                 from theme import Theme
                 import widgets  # noqa: F401
 
-                Window.clearcolor = (1, 0.5, 0, 1)  # NARANDZASTO = osnovni moduli ucitani
+                Window.clearcolor = (1, 0.5, 0, 1)  # NARANDZASTO
 
                 from screens.home_screen import HomeScreen
                 from screens.shopping_list_screen import ShoppingListScreen
@@ -94,7 +95,7 @@ def pokreni_glavnu_app():
                 from screens.database_screen import DatabaseScreen
                 from screens.settings_screen import SettingsScreen
 
-                Window.clearcolor = (1, 1, 0, 1)  # ZUTO = ekrani (screens) ucitani
+                Window.clearcolor = (1, 1, 0, 1)  # ZUTO
 
                 db.init_db()
 
@@ -109,7 +110,7 @@ def pokreni_glavnu_app():
     foreground_color: app.theme.input_text_color
 """)
 
-                Window.clearcolor = (0, 1, 1, 1)  # CIJAN = kv fajlovi ucitani
+                Window.clearcolor = (0, 1, 1, 1)  # CIJAN
 
                 if platform not in ("android", "ios"):
                     Window.size = (400, 700)
@@ -137,13 +138,16 @@ def pokreni_glavnu_app():
                 sm.add_widget(SettingsScreen(name="settings"))
                 sm.current = "home"
 
-                Window.clearcolor = (0, 1, 0, 1)  # ZELENO = sve uspesno, ekrani dodati
+                Window.clearcolor = (0, 1, 0, 1)  # ZELENO = build() zavrsen uspesno
 
                 return sm
             except Exception:
                 greska = traceback.format_exc()
                 print(greska)
                 return _napravi_greska_sadrzaj(greska)
+
+        def on_start(self):
+            Window.clearcolor = (1, 0, 1, 1)  # ROZE = Kivy je stvarno pokrenuo prikaz
 
         def _on_bg_color_change(self, instance, value):
             Window.clearcolor = tuple(value)
