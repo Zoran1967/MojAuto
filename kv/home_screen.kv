@@ -1,60 +1,33 @@
 #:import dp kivy.metrics.dp
-<SettingsScreen>:
-    FloatLayout:
-        BoxLayout:
-            orientation: "vertical"
-            padding: [20, 20, 20, dp(80)]
-            spacing: 15
-            size_hint: 1, 1
-            pos_hint: {"x": 0, "y": 0}
-
-            Label:
-                id: title_label
-                text: "Podesavanja"
-                font_size: "20sp"
-                bold: True
-                size_hint_y: None
-                height: dp(36)
-
-            BoxLayout:
-                orientation: "vertical"
-                spacing: dp(14)
-                size_hint_y: None
-                height: self.minimum_height
-                padding: [0, dp(10), 0, 0]
-
-                PrimaryButton:
-                    id: tema_btn
-                    text: "Tema (boja dugmadi)"
-                    size_hint_y: None
-                    height: dp(54)
-                    on_release: root.open_theme_popup()
-
-                PrimaryButton:
-                    id: bg_btn
-                    text: "Boja pozadine ekrana"
-                    size_hint_y: None
-                    height: dp(54)
-                    on_release: root.open_bg_popup()
-
-                PrimaryButton:
-                    id: tekst_btn
-                    text: "Boja teksta u poljima"
-                    size_hint_y: None
-                    height: dp(54)
-                    on_release: root.open_input_text_popup()
-
-                PrimaryButton:
-                    id: kurs_btn
-                    text: "Valuta i kurs"
-                    size_hint_y: None
-                    height: dp(54)
-                    on_release: root.open_currency_popup()
-
-        BackButton:
-            id: back_btn
-            text: "Nazad"
-            size_hint: None, None
-            size: dp(120), dp(48)
-            pos_hint: {"x": 0.03, "y": 0.03}
-            on_release: root.go_back()
+<HomeScreen>:
+    canvas.before:
+        Color:
+            rgba: 0.06, 0.06, 0.08, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+    BoxLayout:
+        orientation: "vertical"
+        padding: dp(20)
+        spacing: dp(14)
+        Label:
+            text: "TEST - da li se ovo vidi?"
+            font_size: "28sp"
+            bold: True
+            color: 1, 1, 1, 1
+        Button:
+            text: root.txt_database
+            font_size: "20sp"
+            on_release: root.go_to_database()
+        Button:
+            text: root.txt_history
+            font_size: "20sp"
+            on_release: root.go_to_history()
+        Button:
+            text: root.txt_new_list
+            font_size: "20sp"
+            on_release: root.go_to_new_list()
+        Button:
+            text: root.txt_settings
+            font_size: "20sp"
+            on_release: root.go_to_settings()
