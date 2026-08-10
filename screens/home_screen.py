@@ -4,6 +4,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.scrollview import ScrollView
 from kivy.metrics import dp
 from kivy.properties import StringProperty
+from kivy.core.window import Window
 
 from database import db
 from widgets import PrimaryButton, SecondaryButton
@@ -33,7 +34,9 @@ class HomeScreen(Screen):
     txt_settings = StringProperty("Podesavanja")
 
     def on_pre_enter(self, *args):
+        Window.clearcolor = (0.5, 0, 0.5, 1)  # LJUBICASTO = on_pre_enter pocelo
         self.osvezi_tekstove()
+        Window.clearcolor = (0, 0, 0.5, 1)  # TAMNOPLAVO = osvezi_tekstove zavrsen
 
     def osvezi_tekstove(self):
         jezik = db.get_setting("jezik", "sr")
