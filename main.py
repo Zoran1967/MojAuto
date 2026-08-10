@@ -73,70 +73,67 @@ ExceptionManager.add_handler(CrashPopupHandler())
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
-class CrashApp(App):
-    def __init__(self, greska_tekst, **kwargs):
-        super().__init__(**kwargs)
-        self.greska_tekst = greska_tekst
-
-    def build(self):
-        return _napravi_greska_sadrzaj(self.greska_tekst)
-
-
 def pokreni_glavnu_app():
-    from screens.home_screen import HomeScreen
-    from screens.shopping_list_screen import ShoppingListScreen
-    from screens.history_screen import HistoryScreen
-    from screens.database_screen import DatabaseScreen
-    from screens.settings_screen import SettingsScreen
     from database import db
     from theme import Theme
     import widgets  # noqa: F401
-
-    db.init_db()
-
-    Builder.load_file(os.path.join(BASE_DIR, "kv", "home_screen.kv"))
-    Builder.load_file(os.path.join(BASE_DIR, "kv", "shopping_list_screen.kv"))
-    Builder.load_file(os.path.join(BASE_DIR, "kv", "history_screen.kv"))
-    Builder.load_file(os.path.join(BASE_DIR, "kv", "database_screen.kv"))
-    Builder.load_file(os.path.join(BASE_DIR, "kv", "settings_screen.kv"))
-
-    Builder.load_string("""
-<StyledTextInput>:
-    foreground_color: app.theme.input_text_color
-""")
 
     class ShoppingApp(App):
         theme = ObjectProperty(None)
         assets_dir = ObjectProperty(None)
 
         def build(self):
-            if platform not in ("android", "ios"):
-                Window.size = (400, 700)
+            try:
+                from screens.home_screen import HomeScreen
+                from screens.shopping_list_screen import ShoppingListScreen
+                from screens.history_screen import HistoryScreen
+                from screens.database_screen import DatabaseScreen
+                from screens.settings_screen import SettingsScreen
 
-            self.assets_dir = os.path.join(BASE_DIR, "assets") + os.sep
+                db.init_db()
 
-            self.theme = Theme()
+                Builder.load_file(os.path.join(BASE_DIR, "kv", "home_screen.kv"))
+                Builder.load_file(os.path.join(BASE_DIR, "kv", "shopping_list_screen.kv"))
+                Builder.load_file(os.path.join(BASE_DIR, "kv", "history_screen.kv"))
+                Builder.load_file(os.path.join(BASE_DIR, "kv", "database_screen.kv"))
+                Builder.load_file(os.path.join(BASE_DIR, "kv", "settings_screen.kv"))
 
-            sacuvana_tema = db.get_setting("tema", self.theme.name)
-            self.theme.set_theme(sacuvana_tema)
+                Builder.load_string("""
+<StyledTextInput>:
+    foreground_color: app.theme.input_text_color
+""")
 
-            sacuvana_bg = db.get_setting("bg_boja", self.theme.bg_name)
-            self.theme.set_bg_color(sacuvana_bg)
+                if platform not in ("android", "ios"):
+                    Window.size = (400, 700)
 
-            sacuvan_input_tekst = db.get_setting("input_boja", self.theme.input_text_name)
-            self.theme.set_input_text_color(sacuvan_input_tekst)
+                self.assets_dir = os.path.join(BASE_DIR, "assets") + os.sep
 
-            Window.clearcolor = tuple(self.theme.bg_color)
-            self.theme.bind(bg_color=self._on_bg_color_change)
+                self.theme = Theme()
 
-            sm = ScreenManager(transition=FadeTransition())
-            sm.add_widget(HomeScreen(name="home"))
-            sm.add_widget(ShoppingListScreen(name="shopping_list"))
-            sm.add_widget(HistoryScreen(name="history"))
-            sm.add_widget(DatabaseScreen(name="database"))
-            sm.add_widget(SettingsScreen(name="settings"))
-            sm.current = "home"
-            return sm
+                sacuvana_tema = db.get_setting("tema", self.theme.name)
+                self.theme.set_theme(sacuvana_tema)
+
+                sacuvana_bg = db.get_setting("bg_boja", self.theme.bg_name)
+                self.theme.set_bg_color(sacuvana_bg)
+
+                sacuvan_input_tekst = db.get_setting("input_boja", self.theme.input_text_name)
+                self.theme.set_input_text_color(sacuvan_input_tekst)
+
+                Window.clearcolor = tuple(self.theme.bg_color)
+                self.theme.bind(bg_color=self._on_bg_color_change)
+
+                sm = ScreenManager(transition=FadeTransition())
+                sm.add_widget(HomeScreen(name="home"))
+                sm.add_widget(ShoppingListScreen(name="shopping_list"))
+                sm.add_widget(HistoryScreen(name="history"))
+                sm.add_widget(DatabaseScreen(name="database"))
+                sm.add_widget(SettingsScreen(name="settings"))
+                sm.current = "home"
+                return sm
+            except Exception:
+                greska = traceback.format_exc()
+                print(greska)
+                return _napravi_greska_sadrzaj(greska)
 
         def _on_bg_color_change(self, instance, value):
             Window.clearcolor = tuple(value)
@@ -150,4 +147,9 @@ if __name__ == "__main__":
     except Exception:
         greska = traceback.format_exc()
         print(greska)
-        CrashApp(greska).run()
+
+        class CrashApp(App):
+            def build(self):
+                return _napravi_greska_sadrzaj(greska)
+
+        CrashApp().run()
