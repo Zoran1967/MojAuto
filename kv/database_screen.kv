@@ -12,13 +12,10 @@
                 font_size: "15sp"
                 size_hint_y: None
                 height: dp(36)
-            GridLayout:
-                cols: 4
-                spacing: dp(10)
+            BoxLayout:
                 size_hint_y: None
-                height: self.minimum_height
-                row_default_height: dp(84)
-                row_force_default: True
+                height: dp(64)
+                spacing: 6
                 IconTabButton:
                     id: tab_products
                     icon_source: app.assets_dir + "gorivo.png"
@@ -34,14 +31,17 @@
                     icon_source: app.assets_dir + "troskovi.png"
                     text: "Troskovi"
                     on_release: root.show_kategorije()
-            GridLayout:
-                id: extra_tabs_box
-                cols: 4
-                spacing: dp(10)
+            ScrollView:
                 size_hint_y: None
-                height: self.minimum_height
-                row_default_height: dp(84)
-                row_force_default: True
+                height: dp(96)
+                do_scroll_y: False
+                BoxLayout:
+                    id: extra_tabs_box
+                    orientation: "horizontal"
+                    size_hint_x: None
+                    width: self.minimum_width
+                    spacing: dp(6)
+                    height: dp(96)
             ScrollView:
                 BoxLayout:
                     id: database_box
@@ -49,10 +49,10 @@
                     size_hint_y: None
                     height: self.minimum_height
                     spacing: dp(4)
-        BackButton:
-            id: back_btn
-            image_source: "assets/nazad_prazno.png"
+        Button:
             size_hint: None, None
             size: dp(110), dp(50)
             pos_hint: {"x": 0.02, "y": 0.02}
+            background_normal: "assets/nazad_prazno.png"
+            background_down: "assets/nazad_prazno.png"
             on_release: root.go_back()
