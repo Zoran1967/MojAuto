@@ -13,7 +13,7 @@ icon.adaptive_background.filename = %(source.dir)s/assets/icon.png
 
 version = 0.1
 
-requirements = python3,kivy,camera4kivy,fpdf2,plyer
+requirements = python3,kivy,camera4kivy,fpdf2,fonttools,plyer
 
 orientation = portrait
 fullscreen = 0
