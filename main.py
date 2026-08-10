@@ -7,12 +7,11 @@ import os
 import traceback
 
 from kivy.app import App
-from kivy.uix.screenmanager import ScreenManager, FadeTransition
+from kivy.uix.screenmanager import ScreenManager
 from kivy.lang import Builder
 from kivy.core.window import Window
 from kivy.utils import platform
 from kivy.properties import ObjectProperty
-from kivy.clock import Clock
 
 from kivy.base import ExceptionHandler, ExceptionManager
 from kivy.uix.popup import Popup
@@ -75,27 +74,21 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def pokreni_glavnu_app():
+    from database import db
+    from theme import Theme
+    import widgets  # noqa: F401
+
     class ShoppingApp(App):
         theme = ObjectProperty(None)
         assets_dir = ObjectProperty(None)
 
         def build(self):
-            Window.clearcolor = (1, 0, 0, 1)  # CRVENO = build() je pocelo
-
             try:
-                from database import db
-                from theme import Theme
-                import widgets  # noqa: F401
-
-                Window.clearcolor = (1, 0.5, 0, 1)  # NARANDZASTO
-
                 from screens.home_screen import HomeScreen
                 from screens.shopping_list_screen import ShoppingListScreen
                 from screens.history_screen import HistoryScreen
                 from screens.database_screen import DatabaseScreen
                 from screens.settings_screen import SettingsScreen
-
-                Window.clearcolor = (1, 1, 0, 1)  # ZUTO
 
                 db.init_db()
 
@@ -109,8 +102,6 @@ def pokreni_glavnu_app():
 <StyledTextInput>:
     foreground_color: app.theme.input_text_color
 """)
-
-                Window.clearcolor = (0, 1, 1, 1)  # CIJAN
 
                 if platform not in ("android", "ios"):
                     Window.size = (400, 700)
@@ -128,30 +119,21 @@ def pokreni_glavnu_app():
                 sacuvan_input_tekst = db.get_setting("input_boja", self.theme.input_text_name)
                 self.theme.set_input_text_color(sacuvan_input_tekst)
 
+                Window.clearcolor = tuple(self.theme.bg_color)
                 self.theme.bind(bg_color=self._on_bg_color_change)
 
-                sm = ScreenManager(transition=FadeTransition())
+                sm = ScreenManager()
                 sm.add_widget(HomeScreen(name="home"))
                 sm.add_widget(ShoppingListScreen(name="shopping_list"))
                 sm.add_widget(HistoryScreen(name="history"))
                 sm.add_widget(DatabaseScreen(name="database"))
                 sm.add_widget(SettingsScreen(name="settings"))
                 sm.current = "home"
-
-                Window.clearcolor = (0, 1, 0, 1)  # ZELENO = build() zavrsen uspesno
-
                 return sm
             except Exception:
                 greska = traceback.format_exc()
                 print(greska)
                 return _napravi_greska_sadrzaj(greska)
-
-        def on_start(self):
-            Window.clearcolor = (1, 0, 1, 1)  # ROZE = Kivy je stvarno pokrenuo prikaz
-            Clock.schedule_once(self._test_otkucaj, 2)
-
-        def _test_otkucaj(self, dt):
-            Window.clearcolor = (1, 1, 1, 1)  # BELO = render petlja i dalje radi posle 2 sek
 
         def _on_bg_color_change(self, instance, value):
             Window.clearcolor = tuple(value)
