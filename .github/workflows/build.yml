@@ -29,6 +29,12 @@ jobs:
           pip install --upgrade pip
           pip install buildozer cython==0.29.33
 
+      - name: Cache debug keystore
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: mojauto-debug-keystore-v1
+
       - name: Build APK
         env:
           PIP_NO_BINARY: fonttools
