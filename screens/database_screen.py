@@ -267,6 +267,7 @@ class DatabaseScreen(Screen):
             btn = IconTabButton(
                 icon_source=assets_dir + icon_fajl,
                 text=prevedi(naslov_kljuc, jezik),
+                size_hint_x=None, width=dp(92),
             )
             btn.bind(on_release=lambda inst, t=tabela: self._otvori_kategoriju(t))
             box.add_widget(btn)
