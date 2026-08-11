@@ -7,13 +7,15 @@
             spacing: 10
             size_hint: 1, 1
             pos_hint: {"x": 0, "y": 0}
+
             BoxLayout:
                 size_hint_y: None
                 height: dp(30)
                 Label:
-                    text: "Vozila"
+                    text: "Shopping List"
                     font_size: "18sp"
                     bold: True
+
             ScrollView:
                 size_hint_y: 1
                 BoxLayout:
@@ -22,12 +24,14 @@
                     size_hint_y: None
                     height: self.minimum_height
                     spacing: dp(12)
+
             PrimaryButton:
                 id: add_product_btn
                 text: "+ Dodaj proizvod"
                 size_hint_y: None
                 height: dp(52)
                 on_release: root.add_item()
+
             BoxLayout:
                 size_hint_y: None
                 height: dp(40)
@@ -41,10 +45,12 @@
                     text: "0.00"
                     bold: True
                     font_size: "16sp"
-        BackButton:
+
+        Button:
             id: back_btn
-            image_source: "assets/nazad_prazno.png"
             size_hint: None, None
             size: dp(110), dp(48)
             pos_hint: {"x": 0.03, "y": 0.03}
+            background_normal: "assets/nazad_prazno.png"
+            background_down: "assets/nazad_prazno.png"
             on_release: root.go_back()
