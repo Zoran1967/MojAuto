@@ -25,6 +25,20 @@
         valign: "middle"
         text_size: self.width, None
         size_hint_y: 0.32
+<LanguageButton@ButtonBehavior+BoxLayout>:
+    orientation: "vertical"
+    size_hint: None, None
+    size: dp(52), dp(64)
+    Image:
+        source: app.assets_dir + "globe_icon.png"
+        allow_stretch: True
+        keep_ratio: True
+        size_hint_y: 0.7
+    Label:
+        text: "LANGUAGE"
+        font_size: "8sp"
+        bold: True
+        size_hint_y: 0.3
 <RoundedImageBox@Widget>:
     canvas.before:
         StencilPush
@@ -90,20 +104,6 @@
                     keep_ratio: True
                     pos: cart_box.pos
                     size: cart_box.size
-            ButtonBehavior:
-                BoxLayout:
-                    size_hint: None, None
-                    size: dp(52), dp(64)
-                    pos_hint: {"right": 0.98, "y": 0.02}
-                    orientation: "vertical"
-                    on_release: root.open_language_picker()
-                    Image:
-                        source: app.assets_dir + "globe_icon.png"
-                        allow_stretch: True
-                        keep_ratio: True
-                        size_hint_y: 0.7
-                    Label:
-                        text: "LANGUAGE"
-                        font_size: "8sp"
-                        bold: True
-                        size_hint_y: 0.3
+            LanguageButton:
+                pos_hint: {"right": 0.98, "y": 0.02}
+                on_release: root.open_language_picker()
