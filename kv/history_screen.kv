@@ -23,10 +23,11 @@
                     height: self.minimum_height
                     spacing: dp(10)
 
-        BackButton:
+        Button:
             id: back_btn
-            image_source: "assets/nazad_prazno.png"
             size_hint: None, None
             size: dp(110), dp(48)
             pos_hint: {"x": 0.03, "y": 0.03}
+            background_normal: "assets/nazad_prazno.png"
+            background_down: "assets/nazad_prazno.png"
             on_release: root.go_back()
