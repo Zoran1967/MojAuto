@@ -3,7 +3,7 @@
     icon_source: ""
     label_text: ""
     orientation: "vertical"
-    padding: dp(6)
+    padding: dp(4)
     spacing: dp(2)
     canvas.before:
         Color:
@@ -11,20 +11,35 @@
         RoundedRectangle:
             pos: self.pos
             size: self.size
-            radius: [dp(18)]
+            radius: [dp(14)]
     Image:
         source: root.icon_source
         allow_stretch: True
         keep_ratio: True
-        size_hint_y: 0.72
+        size_hint_y: 0.68
     Label:
         text: root.label_text
-        font_size: "14sp"
+        font_size: "12sp"
         bold: True
         halign: "center"
         valign: "middle"
         text_size: self.width, None
-        size_hint_y: 0.28
+        size_hint_y: 0.32
+<RoundedImageBox@Widget>:
+    canvas.before:
+        StencilPush
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [dp(28)]
+        StencilUse
+    canvas.after:
+        StencilUnUse
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [dp(28)]
+        StencilPop
 <HomeScreen>:
     canvas.before:
         Color:
@@ -38,15 +53,15 @@
         spacing: dp(14)
         Label:
             text: "MojAuto"
-            font_size: "28sp"
+            font_size: "26sp"
             bold: True
             size_hint_y: None
-            height: dp(50)
+            height: dp(44)
         GridLayout:
             cols: 2
             rows: 2
-            spacing: dp(12)
-            size_hint_y: 1
+            spacing: dp(10)
+            size_hint_y: 0.4
             IconHomeButton:
                 icon_source: app.assets_dir + "baza.png"
                 label_text: root.txt_database
@@ -63,3 +78,32 @@
                 icon_source: app.assets_dir + "podesavanja.png"
                 label_text: root.txt_settings
                 on_release: root.go_to_settings()
+        FloatLayout:
+            size_hint_y: 0.6
+            RoundedImageBox:
+                id: cart_box
+                size_hint: 1, 1
+                pos_hint: {"center_x": 0.5, "center_y": 0.5}
+                Image:
+                    source: app.assets_dir + "icon.png"
+                    allow_stretch: True
+                    keep_ratio: True
+                    pos: cart_box.pos
+                    size: cart_box.size
+            ButtonBehavior:
+                BoxLayout:
+                    size_hint: None, None
+                    size: dp(52), dp(64)
+                    pos_hint: {"right": 0.98, "y": 0.02}
+                    orientation: "vertical"
+                    on_release: root.open_language_picker()
+                    Image:
+                        source: app.assets_dir + "globe_icon.png"
+                        allow_stretch: True
+                        keep_ratio: True
+                        size_hint_y: 0.7
+                    Label:
+                        text: "LANGUAGE"
+                        font_size: "8sp"
+                        bold: True
+                        size_hint_y: 0.3
