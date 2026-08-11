@@ -31,17 +31,13 @@
                     icon_source: app.assets_dir + "troskovi.png"
                     text: "Troskovi"
                     on_release: root.show_kategorije()
-            ScrollView:
+            GridLayout:
+                id: extra_tabs_box
+                cols: 4
+                rows: 2
                 size_hint_y: None
-                height: dp(96)
-                do_scroll_y: False
-                BoxLayout:
-                    id: extra_tabs_box
-                    orientation: "horizontal"
-                    size_hint_x: None
-                    width: self.minimum_width
-                    spacing: dp(6)
-                    height: dp(96)
+                height: dp(180)
+                spacing: dp(6)
             ScrollView:
                 BoxLayout:
                     id: database_box
@@ -50,8 +46,6 @@
                     height: self.minimum_height
                     spacing: dp(4)
         Button:
-            id: back_btn
-            text: ""
             size_hint: None, None
             size: dp(110), dp(50)
             pos_hint: {"x": 0.02, "y": 0.02}
