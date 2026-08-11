@@ -1,4 +1,30 @@
 #:import dp kivy.metrics.dp
+<IconHomeButton@ButtonBehavior+BoxLayout>:
+    icon_source: ""
+    label_text: ""
+    orientation: "vertical"
+    padding: dp(6)
+    spacing: dp(2)
+    canvas.before:
+        Color:
+            rgba: 0.06, 0.06, 0.08, 1
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [dp(18)]
+    Image:
+        source: root.icon_source
+        allow_stretch: True
+        keep_ratio: True
+        size_hint_y: 0.72
+    Label:
+        text: root.label_text
+        font_size: "14sp"
+        bold: True
+        halign: "center"
+        valign: "middle"
+        text_size: self.width, None
+        size_hint_y: 0.28
 <HomeScreen>:
     canvas.before:
         Color:
@@ -11,23 +37,29 @@
         padding: dp(20)
         spacing: dp(14)
         Label:
-            text: "TEST - da li se ovo vidi?"
+            text: "MojAuto"
             font_size: "28sp"
             bold: True
-            color: 1, 1, 1, 1
-        Button:
-            text: root.txt_database
-            font_size: "20sp"
-            on_release: root.go_to_database()
-        Button:
-            text: root.txt_history
-            font_size: "20sp"
-            on_release: root.go_to_history()
-        Button:
-            text: root.txt_new_list
-            font_size: "20sp"
-            on_release: root.go_to_new_list()
-        Button:
-            text: root.txt_settings
-            font_size: "20sp"
-            on_release: root.go_to_settings()
+            size_hint_y: None
+            height: dp(50)
+        GridLayout:
+            cols: 2
+            rows: 2
+            spacing: dp(12)
+            size_hint_y: 1
+            IconHomeButton:
+                icon_source: app.assets_dir + "baza.png"
+                label_text: root.txt_database
+                on_release: root.go_to_database()
+            IconHomeButton:
+                icon_source: app.assets_dir + "istorija.png"
+                label_text: root.txt_history
+                on_release: root.go_to_history()
+            IconHomeButton:
+                icon_source: app.assets_dir + "nova_lista.png"
+                label_text: root.txt_new_list
+                on_release: root.go_to_new_list()
+            IconHomeButton:
+                icon_source: app.assets_dir + "podesavanja.png"
+                label_text: root.txt_settings
+                on_release: root.go_to_settings()
