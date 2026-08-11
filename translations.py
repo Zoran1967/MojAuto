@@ -577,6 +577,47 @@ PREVODI = {
         "sk": "Kurz (1 EUR = ? RSD)", "uk": "Курс (1 EUR = ? RSD)", "it": "Tasso (1 EUR = ? RSD)",
         "fr": "Taux (1 EUR = ? RSD)", "bg": "Курс (1 EUR = ? RSD)",
     },
+    "podesavanja_backup_btn": {
+        "sr": "Sacuvaj rezervnu kopiju", "en": "Save backup", "de": "Sicherung speichern",
+        "sk": "Ulozit zalohu", "uk": "Зберегти резервну копію", "it": "Salva backup",
+        "fr": "Enregistrer la sauvegarde", "bg": "Запази резервно копие",
+    },
+    "podesavanja_restore_btn": {
+        "sr": "Vrati rezervnu kopiju", "en": "Restore backup", "de": "Sicherung wiederherstellen",
+        "sk": "Obnovit zalohu", "uk": "Відновити резервну копію", "it": "Ripristina backup",
+        "fr": "Restaurer la sauvegarde", "bg": "Възстанови резервно копие",
+    },
+    "podesavanja_backup_sacuvan": {
+        "sr": "Rezervna kopija sacuvana: {putanja}", "en": "Backup saved: {putanja}",
+        "de": "Sicherung gespeichert: {putanja}", "sk": "Zaloha ulozena: {putanja}",
+        "uk": "Резервну копію збережено: {putanja}", "it": "Backup salvato: {putanja}",
+        "fr": "Sauvegarde enregistree: {putanja}", "bg": "Резервното копие е запазено: {putanja}",
+    },
+    "podesavanja_backup_vracen": {
+        "sr": "Podaci su uspesno vraceni. Ponovo otvori aplikaciju.",
+        "en": "Data restored successfully. Reopen the app.",
+        "de": "Daten erfolgreich wiederhergestellt. App erneut offnen.",
+        "sk": "Data boli uspesne obnovene. Znovu otvorte aplikaciu.",
+        "uk": "Дані успішно відновлено. Відкрийте застосунок знову.",
+        "it": "Dati ripristinati con successo. Riapri l'app.",
+        "fr": "Donnees restaurees avec succes. Rouvrez l'application.",
+        "bg": "Данните са възстановени успешно. Отворете отново приложението.",
+    },
+    "podesavanja_backup_nema": {
+        "sr": "Nije pronadjena rezervna kopija u Download folderu.",
+        "en": "No backup found in the Download folder.",
+        "de": "Keine Sicherung im Download-Ordner gefunden.",
+        "sk": "V priecinku Download nebola najdena ziadna zaloha.",
+        "uk": "У папці Завантаження не знайдено резервної копії.",
+        "it": "Nessun backup trovato nella cartella Download.",
+        "fr": "Aucune sauvegarde trouvee dans le dossier Download.",
+        "bg": "В папка Download не е намерено резервно копие.",
+    },
+    "podesavanja_backup_greska": {
+        "sr": "Greska: {greska}", "en": "Error: {greska}", "de": "Fehler: {greska}",
+        "sk": "Chyba: {greska}", "uk": "Помилка: {greska}", "it": "Errore: {greska}",
+        "fr": "Erreur: {greska}", "bg": "Грешка: {greska}",
+    },
 }
 
 
