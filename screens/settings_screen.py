@@ -28,6 +28,8 @@ class SettingsScreen(Screen):
         self.ids.bg_btn.text = prevedi("podesavanja_pozadina_btn", jezik)
         self.ids.tekst_btn.text = prevedi("podesavanja_tekst_btn", jezik)
         self.ids.kurs_btn.text = prevedi("podesavanja_kurs_btn", jezik)
+        self.ids.backup_btn.text = prevedi("podesavanja_backup_btn", jezik)
+        self.ids.restore_btn.text = prevedi("podesavanja_restore_btn", jezik)
         self.ids.back_btn.text = prevedi("istorija_nazad", jezik)
 
     # ---------- Tema (boja dugmadi) ----------
@@ -223,6 +225,47 @@ class SettingsScreen(Screen):
         content.add_widget(close_btn)
 
         popup.open()
+
+    # ---------- Rezervna kopija (backup / restore) ----------
+
+    def _prikazi_poruku(self, tekst):
+        jezik = _jezik()
+        content = BoxLayout(orientation="vertical", spacing=dp(10), padding=dp(10))
+
+        label = Label(text=tekst, font_size="14sp", size_hint_y=None)
+        label.bind(
+            width=lambda inst, val: setattr(inst, "text_size", (val, None)),
+            texture_size=lambda inst, val: setattr(inst, "height", val[1] + dp(10)),
+        )
+        content.add_widget(label)
+
+        popup = Popup(
+            title="", content=content, size_hint=(0.85, 0.4),
+            overlay_color=(0, 0, 0, 0.85),
+        )
+        close_btn = SecondaryButton(text=prevedi("podesavanja_zatvori", jezik), size_hint_y=None, height=dp(44))
+        close_btn.bind(on_release=popup.dismiss)
+        content.add_widget(close_btn)
+        popup.open()
+
+    def napravi_backup(self):
+        jezik = _jezik()
+        try:
+            putanja = db.napravi_rezervnu_kopiju()
+            self._prikazi_poruku(prevedi("podesavanja_backup_sacuvan", jezik).format(putanja=putanja))
+        except Exception as e:
+            self._prikazi_poruku(prevedi("podesavanja_backup_greska", jezik).format(greska=str(e)))
+
+    def vrati_backup(self):
+        jezik = _jezik()
+        try:
+            uspeh = db.vrati_rezervnu_kopiju()
+            if uspeh:
+                self._prikazi_poruku(prevedi("podesavanja_backup_vracen", jezik))
+            else:
+                self._prikazi_poruku(prevedi("podesavanja_backup_nema", jezik))
+        except Exception as e:
+            self._prikazi_poruku(prevedi("podesavanja_backup_greska", jezik).format(greska=str(e)))
 
     def go_back(self):
         self.manager.current = "home"
