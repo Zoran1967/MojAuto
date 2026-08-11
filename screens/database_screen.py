@@ -48,9 +48,14 @@ Builder.load_string("""
         size_hint_y: 0.65
     Label:
         text: root.text
-        font_size: "11sp"
+        font_size: "10sp"
         bold: True
         size_hint_y: 0.35
+        halign: "center"
+        valign: "middle"
+        text_size: self.width, None
+        shorten: True
+        shorten_from: "right"
 """)
 
 
