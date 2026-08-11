@@ -14,6 +14,7 @@ valuti (npr. u pregledu Troskova), preko konvertuj().
 """
 import sqlite3
 import os
+import shutil
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -271,6 +272,16 @@ def init_db():
 
 # ---------- Generisane CRUD funkcije (rade za sve tabele) ----------
 
+def _auto_backup():
+    """Tiha, automatska rezervna kopija posle svake izmene baze.
+    Ne prijavljuje gresku korisniku (npr. ako nema dozvole za upis) -
+    to bi samo smetalo pri obicnom radu sa aplikacijom."""
+    try:
+        napravi_rezervnu_kopiju()
+    except Exception:
+        pass
+
+
 def insert(table, data: dict):
     columns = ", ".join(data.keys())
     placeholders = ", ".join("?" for _ in data)
@@ -281,6 +292,7 @@ def insert(table, data: dict):
     conn.commit()
     novi_id = c.lastrowid
     conn.close()
+    _auto_backup()
     return novi_id
 
 
@@ -291,6 +303,7 @@ def update(table, record_id, data: dict):
     conn.execute(f"UPDATE {table} SET {set_clause} WHERE id = ?", values)
     conn.commit()
     conn.close()
+    _auto_backup()
 
 
 def delete(table, record_id):
@@ -298,6 +311,7 @@ def delete(table, record_id):
     conn.execute(f"DELETE FROM {table} WHERE id = ?", (record_id,))
     conn.commit()
     conn.close()
+    _auto_backup()
 
 
 def get_by_id(table, record_id):
@@ -424,3 +438,36 @@ def troskovi_pregled(vehicle_id, od, do, prikaz_valuta="RSD"):
 
     zbir["ukupno"] = sum(zbir.values())
     return zbir
+
+
+# ---------- Rezervna kopija (backup/restore) baze podataka ----------
+
+def _backup_dir():
+    try:
+        from android.storage import primary_external_storage_path
+        downloads = os.path.join(primary_external_storage_path(), "Download")
+    except ImportError:
+        downloads = os.path.join(os.path.expanduser("~"), "Downloads")
+    os.makedirs(downloads, exist_ok=True)
+    return downloads
+
+
+def putanja_rezervne_kopije():
+    return os.path.join(_backup_dir(), "mojauto_backup.db")
+
+
+def napravi_rezervnu_kopiju():
+    """Kopira trenutnu bazu u Download/mojauto_backup.db. Vraca putanju."""
+    putanja = putanja_rezervne_kopije()
+    shutil.copy2(DB_PATH, putanja)
+    return putanja
+
+
+def vrati_rezervnu_kopiju():
+    """Vraca podatke iz Download/mojauto_backup.db u trenutnu bazu.
+    Vraca True ako je uspelo, False ako fajl ne postoji."""
+    putanja = putanja_rezervne_kopije()
+    if not os.path.exists(putanja):
+        return False
+    shutil.copy2(putanja, DB_PATH)
+    return True
