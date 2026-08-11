@@ -52,6 +52,20 @@
                         height: dp(52)
                         on_release: root.open_currency_popup()
 
+                    PrimaryButton:
+                        id: backup_btn
+                        text: "Sacuvaj rezervnu kopiju"
+                        size_hint_y: None
+                        height: dp(52)
+                        on_release: root.napravi_backup()
+
+                    SecondaryButton:
+                        id: restore_btn
+                        text: "Vrati rezervnu kopiju"
+                        size_hint_y: None
+                        height: dp(52)
+                        on_release: root.vrati_backup()
+
         Button:
             id: back_btn
             size_hint: None, None
