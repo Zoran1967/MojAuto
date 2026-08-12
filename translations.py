@@ -618,6 +618,42 @@ PREVODI = {
         "sk": "Chyba: {greska}", "uk": "Помилка: {greska}", "it": "Errore: {greska}",
         "fr": "Erreur: {greska}", "bg": "Грешка: {greska}",
     },
+    "dokumenti_slikaj_btn": {
+        "sr": "Slikaj dokument", "en": "Take photo", "de": "Dokument fotografieren",
+        "sk": "Odfotit dokument", "uk": "Сфотографувати документ", "it": "Fotografa documento",
+        "fr": "Photographier le document", "bg": "Снимай документа",
+    },
+    "dokumenti_nema_slike": {
+        "sr": "Nema slike jos.", "en": "No photo yet.", "de": "Noch kein Foto.",
+        "sk": "Zatial ziadna fotka.", "uk": "Ще немає фото.", "it": "Nessuna foto ancora.",
+        "fr": "Pas encore de photo.", "bg": "Все още няма снимка.",
+    },
+    "dokumenti_slika_snimljena": {
+        "sr": "Slika snimljena.", "en": "Photo saved.", "de": "Foto gespeichert.",
+        "sk": "Fotka ulozena.", "uk": "Фото збережено.", "it": "Foto salvata.",
+        "fr": "Photo enregistree.", "bg": "Снимката е запазена.",
+    },
+    "dokumenti_greska_slikanja": {
+        "sr": "Slikanje nije uspelo.", "en": "Taking photo failed.", "de": "Fotografieren fehlgeschlagen.",
+        "sk": "Fotenie zlyhalo.", "uk": "Не вдалося сфотографувати.", "it": "Scatto foto non riuscito.",
+        "fr": "Echec de la prise de photo.", "bg": "Снимането не бе успешно.",
+    },
+    "dokumenti_kamera_nedostupna": {
+        "sr": "Kamera nije dostupna na ovom uredjaju.", "en": "Camera not available on this device.",
+        "de": "Kamera auf diesem Gerat nicht verfugbar.", "sk": "Fotoaparat nie je na tomto zariadeni dostupny.",
+        "uk": "Камера недоступна на цьому пристрої.", "it": "Fotocamera non disponibile su questo dispositivo.",
+        "fr": "Camera non disponible sur cet appareil.", "bg": "Камерата не е достъпна на това устройство.",
+    },
+    "dokumenti_greska_naziv": {
+        "sr": "Unesi naziv dokumenta.", "en": "Enter a document name.", "de": "Dokumentnamen eingeben.",
+        "sk": "Zadajte nazov dokumentu.", "uk": "Введіть назву документа.", "it": "Inserisci il nome del documento.",
+        "fr": "Entrez le nom du document.", "bg": "Въведете име на документа.",
+    },
+    "dokumenti_greska_slika": {
+        "sr": "Prvo slikaj dokument.", "en": "Take a photo first.", "de": "Zuerst ein Foto machen.",
+        "sk": "Najprv odfotte dokument.", "uk": "Спочатку сфотографуйте документ.", "it": "Prima scatta una foto.",
+        "fr": "Prenez d'abord une photo.", "bg": "Първо снимай документа.",
+    },
 }
 
 
