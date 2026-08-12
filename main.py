@@ -7,11 +7,12 @@ import os
 import traceback
 
 from kivy.app import App
-from kivy.uix.screenmanager import ScreenManager
+from kivy.uix.screenmanager import ScreenManager, FadeTransition
 from kivy.lang import Builder
 from kivy.core.window import Window
 from kivy.utils import platform
 from kivy.properties import ObjectProperty
+from kivy.clock import Clock
 
 from kivy.base import ExceptionHandler, ExceptionManager
 from kivy.uix.popup import Popup
@@ -74,16 +75,16 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def pokreni_glavnu_app():
-    from database import db
-    from theme import Theme
-    import widgets  # noqa: F401
-
     class ShoppingApp(App):
         theme = ObjectProperty(None)
         assets_dir = ObjectProperty(None)
 
         def build(self):
             try:
+                from database import db
+                from theme import Theme
+                import widgets  # noqa: F401
+
                 from screens.home_screen import HomeScreen
                 from screens.shopping_list_screen import ShoppingListScreen
                 from screens.history_screen import HistoryScreen
@@ -122,18 +123,30 @@ def pokreni_glavnu_app():
                 Window.clearcolor = tuple(self.theme.bg_color)
                 self.theme.bind(bg_color=self._on_bg_color_change)
 
-                sm = ScreenManager()
+                sm = ScreenManager(transition=FadeTransition())
                 sm.add_widget(HomeScreen(name="home"))
                 sm.add_widget(ShoppingListScreen(name="shopping_list"))
                 sm.add_widget(HistoryScreen(name="history"))
                 sm.add_widget(DatabaseScreen(name="database"))
                 sm.add_widget(SettingsScreen(name="settings"))
                 sm.current = "home"
+
                 return sm
             except Exception:
                 greska = traceback.format_exc()
                 print(greska)
                 return _napravi_greska_sadrzaj(greska)
+
+        def on_start(self):
+            if platform == "android":
+                Clock.schedule_once(self._trazi_dozvole, 0)
+
+        def _trazi_dozvole(self, dt):
+            try:
+                from android.permissions import request_permissions, Permission
+                request_permissions([Permission.CAMERA, Permission.WRITE_EXTERNAL_STORAGE])
+            except Exception:
+                pass
 
         def _on_bg_color_change(self, instance, value):
             Window.clearcolor = tuple(value)
