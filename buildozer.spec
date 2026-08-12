@@ -13,19 +13,21 @@ icon.adaptive_background.filename = %(source.dir)s/assets/icon.png
 
 version = 0.1
 
-requirements = python3,kivy,camera4kivy,fpdf2,fonttools,plyer
+requirements = python3,kivy,camera4kivy,gestures4kivy,fpdf2,fonttools,plyer
 
 orientation = portrait
 fullscreen = 0
 
 android.permissions = CAMERA,WRITE_EXTERNAL_STORAGE
 
-android.api = 34
+android.api = 33
 android.minapi = 24
 android.ndk = 25b
 android.archs = arm64-v8a
 
 android.enable_androidx = True
+
+p4a.hook = camerax_provider/gradle_options.py
 
 [buildozer]
 log_level = 2
