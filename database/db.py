@@ -442,6 +442,16 @@ def troskovi_pregled(vehicle_id, od, do, prikaz_valuta="RSD"):
 
 # ---------- Rezervna kopija (backup/restore) baze podataka ----------
 
+def _slike_dir():
+    d = os.path.join(os.path.dirname(DB_PATH), "dokumenti_slike")
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
+def putanja_slike(naziv_fajla):
+    return os.path.join(_slike_dir(), naziv_fajla)
+
+
 def _backup_dir():
     try:
         from android.storage import primary_external_storage_path
@@ -457,17 +467,26 @@ def putanja_rezervne_kopije():
 
 
 def napravi_rezervnu_kopiju():
-    """Kopira trenutnu bazu u Download/mojauto_backup.db. Vraca putanju."""
+    """Kopira trenutnu bazu i sve slike dokumenata u Download folder. Vraca putanju baze."""
     putanja = putanja_rezervne_kopije()
     shutil.copy2(DB_PATH, putanja)
+
+    slike_src = _slike_dir()
+    if os.path.isdir(slike_src) and os.listdir(slike_src):
+        slike_dst = os.path.join(_backup_dir(), "mojauto_backup_slike")
+        shutil.copytree(slike_src, slike_dst, dirs_exist_ok=True)
     return putanja
 
 
 def vrati_rezervnu_kopiju():
-    """Vraca podatke iz Download/mojauto_backup.db u trenutnu bazu.
-    Vraca True ako je uspelo, False ako fajl ne postoji."""
+    """Vraca podatke i slike dokumenata iz Download foldera u aplikaciju.
+    Vraca True ako je uspelo, False ako fajl baze ne postoji."""
     putanja = putanja_rezervne_kopije()
     if not os.path.exists(putanja):
         return False
     shutil.copy2(putanja, DB_PATH)
+
+    slike_src = os.path.join(_backup_dir(), "mojauto_backup_slike")
+    if os.path.isdir(slike_src):
+        shutil.copytree(slike_src, _slike_dir(), dirs_exist_ok=True)
     return True
