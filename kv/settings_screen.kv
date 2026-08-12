@@ -2,9 +2,9 @@
 <IconSettingsButton@ButtonBehavior+BoxLayout>:
     icon_source: ""
     label_text: ""
-    orientation: "horizontal"
-    padding: dp(10), dp(6)
-    spacing: dp(12)
+    orientation: "vertical"
+    padding: dp(8)
+    spacing: dp(4)
     canvas.before:
         Color:
             rgba: (0, 0, 0, 0.25)
@@ -22,16 +22,16 @@
         source: root.icon_source
         allow_stretch: True
         keep_ratio: True
-        size_hint_x: None
-        width: self.height
+        size_hint_y: 0.68
     Label:
         text: root.label_text
-        font_size: "15sp"
+        font_size: "13sp"
         bold: True
         color: 1, 1, 1, 1
-        halign: "left"
+        halign: "center"
         valign: "middle"
         text_size: self.width, None
+        size_hint_y: 0.32
 <SettingsScreen>:
     FloatLayout:
         BoxLayout:
@@ -49,61 +49,47 @@
                 size_hint_y: None
                 height: dp(36)
 
-            ScrollView:
-                BoxLayout:
-                    orientation: "vertical"
-                    size_hint_y: None
-                    height: self.minimum_height
-                    spacing: dp(15)
-                    padding: 0, 0, 0, dp(20)
+            GridLayout:
+                cols: 3
+                rows: 2
+                spacing: dp(12)
+                size_hint_y: 1
 
-                    IconSettingsButton:
-                        id: tema_btn
-                        icon_source: app.assets_dir + "1_tema.png"
-                        label_text: "Tema (boja dugmadi)"
-                        size_hint_y: None
-                        height: dp(56)
-                        on_release: root.open_theme_popup()
+                IconSettingsButton:
+                    id: tema_btn
+                    icon_source: app.assets_dir + "1_tema.png"
+                    label_text: "Tema (boja dugmadi)"
+                    on_release: root.open_theme_popup()
 
-                    IconSettingsButton:
-                        id: bg_btn
-                        icon_source: app.assets_dir + "2_pozadina.png"
-                        label_text: "Boja pozadine ekrana"
-                        size_hint_y: None
-                        height: dp(56)
-                        on_release: root.open_bg_popup()
+                IconSettingsButton:
+                    id: bg_btn
+                    icon_source: app.assets_dir + "2_pozadina.png"
+                    label_text: "Boja pozadine ekrana"
+                    on_release: root.open_bg_popup()
 
-                    IconSettingsButton:
-                        id: tekst_btn
-                        icon_source: app.assets_dir + "3_tekst.png"
-                        label_text: "Boja teksta u poljima"
-                        size_hint_y: None
-                        height: dp(56)
-                        on_release: root.open_input_text_popup()
+                IconSettingsButton:
+                    id: tekst_btn
+                    icon_source: app.assets_dir + "3_tekst.png"
+                    label_text: "Boja teksta u poljima"
+                    on_release: root.open_input_text_popup()
 
-                    IconSettingsButton:
-                        id: kurs_btn
-                        icon_source: app.assets_dir + "4_kurs.png"
-                        label_text: "Kurs"
-                        size_hint_y: None
-                        height: dp(56)
-                        on_release: root.open_currency_popup()
+                IconSettingsButton:
+                    id: kurs_btn
+                    icon_source: app.assets_dir + "4_kurs.png"
+                    label_text: "Kurs"
+                    on_release: root.open_currency_popup()
 
-                    IconSettingsButton:
-                        id: backup_btn
-                        icon_source: app.assets_dir + "5_bekap.png"
-                        label_text: "Sacuvaj rezervnu kopiju"
-                        size_hint_y: None
-                        height: dp(56)
-                        on_release: root.napravi_backup()
+                IconSettingsButton:
+                    id: backup_btn
+                    icon_source: app.assets_dir + "5_bekap.png"
+                    label_text: "Sacuvaj rezervnu kopiju"
+                    on_release: root.napravi_backup()
 
-                    IconSettingsButton:
-                        id: restore_btn
-                        icon_source: app.assets_dir + "6_vrati_bekap.png"
-                        label_text: "Vrati rezervnu kopiju"
-                        size_hint_y: None
-                        height: dp(56)
-                        on_release: root.vrati_backup()
+                IconSettingsButton:
+                    id: restore_btn
+                    icon_source: app.assets_dir + "6_vrati_bekap.png"
+                    label_text: "Vrati rezervnu kopiju"
+                    on_release: root.vrati_backup()
 
         Button:
             id: back_btn
