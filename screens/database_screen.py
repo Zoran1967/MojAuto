@@ -904,6 +904,14 @@ class DatabaseScreen(Screen):
         slikaj_btn.bind(on_release=slikaj)
         content.add_widget(slikaj_btn)
 
+        def proveri_konekciju(dt):
+            povezano = getattr(preview, "camera_connected", False)
+            status_label.text = f"Kamera povezana: {povezano}"
+            if povezano:
+                return False
+
+        Clock.schedule_interval(proveri_konekciju, 1)
+
         popup = Popup(
             title=prevedi("zapisi_novi_zapis", jezik), content=content, size_hint=(0.95, 0.95),
             overlay_color=(0, 0, 0, 0.85), auto_dismiss=False,
