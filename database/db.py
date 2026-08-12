@@ -443,7 +443,11 @@ def troskovi_pregled(vehicle_id, od, do, prikaz_valuta="RSD"):
 # ---------- Rezervna kopija (backup/restore) baze podataka ----------
 
 def _slike_dir():
-    d = os.path.join(os.path.dirname(DB_PATH), "dokumenti_slike")
+    try:
+        from android.storage import app_storage_path
+        d = os.path.join(app_storage_path(), "DCIM", "dokumenti_slike")
+    except ImportError:
+        d = os.path.join(os.path.dirname(DB_PATH), "dokumenti_slike")
     os.makedirs(d, exist_ok=True)
     return d
 
