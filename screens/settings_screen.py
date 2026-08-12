@@ -24,12 +24,12 @@ class SettingsScreen(Screen):
     def on_pre_enter(self, *args):
         jezik = _jezik()
         self.ids.title_label.text = prevedi("podesavanja_naslov", jezik)
-        self.ids.tema_btn.text = prevedi("podesavanja_tema_btn", jezik)
-        self.ids.bg_btn.text = prevedi("podesavanja_pozadina_btn", jezik)
-        self.ids.tekst_btn.text = prevedi("podesavanja_tekst_btn", jezik)
-        self.ids.kurs_btn.text = prevedi("podesavanja_kurs_btn", jezik)
-        self.ids.backup_btn.text = prevedi("podesavanja_backup_btn", jezik)
-        self.ids.restore_btn.text = prevedi("podesavanja_restore_btn", jezik)
+        self.ids.tema_btn.label_text = prevedi("podesavanja_tema_btn", jezik)
+        self.ids.bg_btn.label_text = prevedi("podesavanja_pozadina_btn", jezik)
+        self.ids.tekst_btn.label_text = prevedi("podesavanja_tekst_btn", jezik)
+        self.ids.kurs_btn.label_text = prevedi("podesavanja_kurs_btn", jezik)
+        self.ids.backup_btn.label_text = prevedi("podesavanja_backup_btn", jezik)
+        self.ids.restore_btn.label_text = prevedi("podesavanja_restore_btn", jezik)
         self.ids.back_btn.text = prevedi("istorija_nazad", jezik)
 
     # ---------- Tema (boja dugmadi) ----------
