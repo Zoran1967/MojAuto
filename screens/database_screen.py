@@ -5,12 +5,15 @@ from kivy.uix.button import Button
 from kivy.uix.behaviors import ButtonBehavior
 from kivy.uix.popup import Popup
 from kivy.uix.scrollview import ScrollView
+from kivy.uix.image import Image as KivyImage
 from kivy.properties import StringProperty
 from kivy.lang import Builder
 from kivy.metrics import dp
 from kivy.app import App
 from datetime import datetime, timedelta
 import calendar
+import time
+import os
 
 from database import db
 from widgets import PrimaryButton, SecondaryButton, DangerButton, StyledTextInput
@@ -48,14 +51,9 @@ Builder.load_string("""
         size_hint_y: 0.65
     Label:
         text: root.text
-        font_size: "10sp"
+        font_size: "11sp"
         bold: True
         size_hint_y: 0.35
-        halign: "center"
-        valign: "middle"
-        text_size: self.width, None
-        shorten: True
-        shorten_from: "right"
 """)
 
 
@@ -267,7 +265,6 @@ class DatabaseScreen(Screen):
             btn = IconTabButton(
                 icon_source=assets_dir + icon_fajl,
                 text=prevedi(naslov_kljuc, jezik),
-                size_hint_x=None, width=dp(92),
             )
             btn.bind(on_release=lambda inst, t=tabela: self._otvori_kategoriju(t))
             box.add_widget(btn)
@@ -658,16 +655,27 @@ class DatabaseScreen(Screen):
                 btn = SecondaryButton(
                     text=tab_def["prikaz"](red), size_hint_y=None, height=dp(52),
                 )
-                btn.bind(
-                    on_release=lambda inst, rid=red["id"]:
-                        self.open_edit_record_popup(tabela, rid, vehicle_id, popup, refresh)
-                )
+                if tabela == "dokumenti":
+                    btn.bind(
+                        on_release=lambda inst, rid=red["id"]:
+                            self.open_view_dokument_popup(rid, vehicle_id, refresh)
+                    )
+                else:
+                    btn.bind(
+                        on_release=lambda inst, rid=red["id"]:
+                            self.open_edit_record_popup(tabela, rid, vehicle_id, popup, refresh)
+                    )
                 records_box.add_widget(btn)
 
         novi_btn = PrimaryButton(text=prevedi("zapisi_dodaj_zapis", jezik), size_hint_y=None, height=dp(44))
-        novi_btn.bind(
-            on_release=lambda inst: self.open_add_record_popup(tabela, vehicle_id, popup, refresh)
-        )
+        if tabela == "dokumenti":
+            novi_btn.bind(
+                on_release=lambda inst: self.open_add_dokument_popup(vehicle_id, popup, refresh)
+            )
+        else:
+            novi_btn.bind(
+                on_release=lambda inst: self.open_add_record_popup(tabela, vehicle_id, popup, refresh)
+            )
         content.add_widget(novi_btn)
 
         close_btn = SecondaryButton(text=prevedi("zapisi_zatvori", jezik), size_hint_y=None, height=dp(44))
@@ -832,6 +840,141 @@ class DatabaseScreen(Screen):
         delete_btn = DangerButton(text=prevedi("zapisi_obrisi_zapis", jezik), size_hint_y=None, height=dp(44))
         delete_btn.bind(on_release=delete)
         outer.add_widget(delete_btn)
+
+        popup.open()
+
+    # ---------- Dokumenta: slikanje i pregled slike ----------
+
+    def open_add_dokument_popup(self, vehicle_id, parent_popup, refresh_parent):
+        jezik = _jezik()
+        content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
+
+        tip_input = StyledTextInput(
+            hint_text=prevedi("polje_tip_dokumenta", jezik),
+            multiline=False, size_hint_y=None, height=dp(44),
+        )
+        naziv_input = StyledTextInput(
+            hint_text=prevedi("polje_naziv", jezik),
+            multiline=False, size_hint_y=None, height=dp(44),
+        )
+        content.add_widget(tip_input)
+        content.add_widget(naziv_input)
+
+        preview_img = KivyImage(size_hint_y=None, height=dp(180))
+        content.add_widget(preview_img)
+
+        status_label = Label(
+            text=prevedi("dokumenti_nema_slike", jezik), size_hint_y=None,
+            height=dp(24), color=(0.75, 0.75, 0.75, 1),
+        )
+        content.add_widget(status_label)
+
+        error_label = Label(text="", size_hint_y=None, height=dp(24), color=(1, 0.4, 0.4, 1))
+        content.add_widget(error_label)
+
+        slika_stanje = {"putanja": None}
+
+        def slika_snimljena(putanja):
+            if not putanja or not os.path.exists(putanja):
+                status_label.text = prevedi("dokumenti_greska_slikanja", jezik)
+                return
+            slika_stanje["putanja"] = putanja
+            preview_img.source = putanja
+            preview_img.reload()
+            status_label.text = prevedi("dokumenti_slika_snimljena", jezik)
+
+        def slikaj(*a):
+            try:
+                from plyer import camera
+            except Exception:
+                status_label.text = prevedi("dokumenti_kamera_nedostupna", jezik)
+                return
+            naziv_fajla = f"dok_{int(time.time())}.jpg"
+            puna_putanja = db.putanja_slike(naziv_fajla)
+            try:
+                camera.take_picture(puna_putanja, lambda p: slika_snimljena(p))
+            except Exception:
+                status_label.text = prevedi("dokumenti_kamera_nedostupna", jezik)
+
+        slikaj_btn = PrimaryButton(text=prevedi("dokumenti_slikaj_btn", jezik), size_hint_y=None, height=dp(48))
+        slikaj_btn.bind(on_release=slikaj)
+        content.add_widget(slikaj_btn)
+
+        popup = Popup(
+            title=prevedi("zapisi_novi_zapis", jezik), content=content, size_hint=(0.92, 0.9),
+            overlay_color=(0, 0, 0, 0.85), auto_dismiss=False,
+        )
+
+        def save(*a):
+            if not naziv_input.text.strip():
+                error_label.text = prevedi("dokumenti_greska_naziv", jezik)
+                return
+            if not slika_stanje["putanja"]:
+                error_label.text = prevedi("dokumenti_greska_slika", jezik)
+                return
+            data = {
+                "tip": tip_input.text.strip(),
+                "naziv": naziv_input.text.strip(),
+                "putanja": slika_stanje["putanja"],
+                "datum_dodavanja": datetime.now().strftime("%d.%m.%Y"),
+                "vehicle_id": vehicle_id,
+            }
+            db.insert("dokumenti", data)
+            popup.dismiss()
+            refresh_parent()
+
+        btn_row = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
+        save_btn = PrimaryButton(text=prevedi("zapisi_sacuvaj", jezik))
+        save_btn.bind(on_release=save)
+        cancel_btn = SecondaryButton(text=prevedi("zapisi_otkazi", jezik))
+        cancel_btn.bind(on_release=popup.dismiss)
+        btn_row.add_widget(save_btn)
+        btn_row.add_widget(cancel_btn)
+        content.add_widget(btn_row)
+
+        popup.open()
+
+    def open_view_dokument_popup(self, record_id, vehicle_id, refresh_parent):
+        jezik = _jezik()
+        red = db.get_by_id("dokumenti", record_id)
+        if red is None:
+            return
+
+        content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
+        content.add_widget(Label(
+            text=red["naziv"] or "-", bold=True, font_size="16sp",
+            size_hint_y=None, height=dp(28),
+        ))
+
+        img = KivyImage(
+            source=red["putanja"] or "", allow_stretch=True, keep_ratio=True, size_hint_y=1,
+        )
+        content.add_widget(img)
+
+        popup = Popup(
+            title=red["tip"] or "", content=content, size_hint=(0.94, 0.9),
+            overlay_color=(0, 0, 0, 0.85),
+        )
+
+        delete_state = {"confirm": False}
+
+        def delete(instance):
+            if not delete_state["confirm"]:
+                delete_state["confirm"] = True
+                instance.text = prevedi("zapisi_potvrdi_brisanje", jezik)
+                return
+            db.delete("dokumenti", record_id)
+            popup.dismiss()
+            refresh_parent()
+
+        btn_row = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
+        delete_btn = DangerButton(text=prevedi("zapisi_obrisi_zapis", jezik))
+        delete_btn.bind(on_release=delete)
+        close_btn = SecondaryButton(text=prevedi("zapisi_zatvori", jezik))
+        close_btn.bind(on_release=popup.dismiss)
+        btn_row.add_widget(delete_btn)
+        btn_row.add_widget(close_btn)
+        content.add_widget(btn_row)
 
         popup.open()
 
