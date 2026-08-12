@@ -1,4 +1,37 @@
 #:import dp kivy.metrics.dp
+<IconSettingsButton@ButtonBehavior+BoxLayout>:
+    icon_source: ""
+    label_text: ""
+    orientation: "horizontal"
+    padding: dp(10), dp(6)
+    spacing: dp(12)
+    canvas.before:
+        Color:
+            rgba: (0, 0, 0, 0.25)
+        RoundedRectangle:
+            pos: self.x, self.y - dp(2)
+            size: self.size
+            radius: [dp(16)]
+        Color:
+            rgba: app.theme.accent if self.state == "normal" else (app.theme.accent[0]*0.7, app.theme.accent[1]*0.7, app.theme.accent[2]*0.7, 1)
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [dp(16)]
+    Image:
+        source: root.icon_source
+        allow_stretch: True
+        keep_ratio: True
+        size_hint_x: None
+        width: self.height
+    Label:
+        text: root.label_text
+        font_size: "15sp"
+        bold: True
+        color: 1, 1, 1, 1
+        halign: "left"
+        valign: "middle"
+        text_size: self.width, None
 <SettingsScreen>:
     FloatLayout:
         BoxLayout:
@@ -24,46 +57,52 @@
                     spacing: dp(15)
                     padding: 0, 0, 0, dp(20)
 
-                    PrimaryButton:
+                    IconSettingsButton:
                         id: tema_btn
-                        text: "Tema (boja dugmadi)"
+                        icon_source: app.assets_dir + "1_tema.png"
+                        label_text: "Tema (boja dugmadi)"
                         size_hint_y: None
-                        height: dp(52)
+                        height: dp(56)
                         on_release: root.open_theme_popup()
 
-                    PrimaryButton:
+                    IconSettingsButton:
                         id: bg_btn
-                        text: "Boja pozadine ekrana"
+                        icon_source: app.assets_dir + "2_pozadina.png"
+                        label_text: "Boja pozadine ekrana"
                         size_hint_y: None
-                        height: dp(52)
+                        height: dp(56)
                         on_release: root.open_bg_popup()
 
-                    PrimaryButton:
+                    IconSettingsButton:
                         id: tekst_btn
-                        text: "Boja teksta u poljima"
+                        icon_source: app.assets_dir + "3_tekst.png"
+                        label_text: "Boja teksta u poljima"
                         size_hint_y: None
-                        height: dp(52)
+                        height: dp(56)
                         on_release: root.open_input_text_popup()
 
-                    PrimaryButton:
+                    IconSettingsButton:
                         id: kurs_btn
-                        text: "Kurs"
+                        icon_source: app.assets_dir + "4_kurs.png"
+                        label_text: "Kurs"
                         size_hint_y: None
-                        height: dp(52)
+                        height: dp(56)
                         on_release: root.open_currency_popup()
 
-                    PrimaryButton:
+                    IconSettingsButton:
                         id: backup_btn
-                        text: "Sacuvaj rezervnu kopiju"
+                        icon_source: app.assets_dir + "5_bekap.png"
+                        label_text: "Sacuvaj rezervnu kopiju"
                         size_hint_y: None
-                        height: dp(52)
+                        height: dp(56)
                         on_release: root.napravi_backup()
 
-                    SecondaryButton:
+                    IconSettingsButton:
                         id: restore_btn
-                        text: "Vrati rezervnu kopiju"
+                        icon_source: app.assets_dir + "6_vrati_bekap.png"
+                        label_text: "Vrati rezervnu kopiju"
                         size_hint_y: None
-                        height: dp(52)
+                        height: dp(56)
                         on_release: root.vrati_backup()
 
         Button:
