@@ -10,6 +10,7 @@ from kivy.properties import StringProperty
 from kivy.lang import Builder
 from kivy.metrics import dp
 from kivy.app import App
+from kivy.clock import Clock
 from datetime import datetime, timedelta
 import calendar
 import time
@@ -875,16 +876,22 @@ class DatabaseScreen(Screen):
         error_label = Label(text="", size_hint_y=None, height=dp(24), color=(1, 0.4, 0.4, 1))
         content.add_widget(error_label)
 
-        slika_stanje = {"putanja": None}
+        slika_stanje = {"putanja": None, "cekanje_event": None}
 
         def slika_snimljena(putanja):
+            slika_stanje["cekanje_event"] and slika_stanje["cekanje_event"].cancel()
             if not putanja:
                 status_label.text = prevedi("dokumenti_greska_slikanja", jezik)
                 return
             slika_stanje["putanja"] = putanja
-            status_label.text = prevedi("dokumenti_slika_snimljena", jezik)
+            status_label.text = f"{prevedi('dokumenti_slika_snimljena', jezik)} ({putanja})"
+
+        def na_isteklo_vreme(dt):
+            status_label.text = "Kamera nije odgovorila u roku od 6 sekundi (callback se nije pozvao)."
 
         def slikaj(*a):
+            status_label.text = "Snimam..."
+            slika_stanje["cekanje_event"] = Clock.schedule_once(na_isteklo_vreme, 6)
             try:
                 preview.capture_photo(
                     location="private", subdir="dokumenti_slike",
