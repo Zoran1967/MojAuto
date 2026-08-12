@@ -865,8 +865,10 @@ class DatabaseScreen(Screen):
 
         status_label = Label(
             text=prevedi("dokumenti_nema_slike", jezik), size_hint_y=None,
-            height=dp(24), color=(0.75, 0.75, 0.75, 1),
+            height=dp(40), color=(0.75, 0.75, 0.75, 1),
+            halign="left", valign="middle",
         )
+        status_label.bind(width=lambda inst, val: setattr(inst, "text_size", (val, None)))
         content.add_widget(status_label)
 
         error_label = Label(text="", size_hint_y=None, height=dp(24), color=(1, 0.4, 0.4, 1))
@@ -886,15 +888,15 @@ class DatabaseScreen(Screen):
         def slikaj(*a):
             try:
                 from plyer import camera
-            except Exception:
-                status_label.text = prevedi("dokumenti_kamera_nedostupna", jezik)
+            except Exception as e:
+                status_label.text = f"{prevedi('dokumenti_kamera_nedostupna', jezik)} ({e})"
                 return
             naziv_fajla = f"dok_{int(time.time())}.jpg"
             puna_putanja = db.putanja_slike(naziv_fajla)
             try:
                 camera.take_picture(puna_putanja, lambda p: slika_snimljena(p))
-            except Exception:
-                status_label.text = prevedi("dokumenti_kamera_nedostupna", jezik)
+            except Exception as e:
+                status_label.text = f"{prevedi('dokumenti_kamera_nedostupna', jezik)} ({e})"
 
         slikaj_btn = PrimaryButton(text=prevedi("dokumenti_slikaj_btn", jezik), size_hint_y=None, height=dp(48))
         slikaj_btn.bind(on_release=slikaj)
