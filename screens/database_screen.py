@@ -894,7 +894,7 @@ class DatabaseScreen(Screen):
             slika_stanje["cekanje_event"] = Clock.schedule_once(na_isteklo_vreme, 6)
             try:
                 preview.capture_photo(
-                    location="private", subdir="dokumenti_slike",
+                    subdir="dokumenti_slike",
                     name=f"dok_{int(time.time())}",
                 )
             except Exception as e:
