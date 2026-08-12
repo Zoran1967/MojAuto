@@ -860,8 +860,9 @@ class DatabaseScreen(Screen):
         content.add_widget(tip_input)
         content.add_widget(naziv_input)
 
-        preview_img = KivyImage(size_hint_y=None, height=dp(180))
-        content.add_widget(preview_img)
+        from camera4kivy import Preview
+        preview = Preview(size_hint_y=1)
+        content.add_widget(preview)
 
         status_label = Label(
             text=prevedi("dokumenti_nema_slike", jezik), size_hint_y=None,
@@ -877,35 +878,43 @@ class DatabaseScreen(Screen):
         slika_stanje = {"putanja": None}
 
         def slika_snimljena(putanja):
-            if not putanja or not os.path.exists(putanja):
+            if not putanja:
                 status_label.text = prevedi("dokumenti_greska_slikanja", jezik)
                 return
             slika_stanje["putanja"] = putanja
-            preview_img.source = putanja
-            preview_img.reload()
             status_label.text = prevedi("dokumenti_slika_snimljena", jezik)
 
         def slikaj(*a):
             try:
-                from plyer import camera
+                preview.capture_photo(
+                    location="private", subdir="dokumenti_slike",
+                    name=f"dok_{int(time.time())}",
+                )
             except Exception as e:
-                status_label.text = f"{prevedi('dokumenti_kamera_nedostupna', jezik)} ({e})"
-                return
-            naziv_fajla = f"dok_{int(time.time())}.jpg"
-            puna_putanja = db.putanja_slike(naziv_fajla)
-            try:
-                camera.take_picture(puna_putanja, lambda p: slika_snimljena(p))
-            except Exception as e:
-                status_label.text = f"{prevedi('dokumenti_kamera_nedostupna', jezik)} ({e})"
+                status_label.text = f"{prevedi('dokumenti_greska_slikanja', jezik)} ({e})"
 
         slikaj_btn = PrimaryButton(text=prevedi("dokumenti_slikaj_btn", jezik), size_hint_y=None, height=dp(48))
         slikaj_btn.bind(on_release=slikaj)
         content.add_widget(slikaj_btn)
 
         popup = Popup(
-            title=prevedi("zapisi_novi_zapis", jezik), content=content, size_hint=(0.92, 0.9),
+            title=prevedi("zapisi_novi_zapis", jezik), content=content, size_hint=(0.95, 0.95),
             overlay_color=(0, 0, 0, 0.85), auto_dismiss=False,
         )
+
+        def na_otvaranje(*a):
+            try:
+                preview.connect_camera(filepath_callback=slika_snimljena, enable_video=False)
+            except Exception as e:
+                status_label.text = f"{prevedi('dokumenti_kamera_nedostupna', jezik)} ({e})"
+
+        def na_zatvaranje(*a):
+            try:
+                preview.disconnect_camera()
+            except Exception:
+                pass
+
+        popup.bind(on_open=na_otvaranje, on_dismiss=na_zatvaranje)
 
         def save(*a):
             if not naziv_input.text.strip():
