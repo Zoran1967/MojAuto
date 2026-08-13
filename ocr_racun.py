@@ -18,6 +18,7 @@ OCR_API_URL = "https://api.ocr.space/parse/image"
 
 
 def _posalji_zahtev(putanja_slike, api_key):
+    putanja_slike = str(putanja_slike)
     boundary = uuid.uuid4().hex
     with open(putanja_slike, "rb") as f:
         slika_bajtovi = f.read()
