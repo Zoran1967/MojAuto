@@ -18,7 +18,7 @@ requirements = python3,kivy,camera4kivy,gestures4kivy,fpdf2,fonttools,plyer
 orientation = portrait
 fullscreen = 0
 
-android.permissions = CAMERA,WRITE_EXTERNAL_STORAGE,READ_EXTERNAL_STORAGE,READ_MEDIA_IMAGES
+android.permissions = CAMERA,WRITE_EXTERNAL_STORAGE,READ_EXTERNAL_STORAGE,READ_MEDIA_IMAGES,INTERNET
 
 android.api = 33
 android.minapi = 24
