@@ -440,6 +440,24 @@ def troskovi_pregled(vehicle_id, od, do, prikaz_valuta="RSD"):
     return zbir
 
 
+def gorivo_po_pumpama(vehicle_id, od, do, prikaz_valuta="RSD"):
+    """
+    Vraca dict {naziv_pumpe: {"litara": x, "ukupno": y}} za dato vozilo,
+    za period [od, do], grupisano po nazivu pumpe (kolona 'pumpa').
+    Zapisi bez naziva pumpe grupisu se pod '(Nepoznato)'.
+    """
+    po_pumpi = {}
+    for red in get_by_vehicle("gorivo", vehicle_id):
+        if not _u_periodu(_parsiraj_datum(red["datum"]), od, do):
+            continue
+        naziv = (red["pumpa"] or "").strip() or "(Nepoznato)"
+        if naziv not in po_pumpi:
+            po_pumpi[naziv] = {"litara": 0.0, "ukupno": 0.0}
+        po_pumpi[naziv]["litara"] += red["litara"] or 0
+        po_pumpi[naziv]["ukupno"] += konvertuj(red["ukupna_cena"] or 0, red["valuta"] or "RSD", prikaz_valuta)
+    return po_pumpi
+
+
 # ---------- Rezervna kopija (backup/restore) baze podataka ----------
 
 def _slike_dir():
