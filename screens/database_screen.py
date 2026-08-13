@@ -865,7 +865,7 @@ class DatabaseScreen(Screen):
                         return
                     error_label.text = "Ucitavam racun..."
                     try:
-                        podaci = ocr_racun.ocitaj_racun(izbor[0], kljuc)
+                        podaci = ocr_racun.ocitaj_racun(str(izbor[0]), kljuc)
                     except Exception as e:
                         error_label.text = f"OCR greska: {e}"
                         return
