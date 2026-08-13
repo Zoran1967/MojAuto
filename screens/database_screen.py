@@ -20,6 +20,7 @@ from database import db
 from widgets import PrimaryButton, SecondaryButton, DangerButton, StyledTextInput
 from translations import prevedi
 import pdf_report
+import ocr_racun
 
 
 def _jezik():
@@ -679,11 +680,83 @@ class DatabaseScreen(Screen):
             )
         content.add_widget(novi_btn)
 
+        if tabela == "gorivo":
+            pumpe_btn = SecondaryButton(text="Pregled po pumpama", size_hint_y=None, height=dp(44))
+            pumpe_btn.bind(on_release=lambda inst: self.open_pregled_po_pumpama(vehicle_id, vozilo_naziv))
+            content.add_widget(pumpe_btn)
+
         close_btn = SecondaryButton(text=prevedi("zapisi_zatvori", jezik), size_hint_y=None, height=dp(44))
         close_btn.bind(on_release=popup.dismiss)
         content.add_widget(close_btn)
 
         refresh()
+        popup.open()
+
+    # ---------- Gorivo: pregled po pumpama (nedelja/mesec/godina) ----------
+
+    def open_pregled_po_pumpama(self, vehicle_id, vozilo_naziv):
+        content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
+        content.add_widget(Label(
+            text=f"{vozilo_naziv} - Gorivo po pumpama", bold=True, font_size="16sp",
+            size_hint_y=None, height=dp(30),
+        ))
+
+        inner = BoxLayout(orientation="vertical", size_hint_y=None, spacing=dp(4))
+        inner.bind(minimum_height=inner.setter("height"))
+        scroll = ScrollView(size_hint_y=1)
+        scroll.add_widget(inner)
+        content.add_widget(scroll)
+
+        popup = Popup(
+            title="Pregled po pumpama", content=content, size_hint=(0.94, 0.9),
+            overlay_color=(0, 0, 0, 0.85),
+        )
+
+        def prikazi_period(naslov, od, do):
+            inner.add_widget(Label(
+                text=naslov, bold=True, font_size="15sp",
+                size_hint_y=None, height=dp(28),
+            ))
+            po_pumpi = db.gorivo_po_pumpama(vehicle_id, od, do)
+            if not po_pumpi:
+                inner.add_widget(Label(
+                    text="Nema zapisa.", size_hint_y=None, height=dp(22),
+                    color=(0.75, 0.75, 0.75, 1), font_size="12sp",
+                ))
+            ukupno = 0.0
+            for naziv, vrednosti in sorted(po_pumpi.items()):
+                inner.add_widget(Label(
+                    text=f"{naziv}: {vrednosti['litara']:.2f} L - {vrednosti['ukupno']:.2f} RSD",
+                    size_hint_y=None, height=dp(22), font_size="13sp",
+                ))
+                ukupno += vrednosti["ukupno"]
+            inner.add_widget(Label(
+                text=f"UKUPNO: {ukupno:.2f} RSD",
+                bold=True, size_hint_y=None, height=dp(26),
+                color=(0.6, 0.85, 1, 1), font_size="14sp",
+            ))
+            inner.add_widget(Label(text="", size_hint_y=None, height=dp(10)))
+
+        danas = datetime.now()
+
+        pocetak_nedelje = danas - timedelta(days=danas.weekday())
+        pocetak_nedelje = pocetak_nedelje.replace(hour=0, minute=0, second=0)
+        kraj_nedelje = pocetak_nedelje + timedelta(days=6, hours=23, minutes=59, seconds=59)
+        prikazi_period("Ova nedelja", pocetak_nedelje, kraj_nedelje)
+
+        pocetak_meseca = danas.replace(day=1, hour=0, minute=0, second=0)
+        poslednji_dan_meseca = calendar.monthrange(danas.year, danas.month)[1]
+        kraj_meseca = danas.replace(day=poslednji_dan_meseca, hour=23, minute=59, second=59)
+        prikazi_period("Ovaj mesec", pocetak_meseca, kraj_meseca)
+
+        pocetak_godine = danas.replace(month=1, day=1, hour=0, minute=0, second=0)
+        kraj_godine = danas.replace(month=12, day=31, hour=23, minute=59, second=59)
+        prikazi_period("Ova godina", pocetak_godine, kraj_godine)
+
+        close_btn = SecondaryButton(text=prevedi("zapisi_zatvori", _jezik()), size_hint_y=None, height=dp(44))
+        close_btn.bind(on_release=popup.dismiss)
+        content.add_widget(close_btn)
+
         popup.open()
 
     # ---------- Dodavanje / izmena zapisa ----------
@@ -741,6 +814,39 @@ class DatabaseScreen(Screen):
             data["valuta"] = valuta_stanje["valuta"]
         return data
 
+    def _ocr_api_kljuc(self):
+        return db.get_setting("ocr_api_key", "")
+
+    def _trazi_ocr_kljuc(self, posle_unosa):
+        content = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
+        content.add_widget(Label(
+            text="Unesi OCR.space API kljuc (samo prvi put):",
+            size_hint_y=None, height=dp(40),
+        ))
+        kljuc_input = StyledTextInput(multiline=False, size_hint_y=None, height=dp(44))
+        content.add_widget(kljuc_input)
+        popup = Popup(
+            title="OCR API kljuc", content=content, size_hint=(0.9, 0.4),
+            overlay_color=(0, 0, 0, 0.85), auto_dismiss=False,
+        )
+
+        def sacuvaj(*a):
+            vrednost = kljuc_input.text.strip()
+            if vrednost:
+                db.set_setting("ocr_api_key", vrednost)
+            popup.dismiss()
+            posle_unosa(vrednost)
+
+        btn_row = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(6))
+        save_btn = PrimaryButton(text="Sacuvaj")
+        save_btn.bind(on_release=sacuvaj)
+        cancel_btn = SecondaryButton(text="Otkazi")
+        cancel_btn.bind(on_release=lambda *a: (popup.dismiss(), posle_unosa(None)))
+        btn_row.add_widget(save_btn)
+        btn_row.add_widget(cancel_btn)
+        content.add_widget(btn_row)
+        popup.open()
+
     def open_add_record_popup(self, tabela, vehicle_id, parent_popup, refresh_parent):
         jezik = _jezik()
         valuta_stanje = {}
@@ -751,6 +857,46 @@ class DatabaseScreen(Screen):
         scroll_wrap = ScrollView(size_hint=(1, None), height=dp(400))
         scroll_wrap.add_widget(content)
         outer = BoxLayout(orientation="vertical", spacing=dp(8), padding=dp(10))
+
+        if tabela == "gorivo":
+            def pokreni_ocr(kljuc):
+                def na_izboru(izbor):
+                    if not izbor:
+                        return
+                    error_label.text = "Ucitavam racun..."
+                    try:
+                        podaci = ocr_racun.ocitaj_racun(izbor[0], kljuc)
+                    except Exception as e:
+                        error_label.text = f"OCR greska: {e}"
+                        return
+                    if podaci.get("pumpa"):
+                        inputs["pumpa"].text = podaci["pumpa"]
+                    if podaci.get("litara"):
+                        inputs["litara"].text = str(podaci["litara"])
+                    if podaci.get("cena_po_litru"):
+                        inputs["cena_po_litru"].text = str(podaci["cena_po_litru"])
+                    error_label.text = "Racun ucitan - proveri podatke pre cuvanja."
+
+                try:
+                    from plyer import filechooser
+                    filechooser.open_file(
+                        on_selection=na_izboru,
+                        filters=[["Images", "*.jpg", "*.jpeg", "*.png"]],
+                    )
+                except Exception as e:
+                    error_label.text = f"Ne mogu da otvorim galeriju: {e}"
+
+            def skeniraj_racun(*a):
+                kljuc = self._ocr_api_kljuc()
+                if not kljuc:
+                    self._trazi_ocr_kljuc(lambda novi: novi and pokreni_ocr(novi))
+                    return
+                pokreni_ocr(kljuc)
+
+            ocr_btn = PrimaryButton(text="Skeniraj racun (OCR)", size_hint_y=None, height=dp(48))
+            ocr_btn.bind(on_release=skeniraj_racun)
+            outer.add_widget(ocr_btn)
+
         outer.add_widget(scroll_wrap)
 
         popup = Popup(
@@ -878,27 +1024,52 @@ class DatabaseScreen(Screen):
 
         slika_stanje = {"putanja": None, "cekanje_event": None}
 
+        def _pronadji_snimljenu_sliku(naziv_bez_ekstenzije):
+            try:
+                from android.storage import primary_external_storage_path
+                dcim = os.path.join(primary_external_storage_path(), "DCIM")
+            except ImportError:
+                dcim = None
+            if dcim and os.path.isdir(dcim):
+                for koren, _dirs, fajlovi in os.walk(dcim):
+                    for f in fajlovi:
+                        if f.startswith(naziv_bez_ekstenzije):
+                            return os.path.join(koren, f)
+            return None
+
         def slika_snimljena(putanja):
-            slika_stanje["cekanje_event"] and slika_stanje["cekanje_event"].cancel()
+            if slika_stanje["cekanje_event"]:
+                slika_stanje["cekanje_event"].cancel()
+                slika_stanje["cekanje_event"] = None
             if not putanja:
                 status_label.text = prevedi("dokumenti_greska_slikanja", jezik)
                 return
             slika_stanje["putanja"] = putanja
-            status_label.text = f"{prevedi('dokumenti_slika_snimljena', jezik)} ({putanja})"
+            status_label.text = prevedi("dokumenti_slika_snimljena", jezik)
 
-        def na_isteklo_vreme(dt):
-            status_label.text = "Kamera nije odgovorila u roku od 6 sekundi (callback se nije pozvao)."
+        def potrazi_na_disku(naziv, pokusaji_ostalo, dt):
+            pronadjeno = _pronadji_snimljenu_sliku(naziv)
+            if pronadjeno:
+                slika_snimljena(pronadjeno)
+                return
+            if pokusaji_ostalo <= 0:
+                status_label.text = "Slika nije pronadjena na disku (proveri Galeriju rucno)."
+                return
+            slika_stanje["cekanje_event"] = Clock.schedule_once(
+                lambda dt2: potrazi_na_disku(naziv, pokusaji_ostalo - 1, dt2), 1
+            )
 
         def slikaj(*a):
             status_label.text = "Snimam..."
-            slika_stanje["cekanje_event"] = Clock.schedule_once(na_isteklo_vreme, 6)
+            naziv_fajla = f"dok_{int(time.time())}"
             try:
-                preview.capture_photo(
-                    subdir="dokumenti_slike",
-                    name=f"dok_{int(time.time())}",
-                )
+                preview.capture_photo(subdir="dokumenti_slike", name=naziv_fajla)
             except Exception as e:
                 status_label.text = f"{prevedi('dokumenti_greska_slikanja', jezik)} ({e})"
+                return
+            slika_stanje["cekanje_event"] = Clock.schedule_once(
+                lambda dt: potrazi_na_disku(naziv_fajla, 8, dt), 1
+            )
 
         slikaj_btn = PrimaryButton(text=prevedi("dokumenti_slikaj_btn", jezik), size_hint_y=None, height=dp(48))
         slikaj_btn.bind(on_release=slikaj)
