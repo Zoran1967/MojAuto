@@ -10,11 +10,14 @@ se rezultat uvek prikazuje korisniku da potvrdi/ispravi pre cuvanja.
 """
 import re
 import json
+import ssl
 import uuid
 import mimetypes
 import urllib.request
 
 OCR_API_URL = "https://api.ocr.space/parse/image"
+
+_SSL_KONTEKST = ssl._create_unverified_context()
 
 
 def _posalji_zahtev(putanja_slike, api_key):
@@ -51,7 +54,7 @@ def _posalji_zahtev(putanja_slike, api_key):
         OCR_API_URL, data=telo, method="POST",
         headers={"Content-Type": f"multipart/form-data; boundary={boundary}"},
     )
-    with urllib.request.urlopen(zahtev, timeout=30) as odgovor:
+    with urllib.request.urlopen(zahtev, timeout=30, context=_SSL_KONTEKST) as odgovor:
         return json.loads(odgovor.read().decode("utf-8"))
 
 
