@@ -144,7 +144,12 @@ def pokreni_glavnu_app():
         def _trazi_dozvole(self, dt):
             try:
                 from android.permissions import request_permissions, Permission
-                request_permissions([Permission.CAMERA, Permission.WRITE_EXTERNAL_STORAGE])
+                dozvole = [Permission.CAMERA, Permission.WRITE_EXTERNAL_STORAGE]
+                if hasattr(Permission, "READ_EXTERNAL_STORAGE"):
+                    dozvole.append(Permission.READ_EXTERNAL_STORAGE)
+                if hasattr(Permission, "READ_MEDIA_IMAGES"):
+                    dozvole.append(Permission.READ_MEDIA_IMAGES)
+                request_permissions(dozvole)
             except Exception:
                 pass
 
