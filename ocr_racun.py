@@ -112,6 +112,7 @@ def ocitaj_racun(putanja_slike, api_key):
             r"price.{0,10}?/.{0,5}?liter.{0,10}?(\d+[.,]\d+)",
         ]),
         "ukupna_cena": stavka_ukupno or _nadji_ukupno(tekst),
+        "datum": _nadji_datum(tekst),
         "sirovi_tekst": tekst,
     }
 
@@ -159,6 +160,21 @@ def _nadji_ukupno(tekst):
                     return float(m.group(1).replace(",", "."))
                 except ValueError:
                     continue
+    return None
+
+
+def _nadji_datum(tekst):
+    """Trazi datum na racunu u raznim formatima i vraca ga normalizovanog
+    kao DD.MM.GGGG (format koji koristi ova aplikacija)."""
+    obrasci = [
+        (r"(\d{4})-(\d{2})-(\d{2})", lambda m: f"{m.group(3)}.{m.group(2)}.{m.group(1)}"),
+        (r"(\d{2})\.(\d{2})\.(\d{4})", lambda m: f"{m.group(1)}.{m.group(2)}.{m.group(3)}"),
+        (r"(\d{2})/(\d{2})/(\d{4})", lambda m: f"{m.group(1)}.{m.group(2)}.{m.group(3)}"),
+    ]
+    for obrazac, format_funkcija in obrasci:
+        m = re.search(obrazac, tekst)
+        if m:
+            return format_funkcija(m)
     return None
 
 
