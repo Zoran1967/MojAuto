@@ -15,6 +15,7 @@ from datetime import datetime, timedelta
 import calendar
 import time
 import os
+import threading
 
 from database import db
 from widgets import PrimaryButton, SecondaryButton, DangerButton, StyledTextInput
@@ -860,14 +861,18 @@ class DatabaseScreen(Screen):
 
         if tabela == "gorivo":
             def pokreni_ocr(kljuc):
-                def na_izboru(izbor):
-                    if not izbor:
-                        return
-                    error_label.text = "Ucitavam racun..."
+                def obradi_u_pozadini(putanja):
                     try:
-                        podaci = ocr_racun.ocitaj_racun(str(izbor[0]), kljuc)
+                        podaci = ocr_racun.ocitaj_racun(putanja, kljuc)
+                        greska = None
                     except Exception as e:
-                        error_label.text = f"OCR greska: {e}"
+                        podaci = None
+                        greska = str(e)
+                    Clock.schedule_once(lambda dt: primeni_rezultat(podaci, greska), 0)
+
+                def primeni_rezultat(podaci, greska):
+                    if greska:
+                        error_label.text = f"OCR greska: {greska}"
                         return
                     if podaci.get("pumpa"):
                         inputs["pumpa"].text = podaci["pumpa"]
@@ -876,6 +881,14 @@ class DatabaseScreen(Screen):
                     if podaci.get("cena_po_litru"):
                         inputs["cena_po_litru"].text = str(podaci["cena_po_litru"])
                     error_label.text = "Racun ucitan - proveri podatke pre cuvanja."
+
+                def na_izboru(izbor):
+                    if not izbor:
+                        return
+                    error_label.text = "Ucitavam racun..."
+                    threading.Thread(
+                        target=obradi_u_pozadini, args=(str(izbor[0]),), daemon=True,
+                    ).start()
 
                 try:
                     from plyer import filechooser
