@@ -57,8 +57,8 @@ def _posalji_zahtev(putanja_slike, api_key):
         delovi.append(f"{vrednost}\r\n".encode())
 
     dodaj_polje("apikey", api_key)
-    dodaj_polje("language", "eng")
-    dodaj_polje("OCREngine", "2")
+    dodaj_polje("language", "auto")
+    dodaj_polje("OCREngine", "3")
     dodaj_polje("scale", "true")
 
     delovi.append(f"--{boundary}\r\n".encode())
@@ -117,18 +117,20 @@ def ocitaj_racun(putanja_slike, api_key):
 
 
 def _parsiraj_stavku_goriva(tekst):
-    """Trazi red gde je 'l' samostalna jedinica mere (kolona kolicine
-    goriva), npr: '10,8200   l   1,849   23%   20,01 €'. Vraca
-    (litara, cena_po_litru, ukupno) - bilo koji moze biti None."""
+    """Trazi red sa stavkom goriva, npr:
+    '10,8200   l   1,849   23%   20,01 €' (kolicina, jedinica, cena/l, porez%, ukupno).
+    OCR ponekad procita 'l' kao '1' ili 'I', zato ne oslanjamo se na sam
+    znak jedinice mere, nego trazimo red sa najmanje 2 decimalna broja,
+    preskacuci redove sa sazetkom (dph/zaklad/spolu/celkom)."""
     for red in tekst.splitlines():
-        delovi = red.split()
-        if not any(d.lower() == "l" for d in delovi):
+        if re.search(r"dph|zaklad|spolu|celkom|dan\b", red, re.IGNORECASE):
             continue
         brojevi = []
-        for deo in delovi:
-            ocisceno = re.sub(r"[^\d.,]", "", deo)
-            if re.fullmatch(r"\d+[.,]\d+", ocisceno):
-                brojevi.append(float(ocisceno.replace(",", ".")))
+        for token in re.findall(r"\d+[.,]\d+", red):
+            try:
+                brojevi.append(float(token.replace(",", ".")))
+            except ValueError:
+                continue
         if len(brojevi) >= 2:
             litara = brojevi[0]
             cena_po_litru = brojevi[1]
