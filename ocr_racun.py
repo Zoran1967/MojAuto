@@ -113,6 +113,7 @@ def ocitaj_racun(putanja_slike, api_key):
         ]),
         "ukupna_cena": stavka_ukupno or _nadji_ukupno(tekst),
         "datum": _nadji_datum(tekst),
+        "grad": _nadji_grad(tekst),
         "sirovi_tekst": tekst,
     }
 
@@ -175,6 +176,19 @@ def _nadji_datum(tekst):
         m = re.search(obrazac, tekst)
         if m:
             return format_funkcija(m)
+    return None
+
+
+def _nadji_grad(tekst):
+    """Trazi grad u adresi - red sa postanskim brojem (5 cifara) iza
+    koga sledi naziv grada, npr: '90701 Myjava Viestova 1100/3'.
+    Uzima POSLEDNJI takav red (fizicka adresa pumpe), ne prvi
+    (koji je cesto sediste firme, ne mesto kupovine)."""
+    poklapanja = re.findall(r"\b\d{5}\s+([A-Za-zČĆŽŠĐčćžšđ]+)", tekst)
+    if poklapanja:
+        grad = poklapanja[-1].strip()
+        grad = re.split(r"\s*-\s*", grad)[0].strip()
+        return grad[:30]
     return None
 
 
