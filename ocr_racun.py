@@ -9,25 +9,45 @@ Prepoznavanje je heuristicko (racuni se razlikuju po formatu) - zato
 se rezultat uvek prikazuje korisniku da potvrdi/ispravi pre cuvanja.
 """
 import re
+import io
 import json
 import ssl
 import uuid
 import mimetypes
 import urllib.request
 
+from PIL import Image
+
 OCR_API_URL = "https://api.ocr.space/parse/image"
 
 _SSL_KONTEKST = ssl._create_unverified_context()
+
+_MAKS_DIMENZIJA = 1600
+_JPEG_KVALITET = 70
+
+
+def _pripremi_sliku(putanja_slike):
+    """Smanjuje sliku (dimenzije i JPEG kvalitet) da stane ispod
+    ogranicenja besplatnog OCR.space naloga (1 MB po slici).
+    Vraca (bajtovi, naziv_fajla, content_type)."""
+    slika = Image.open(putanja_slike)
+    if slika.mode != "RGB":
+        slika = slika.convert("RGB")
+
+    sirina, visina = slika.size
+    if max(sirina, visina) > _MAKS_DIMENZIJA:
+        razmera = _MAKS_DIMENZIJA / max(sirina, visina)
+        slika = slika.resize((int(sirina * razmera), int(visina * razmera)))
+
+    bafer = io.BytesIO()
+    slika.save(bafer, format="JPEG", quality=_JPEG_KVALITET, optimize=True)
+    return bafer.getvalue(), "racun.jpg", "image/jpeg"
 
 
 def _posalji_zahtev(putanja_slike, api_key):
     putanja_slike = str(putanja_slike)
     boundary = uuid.uuid4().hex
-    with open(putanja_slike, "rb") as f:
-        slika_bajtovi = f.read()
-
-    naziv_fajla = putanja_slike.rsplit("/", 1)[-1]
-    content_type = mimetypes.guess_type(naziv_fajla)[0] or "image/jpeg"
+    slika_bajtovi, naziv_fajla, content_type = _pripremi_sliku(putanja_slike)
 
     delovi = []
 
