@@ -880,6 +880,8 @@ class DatabaseScreen(Screen):
                         inputs["litara"].text = str(podaci["litara"])
                     if podaci.get("cena_po_litru"):
                         inputs["cena_po_litru"].text = str(podaci["cena_po_litru"])
+                    if podaci.get("datum"):
+                        inputs["datum"].text = podaci["datum"]
                     error_label.text = "Racun ucitan - proveri podatke pre cuvanja."
 
                 def na_izboru(izbor):
