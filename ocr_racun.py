@@ -98,20 +98,43 @@ def ocitaj_racun(putanja_slike, api_key):
 
     tekst = parsed_lista[0].get("ParsedText", "")
 
+    stavka_litara, stavka_cena, stavka_ukupno = _parsiraj_stavku_goriva(tekst)
+
     return {
         "pumpa": _nadji_pumpu(tekst),
-        "litara": _nadji_broj(tekst, [
+        "litara": stavka_litara or _nadji_broj(tekst, [
             r"(\d+[.,]\d{2,3})\s*[lL](?:it)?\b",
             r"litar[a]?\D{0,10}(\d+[.,]\d+)",
         ]),
-        "cena_po_litru": _nadji_broj(tekst, [
+        "cena_po_litru": stavka_cena or _nadji_broj(tekst, [
             r"cena.{0,15}?(\d+[.,]\d+)",
             r"/\s*[lL]\D{0,5}(\d+[.,]\d+)",
             r"price.{0,10}?/.{0,5}?liter.{0,10}?(\d+[.,]\d+)",
         ]),
-        "ukupna_cena": _nadji_ukupno(tekst),
+        "ukupna_cena": stavka_ukupno or _nadji_ukupno(tekst),
         "sirovi_tekst": tekst,
     }
+
+
+def _parsiraj_stavku_goriva(tekst):
+    """Trazi red gde je 'l' samostalna jedinica mere (kolona kolicine
+    goriva), npr: '10,8200   l   1,849   23%   20,01 €'. Vraca
+    (litara, cena_po_litru, ukupno) - bilo koji moze biti None."""
+    for red in tekst.splitlines():
+        delovi = red.split()
+        if not any(d.lower() == "l" for d in delovi):
+            continue
+        brojevi = []
+        for deo in delovi:
+            ocisceno = re.sub(r"[^\d.,]", "", deo)
+            if re.fullmatch(r"\d+[.,]\d+", ocisceno):
+                brojevi.append(float(ocisceno.replace(",", ".")))
+        if len(brojevi) >= 2:
+            litara = brojevi[0]
+            cena_po_litru = brojevi[1]
+            ukupno = brojevi[-1] if len(brojevi) >= 3 else None
+            return litara, cena_po_litru, ukupno
+    return None, None, None
 
 
 def _nadji_broj(tekst, obrasci):
@@ -127,7 +150,7 @@ def _nadji_broj(tekst, obrasci):
 
 def _nadji_ukupno(tekst):
     for red in tekst.splitlines():
-        if re.search(r"ukupno|total|za\s*platiti|iznos", red, re.IGNORECASE):
+        if re.search(r"ukupno|total|za\s*platiti|iznos|celkom|spolu", red, re.IGNORECASE):
             m = re.search(r"(\d+[.,]\d{2,3})", red)
             if m:
                 try:
