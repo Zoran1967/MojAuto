@@ -184,7 +184,7 @@ def _nadji_grad(tekst):
     koga sledi naziv grada, npr: '90701 Myjava Viestova 1100/3'.
     Uzima POSLEDNJI takav red (fizicka adresa pumpe), ne prvi
     (koji je cesto sediste firme, ne mesto kupovine)."""
-    poklapanja = re.findall(r"\b\d{5}\s+([A-Za-zČĆŽŠĐčćžšđ]+)", tekst)
+    poklapanja = re.findall(r"\b\d{5}\s+([A-Za-zČĆŽŠĐčćžšđ]{3,})", tekst)
     if poklapanja:
         grad = poklapanja[-1].strip()
         grad = re.split(r"\s*-\s*", grad)[0].strip()
