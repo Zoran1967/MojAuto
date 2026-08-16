@@ -852,7 +852,14 @@ class DatabaseScreen(Screen):
         jezik = _jezik()
         valuta_stanje = {}
         content, inputs = self._build_form(tabela, valuta_stanje=valuta_stanje)
-        error_label = Label(text="", size_hint_y=None, height=dp(24), color=(1, 0.4, 0.4, 1))
+        error_label = Label(
+            text="", size_hint_y=None, height=dp(24), color=(1, 0.4, 0.4, 1),
+            font_size="11sp", halign="left", valign="top",
+        )
+        error_label.bind(
+            width=lambda inst, val: setattr(inst, "text_size", (val, None)),
+            texture_size=lambda inst, val: setattr(inst, "height", val[1] + dp(10)),
+        )
         content.add_widget(error_label)
 
         scroll_wrap = ScrollView(size_hint=(1, None), height=dp(400))
@@ -884,7 +891,10 @@ class DatabaseScreen(Screen):
                         inputs["datum"].text = podaci["datum"]
                     if podaci.get("grad"):
                         inputs["grad"].text = podaci["grad"]
-                    error_label.text = "Racun ucitan - proveri podatke pre cuvanja."
+                    if not podaci.get("litara") or not podaci.get("cena_po_litru"):
+                        error_label.text = f"SIROV TEKST: {podaci.get('sirovi_tekst', '')[:500]}"
+                    else:
+                        error_label.text = "Racun ucitan - proveri podatke pre cuvanja."
 
                 def na_izboru(izbor):
                     if not izbor:
