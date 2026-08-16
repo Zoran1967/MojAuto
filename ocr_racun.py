@@ -179,16 +179,24 @@ def _nadji_datum(tekst):
     return None
 
 
+_GRAD_STOP_RECI = {
+    "dokl", "doklad", "dan", "datum", "cas", "celkom", "spolu",
+    "pokladni", "pokladnica", "pokladnicny", "pokladnik", "faktura",
+    "receipt", "total", "ukupno", "zaklad", "mnozstvo", "cena",
+}
+
+
 def _nadji_grad(tekst):
     """Trazi grad u adresi - red sa postanskim brojem (5 cifara) iza
     koga sledi naziv grada, npr: '90701 Myjava Viestova 1100/3'.
-    Uzima POSLEDNJI takav red (fizicka adresa pumpe), ne prvi
-    (koji je cesto sediste firme, ne mesto kupovine)."""
+    Filtrira poznate reci sa racuna (dokl/pokladni/datum...) da ne bi
+    slucajno uhvatio broj dokumenta ili slicno umesto pravog grada."""
     poklapanja = re.findall(r"\b\d{5}\s+([A-Za-zČĆŽŠĐčćžšđ]{3,})", tekst)
-    if poklapanja:
-        grad = poklapanja[-1].strip()
+    for kandidat in reversed(poklapanja):
+        grad = kandidat.strip()
         grad = re.split(r"\s*-\s*", grad)[0].strip()
-        return grad[:30]
+        if grad.lower() not in _GRAD_STOP_RECI and not grad.lower().startswith(tuple(_GRAD_STOP_RECI)):
+            return grad[:30]
     return None
 
 
