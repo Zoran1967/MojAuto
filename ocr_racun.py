@@ -119,25 +119,26 @@ def ocitaj_racun(putanja_slike, api_key):
 
 
 def _parsiraj_stavku_goriva(tekst):
-    """Trazi red sa stavkom goriva, npr:
-    '10,8200   l   1,849   23%   20,01 €' (kolicina, jedinica, cena/l, porez%, ukupno).
-    OCR ponekad procita 'l' kao '1' ili 'I', zato ne oslanjamo se na sam
-    znak jedinice mere, nego trazimo red sa najmanje 2 decimalna broja,
-    preskacuci redove sa sazetkom (dph/zaklad/spolu/celkom)."""
-    for red in tekst.splitlines():
-        if re.search(r"dph|zaklad|spolu|celkom|dan\b", red, re.IGNORECASE):
+    """Trazi brojeve stavke goriva (kolicina, cena/l, ukupno) - NE
+    oslanja se na to da su u istom redu (OCR ih ponekad prelomi u
+    poseban red za svaki broj). Uzima sve decimalne brojeve PRE prve
+    pojave 'celkom'/'spolu'/'total'/'ukupno' (to je uvek deo stavke,
+    ne dela sa PDV rasčlanom koji dolazi posle i ima slicne brojeve)."""
+    granica = re.search(r"celkom|spolu|total|ukupno", tekst, re.IGNORECASE)
+    deo_teksta = tekst[:granica.start()] if granica else tekst
+
+    brojevi = []
+    for token in re.findall(r"\d+[.,]\d{2,4}", deo_teksta):
+        try:
+            brojevi.append(float(token.replace(",", ".")))
+        except ValueError:
             continue
-        brojevi = []
-        for token in re.findall(r"\d+[.,]\d+", red):
-            try:
-                brojevi.append(float(token.replace(",", ".")))
-            except ValueError:
-                continue
-        if len(brojevi) >= 2:
-            litara = brojevi[0]
-            cena_po_litru = brojevi[1]
-            ukupno = brojevi[-1] if len(brojevi) >= 3 else None
-            return litara, cena_po_litru, ukupno
+
+    if len(brojevi) >= 2:
+        litara = brojevi[0]
+        cena_po_litru = brojevi[1]
+        ukupno = brojevi[-1] if len(brojevi) >= 3 else None
+        return litara, cena_po_litru, ukupno
     return None, None, None
 
 
